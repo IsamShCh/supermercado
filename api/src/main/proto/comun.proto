@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package isam.comun;
+
+option java_multiple_files = true;
+option java_package = "com.isam.grpc.common";
+option java_outer_classname = "CommonProto";
+
+// ========================================
+// ENUMERACIONES COMUNES
+// ========================================
+
+enum UnidadMedida {
+  UNIDAD_MEDIDA_UNSPECIFIED = 0;
+  UNIDAD = 1;
+  KILOGRAMO = 2;
+  GRAMO = 3;
+  LITRO = 4;
+  MILILITRO = 5;
+  METRO = 6;
+  PAQUETE = 7;
+  DOCENA = 8;
+}
+
+enum PoliticaRotacion {
+  POLITICA_ROTACION_UNSPECIFIED = 0;
+  FIFO = 1;  // First In, First Out
+  FEFO = 2;  // First Expired, First Out
+  LIFO = 3;  // Last In, First Out
+}
+
+enum EstadoGenerico {
+  ESTADO_GENERICO_UNSPECIFIED = 0;
+  ACTIVO = 1;
+  INACTIVO = 2;
+}
+
+// ========================================
+// MENSAJES DE RESPUESTA COMUNES
+// ========================================
+
+message ErrorResponse {
+  string codigo_error = 1;
+  string mensaje = 2;
+  map<string, string> detalles = 3;
+  int64 timestamp = 4;
+}
+
+message SuccessResponse {
+  string mensaje = 1;
+  map<string, string> detalles = 2;
+  int64 timestamp = 3;
+}
+
+// ========================================
+// MENSAJES DE PAGINACIÓN
+// ========================================
+
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message PaginationResponse {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_pages = 3;
+  int64 total_elements = 4;
+}
+
+// ========================================
+// MENSAJES DE TIMESTAMP
+// ========================================
+
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
