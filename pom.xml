@@ -19,7 +19,7 @@
 
     <modules>
         <module>api</module>
-        <module>servicio</module>
+        <module>servicio-catalogo</module>
     </modules>
 
 
