@@ -12,18 +12,18 @@ PRODUCTOS = {@SKU + [EAN | PLU] + Nombre + Descripcion + PrecioVenta +
              Caduca + EsGranel + IDCategoria + PoliticaRotacion + 
              UnidadMedida + (Etiquetas) + Estado}
 
-@SKU = *Código único del producto según formato empresa*
+@SKU = *Código único del productoEntity según formato empresa*
 EAN = *Código de barras estándar internacional de 13 dígitos*
 PLU = *Código de 4-5 dígitos para productos a granel*
-Nombre = *Nombre comercial del producto*
-Descripcion = *Descripción detallada del producto*
+Nombre = *Nombre comercial del productoEntity*
+Descripcion = *Descripción detallada del productoEntity*
 PrecioVenta = *Precio en formato decimal con 2 decimales, >= 0*
 OfertaAplicada = *Booleano que indica si hay oferta activa*
 FechaInicioOferta = *Fecha de inicio de la oferta en formato YYYY-MM-DD*
 FechaFinOferta = *Fecha de fin de la oferta en formato YYYY-MM-DD*
-Caduca = *Booleano que indica si el producto tiene fecha de caducidad*
+Caduca = *Booleano que indica si el productoEntity tiene fecha de caducidad*
 EsGranel = *Booleano que indica si se vende por peso*
-IDCategoria = *Identificador de la categoría del producto*
+IDCategoria = *Identificador de la categoría del productoEntity*
 PoliticaRotacion = [FIFO | FEFO | LIFO]
 UnidadMedida = *Unidad de medida del catálogo predefinido*
 Etiquetas = *Cadena de texto con etiquetas concatenadas*
@@ -64,7 +64,7 @@ OFERTAS = {@IDOferta + SKU + PrecioPromocional + TipoPromocion +
            FechaInicio + FechaFin + Estado}
 
 @IDOferta = *Identificador único de la oferta*
-SKU = *SKU del producto en oferta*
+SKU = *SKU del productoEntity en oferta*
 PrecioPromocional = *Precio con descuento, formato decimal 2 decimales*
 TipoPromocion = *Tipo de promoción aplicada*
 FechaInicio = *Fecha inicio validez en formato YYYY-MM-DD*
@@ -80,7 +80,7 @@ INVENTARIO = {@IDInventario + SKU + CantidadAlmacen +
               CantidadEstanteria + UnidadMedida}
 
 @IDInventario = *Identificador único del registro de inventario*
-SKU = *SKU del producto*
+SKU = *SKU del productoEntity*
 CantidadAlmacen = *Cantidad disponible en almacén*
 CantidadEstanteria = *Cantidad disponible en estantería*
 UnidadMedida = *Unidad de medida correspondiente*
@@ -96,9 +96,9 @@ LOTES = {@IDLote + SKU + [EAN | PLU] + NumeroLote + Cantidad +
 
 @IDLote = *Identificador único del lote*
 IDInventario = *Identificador del inventario*
-SKU = *SKU del producto*
-EAN = *Código EAN del producto*
-PLU = *Código PLU del producto a granel*
+SKU = *SKU del productoEntity*
+EAN = *Código EAN del productoEntity*
+PLU = *Código PLU del productoEntity a granel*
 NumeroLote = *Número de lote del proveedor*
 Cantidad = *Cantidad total ingresada*
 FechaCaducidad = *Fecha de caducidad en formato YYYY-MM-DD*
@@ -113,7 +113,7 @@ Estado = [Disponible | Bloqueado | Eliminado]
 MOVIMIENTOS_INVENTARIO = {@IDMovimiento + SKU + (IDLote) + TipoMovimiento + Cantidad + UnidadMedida + FechaHora + IDUsuario + Motivo + (Observaciones)} 
 
 @IDMovimiento = *Identificador único del movimiento* 
-SKU = *SKU del producto* 
+SKU = *SKU del productoEntity* 
 IDLote = *Identificador del lote afectado* 
 TipoMovimiento = [Entrada | Salida | Ajuste | Traslado | Venta | Devolucion | Merma] 
 Cantidad = *Cantidad del movimiento (positiva o negativa)* 
@@ -1169,7 +1169,7 @@ Mensaje = *"Stock insuficiente para completar la operación"*
 ```
 ERROR_PRODUCTO_DESCATALOGADO = SKU + Mensaje
 
-Mensaje = *"El producto está descatalogado y no puede ser utilizado"*
+Mensaje = *"El productoEntity está descatalogado y no puede ser utilizado"*
 
 ```
 
@@ -1271,7 +1271,7 @@ Mensaje = *"No se puede eliminar una categoría que contiene productos"*
 ```
 ERROR_PRODUCTO_CON_HISTORIAL = SKU + Mensaje
 
-Mensaje = *"No se puede eliminar un producto con historial de transacciones"*
+Mensaje = *"No se puede eliminar un productoEntity con historial de transacciones"*
 
 ```
 
@@ -1307,7 +1307,7 @@ Mensaje = *"La fecha no es válida o está fuera del rango permitido"*
 ```
 ERROR_OFERTA_ACTIVA = SKU + IDOfertaActual + Mensaje
 
-Mensaje = *"Ya existe una oferta activa para este producto"*
+Mensaje = *"Ya existe una oferta activa para este productoEntity"*
 
 ```
 
@@ -1334,7 +1334,7 @@ Mensaje = *"El precio debe ser mayor o igual a 0 con formato de 2 decimales"*
 ```
 ERROR_UNIDAD_MEDIDA_INCONSISTENTE = UnidadCatalogo + UnidadRecibida + Mensaje
 
-Mensaje = *"La unidad de medida no coincide con la del producto en catálogo"*
+Mensaje = *"La unidad de medida no coincide con la del productoEntity en catálogo"*
 
 ```
 
@@ -1409,7 +1409,7 @@ Mensaje = *"Se ha detectado una discrepancia en el inventario"*
 ## SECCIÓN 4: DATOS ELEMENTALES COMUNES
 
 ```
-SKU = *Código alfanumérico único del producto, formato definido por empresa*
+SKU = *Código alfanumérico único del productoEntity, formato definido por empresa*
 EAN = *13 dígitos numéricos*
 PLU = *4-5 dígitos numéricos*
 Nombre = *Cadena de texto hasta 200 caracteres*

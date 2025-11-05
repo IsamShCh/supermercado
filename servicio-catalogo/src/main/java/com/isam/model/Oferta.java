@@ -14,7 +14,7 @@ public class Oferta {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SKU", nullable = false)
-    private Producto producto;
+    private Producto productoEntity;
 
     @Column(name = "PrecioPromocional", precision = 10, scale = 2, nullable = false)
     private BigDecimal precioPromocional;
@@ -35,10 +35,10 @@ public class Oferta {
     // Constructors
     public Oferta() {}
 
-    public Oferta(String idOferta, Producto producto, BigDecimal precioPromocional,
-                 LocalDate fechaInicio, LocalDate fechaFin) {
+    public Oferta(String idOferta, Producto productoEntity, BigDecimal precioPromocional,
+                  LocalDate fechaInicio, LocalDate fechaFin) {
         this.idOferta = idOferta;
-        this.producto = producto;
+        this.productoEntity = productoEntity;
         this.precioPromocional = precioPromocional;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
@@ -54,11 +54,11 @@ public class Oferta {
     }
 
     public Producto getProducto() {
-        return producto;
+        return productoEntity;
     }
 
-    public void setProducto(Producto producto) {
-        this.producto = producto;
+    public void setProducto(Producto productoEntity) {
+        this.productoEntity = productoEntity;
     }
 
     public BigDecimal getPrecioPromocional() {

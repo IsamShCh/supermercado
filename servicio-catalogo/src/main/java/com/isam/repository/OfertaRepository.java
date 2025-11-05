@@ -13,11 +13,11 @@ import java.util.List;
 @Repository
 public interface OfertaRepository extends JpaRepository<Oferta, String> {
 
-    List<Oferta> findByProducto_Sku(String sku);
+    List<Oferta> findByProductoEntity_Sku(String sku);
 
     List<Oferta> findByEstado(EstadoOferta estado);
 
-    @Query("SELECT o FROM Oferta o WHERE o.producto.sku = :sku AND o.estado = :estado")
+    @Query("SELECT o FROM Oferta o WHERE o.productoEntity.sku = :sku AND o.estado = :estado")
     List<Oferta> findByProductoSkuAndEstado(@Param("sku") String sku, @Param("estado") EstadoOferta estado);
 
     @Query("SELECT o FROM Oferta o WHERE o.fechaInicio <= :fecha AND o.fechaFin >= :fecha AND o.estado = :estado")
@@ -26,6 +26,6 @@ public interface OfertaRepository extends JpaRepository<Oferta, String> {
     @Query("SELECT o FROM Oferta o WHERE o.fechaFin < :fecha AND o.estado = :estado")
     List<Oferta> findExpiredOffers(@Param("fecha") LocalDate fecha, @Param("estado") EstadoOferta estado);
 
-    @Query("SELECT COUNT(o) FROM Oferta o WHERE o.producto.sku = :sku AND o.estado = :estado")
+    @Query("SELECT COUNT(o) FROM Oferta o WHERE o.productoEntity.sku = :sku AND o.estado = :estado")
     long countByProductoSkuAndEstado(@Param("sku") String sku, @Param("estado") EstadoOferta estado);
 }

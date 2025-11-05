@@ -1,15 +1,20 @@
 package com.isam.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "PRODUCTOS")
 public class Producto {
 
     @Id
-    @Column(name = "SKU", length = 50)
+    @Column(name = "SKU", length = 50, unique = true)
     private String sku;
 
     @Column(name = "EAN", length = 13, unique = true)
@@ -25,6 +30,7 @@ public class Producto {
     private String descripcion;
 
     @Column(name = "PrecioVenta", precision = 10, scale = 2, nullable = false)
+    @PositiveOrZero
     private BigDecimal precioVenta;
 
     @Column(name = "Caduca", nullable = false)
@@ -56,7 +62,7 @@ public class Producto {
     public Producto() {}
 
     public Producto(String sku, String nombre, BigDecimal precioVenta, Categoria categoria,
-                   PoliticaRotacion politicaRotacion, UnidadMedida unidadMedida) {
+                    PoliticaRotacion politicaRotacion, UnidadMedida unidadMedida) {
         this.sku = sku;
         this.nombre = nombre;
         this.precioVenta = precioVenta;
@@ -65,108 +71,13 @@ public class Producto {
         this.unidadMedida = unidadMedida;
     }
 
-    // Getters and Setters
-    public String getSku() {
-        return sku;
-    }
-
-    public void setSku(String sku) {
-        this.sku = sku;
-    }
-
-    public String getEan() {
-        return ean;
-    }
-
-    public void setEan(String ean) {
-        this.ean = ean;
-    }
-
-    public String getPlu() {
-        return plu;
-    }
-
-    public void setPlu(String plu) {
-        this.plu = plu;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public BigDecimal getPrecioVenta() {
-        return precioVenta;
-    }
-
-    public void setPrecioVenta(BigDecimal precioVenta) {
-        this.precioVenta = precioVenta;
-    }
-
-    public Boolean getCaduca() {
-        return caduca;
-    }
-
-    public void setCaduca(Boolean caduca) {
-        this.caduca = caduca;
-    }
-
-    public Boolean getEsGranel() {
-        return esGranel;
-    }
-
-    public void setEsGranel(Boolean esGranel) {
-        this.esGranel = esGranel;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
-    public PoliticaRotacion getPoliticaRotacion() {
-        return politicaRotacion;
-    }
-
-    public void setPoliticaRotacion(PoliticaRotacion politicaRotacion) {
-        this.politicaRotacion = politicaRotacion;
-    }
-
-    public UnidadMedida getUnidadMedida() {
-        return unidadMedida;
-    }
-
-    public void setUnidadMedida(UnidadMedida unidadMedida) {
-        this.unidadMedida = unidadMedida;
-    }
-
-    public String getEtiquetas() {
-        return etiquetas;
-    }
-
-    public void setEtiquetas(String etiquetas) {
-        this.etiquetas = etiquetas;
-    }
-
-    public EstadoProducto getEstado() {
-        return estado;
-    }
-
-    public void setEstado(EstadoProducto estado) {
-        this.estado = estado;
+    @Override
+    public String toString() {
+        return "ProductoEntity{" +
+                "sku='" + sku + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", precioVenta=" + precioVenta +
+                ", estado=" + estado +
+                '}';
     }
 }
