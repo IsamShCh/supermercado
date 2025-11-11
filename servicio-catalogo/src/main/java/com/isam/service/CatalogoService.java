@@ -12,15 +12,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class CatalogoService {
 
-    private final ProductoRepository productoRepository;
-    private final OfertaRepository ofertaRepository;
-    private final CategoriaRepository categoriaRepository;
+    @Autowired
+    private ProductoRepository productoRepository;
+    @Autowired
+    private OfertaRepository ofertaRepository;
+    @Autowired
+    private CategoriaRepository categoriaRepository;
 
     @Autowired
-    public CatalogoService(ProductoRepository productoRepository, OfertaRepository ofertaRepository, CategoriaRepository categoriaRepository) {
-        this.productoRepository = productoRepository;
-        this.ofertaRepository = ofertaRepository;
-        this.categoriaRepository = categoriaRepository;
+    public CatalogoService() {
     }
 
     public Producto crearProducto(Producto productoEntity) {

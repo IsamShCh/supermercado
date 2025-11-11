@@ -1,22 +1,22 @@
 LISTA DE ACONTECIMIENTOS - SISTEMA DE GESTIÓN DE SUPERMERCADOS
 #SECTION - : CATÁLOGO
-#NOTE - AC1: Administrador de inventario crea un nuevo productoEntity en el catálogo
+#NOTE - AC1: Administrador de inventario crea un nuevo producto en el catálogo
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: INFO_NUEVO_PRODUCTO = SKU + EAN/PLU + Nombre + Descripción + PrecioVenta + OfertaAplicada + FechaInicioOferta + FechaFinOferta + Caduca + EsGranel + IDCategoria + PoliticaRotacion + IDProveedor + UnidadMedida
 Almacenes: PRODUCTOS
 Requisitos satisfechos: RF1, RF13, RF14
-#NOTE - AC2: Administrador de inventario modifica un productoEntity existente
+#NOTE - AC2: Administrador de inventario modifica un producto existente
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: INFO_MODIFICAR_PRODUCTO = SKU + DatosActualizar
 Almacenes: PRODUCTOS
 Requisitos satisfechos: RF2
-#NOTE - AC3: Usuario consulta un productoEntity por SKU
+#NOTE - AC3: Usuario consulta un producto por SKU
 Entidad Externa: Cajero / Administrador de Inventario
 Flujo de entrada: CONSULTA_PRODUCTO = SKU
 Almacenes: PRODUCTOS, PROVEEDORES, OFERTA, CATEGORIA
 Requisitos satisfechos: RF3
 
-#NOTE - AC3R: Usuario recibe informacion del productoEntity
+#NOTE - AC3R: Usuario recibe información del producto
 Entidad Externa: Cajero / Administrador de Inventario
 Flujo de entrada: DETALLES_PRODUCTO = SKU + [EAN | PLU] + Nombre + Descripcion + PrecioVenta + (PrecioPromocional) + IDCategoria + NombreCategoria + UnidadMedida + PoliticaRotacion + Estado + (Etiquetas) 
 Almacenes: PRODUCTOS, PROVEEDORES, OFERTA, CATEGORIA
@@ -28,7 +28,7 @@ Flujo de entrada: SOLICITUD_LISTAR_PRODUCTO
 Almacenes: PRODUCTOS, PROVEEDORES, OFERTA, CATEGORIA
 Requisitos satisfechos: RF4
 
-#NOTE - AC4R: Usuario recibe listado completo de productoEntity
+#NOTE - AC4R: Usuario recibe listado completo de producto
 Entidad Externa: Cajero / Administrador de Inventario
 Flujo de entrada: LISTA_PRODUCTOS = {DETALLES_PRODUCTO}
 Almacenes: PRODUCTOS, PROVEEDORES, OFERTA, CATEGORIA
@@ -46,17 +46,17 @@ Flujo de entrada: LISTA_PRODUCTOS = {DETALLES_PRODUCTO}
 Almacenes: PRODUCTOS, PROVEEDORES, OFERTA, CATEGORIA
 Requisitos satisfechos: RF5
 
-#NOTE - AC6: Administrador de inventario descataloga un productoEntity
+#NOTE - AC6: Administrador de inventario descataloga un producto
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: SOLICITUD_DESCATALOGAR = SKU
 Almacenes: PRODUCTOS, INVENTARIO
 Requisitos satisfechos: RF6
-#NOTE - AC7: Administrador de inventario recataloga un productoEntity
+#NOTE - AC7: Administrador de inventario recataloga un producto
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: SOLICITUD_RECATALOGAR = SKU
 Almacenes: PRODUCTOS
 Requisitos satisfechos: RF7
-#TODO - AC8: Administrador de inventario elimina definitivamente un productoEntity NO INCLUIR, ESTO ES UN RIESGO PARA LA INTEGRIDAD
+#TODO - AC8: Administrador de inventario elimina definitivamente un producto NO INCLUIR, ESTO ES UN RIESGO PARA LA INTEGRIDAD
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: SOLICITUD_ELIMINAR_PRODUCTO = SKU
 Almacenes: PRODUCTOS, OFERTAS, VENTAS, DEVOLUCIONES, INVENTARIO.
@@ -71,12 +71,12 @@ Entidad Externa: Administrador de Inventario
 Flujo de entrada: INFO_MODIFICAR_CATEGORIA = IDCategoria + NuevosValores
 Almacenes: CATEGORIAS
 Requisitos satisfechos: RF10
-#NOTE - AC11: Gerente de tienda crea una oferta para un productoEntity
+#NOTE - AC11: Gerente de tienda crea una oferta para un producto
 Entidad Externa: Gerente de Tienda
 Flujo de entrada: INFO_NUEVA_OFERTA = SKU + PrecioPromocional + TipoPromocion + FechaInicio + FechaFin
 Almacenes: PRODUCTOS, OFERTAS
 Requisitos satisfechos: RF11
-#NOTE - AC12: Administrador de inventario asigna etiquetas a un productoEntity
+#NOTE - AC12: Administrador de inventario asigna etiquetas a un producto
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: ASIGNACION_ETIQUETAS = SKU + Etiquetas
 Almacenes: PRODUCTOS
@@ -101,7 +101,7 @@ Entidad Externa: Administrador de Inventario
 Flujo de entrada: INFO_NUEVAS_EXISTENCIAS = SKU + [EAN|PLU] + Cantidad + NumeroLote + (FechaCaducidad) + IDProveedor + UnidadMedida
 Almacenes: PRODUCTOS (lectura), INVENTARIO, LOTES, PROVEEDORES (lectura), MOVIMIENTOS_INVENTARIO
 Requisitos satisfechos: RF17
-#TODO - AC15: Administrador de inventario registra existencias de productoEntity a granel BORRADO
+#TODO - AC15: Administrador de inventario registra existencias de producto a granel BORRADO
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: INFO_EXISTENCIAS_GRANEL = SKU + PLU + Cantidad + NumeroLote + FechaCaducidad + IDProveedor + UnidadMedida
 Almacenes: PRODUCTOS (lectura), INVENTARIO, LOTES, PROVEEDORES (lectura), MOVIMIENTOS_INVENTARIO
@@ -126,12 +126,12 @@ Entidad Externa: Administrador de Inventario
 Flujo de entrada: INFO_CONTABILIZACION = SKU + StockFisicoEstanteria + StockFisicoAlmacen
 Almacenes: PRODUCTOS (lectura), INVENTARIO, LOTES, MOVIMIENTOS_INVENTARIO
 Requisitos satisfechos: RF23
-#NOTE - AC20: Usuario consulta inventario de un productoEntity
+#NOTE - AC20: Usuario consulta inventario de un producto
 Entidad Externa: Administrador de Inventario / Cajero
 Flujo de entrada: CONSULTA_INVENTARIO = SKU
 Almacenes: PRODUCTOS (lectura), INVENTARIO (lectura), LOTES (lectura)
 Requisitos satisfechos: RF24
-#NOTE - AC20R: Usuario obtiene inventario de un productoEntity
+#NOTE - AC20R: Usuario obtiene inventario de un producto
 Entidad Externa: Administrador de Inventario / Cajero
 Flujo de entrada: DETALLES_INVENTARIO++ = SKU + NombreProducto + StockTotalAlmacen + StockTotalEstanteria + UnidadMedida + {DetalleLote}
 Almacenes: PRODUCTOS (lectura), INVENTARIO (lectura), LOTES (lectura)
@@ -159,7 +159,7 @@ Entidad Externa: Cajero
 Flujo de entrada: SOLICITUD_NUEVO_TICKET
 Almacenes: TICKETS_TEMPORALES
 Requisitos satisfechos: RF28
-#NOTE - AC24: Cajero añade productoEntity al ticket
+#NOTE - AC24: Cajero añade producto al ticket
 Entidad Externa: Cajero
 Flujo de entrada: INFO_AÑADIR_PRODUCTO++ = IDTicketTemporal + CodigoBarras
 Almacenes: TICKETS_TEMPORALES, PRODUCTOS (lectura), INVENTARIO (lectura para validar stock)
@@ -177,7 +177,7 @@ Entidad Externa: Cajero
 Flujo de entrada: SOLICITUD_BORRAR_TICKET = IDTicketTemporal
 Almacenes: TICKETS_TEMPORALES
 Requisitos satisfechos: RF30
-#NOTE - AC26: Cajero elimina productoEntity del ticket temporal
+#NOTE - AC26: Cajero elimina producto del ticket temporal
 Entidad Externa: Cajero
 Flujo de entrada: INFO_ELIMINAR_PRODUCTO_TICKET = IDTicketTemporal + SKU
 Almacenes: TICKETS_TEMPORALES
@@ -305,7 +305,6 @@ Entidad Externa: Gerente de Tienda
 Flujo de entrada: SOLICITUD_REPORTE_DEVOLUCIONES = FechaInicio + FechaFin + (FiltroProducto) + (FiltroCategoria) + (FiltroCajero)
 Almacenes: DEVOLUCIONES (lectura), PRODUCTOS (lectura), CATEGORIAS (lectura), USUARIOS (lectura)
 Requisitos satisfechos: RF27, RF58
-
 
 
 #!SECTION

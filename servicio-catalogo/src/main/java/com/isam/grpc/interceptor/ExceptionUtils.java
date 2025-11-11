@@ -6,8 +6,10 @@ import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.rpc.Code;
 import io.grpc.StatusRuntimeException;
+import org.hibernate.exception.ConstraintViolationException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.net.SocketException;
 
@@ -34,45 +36,25 @@ public class ExceptionUtils {
                 cause = cause.getCause();
             }
 
-            if(cause instanceof SocketException){
-
-// También podemos hacerlo asi:
-//                Status status = Status.INVALID_ARGUMENT
-//                        .withDescription("El ID del recurso no puede estar vacío.");
-//                StatusRuntimeException exception = status.asRuntimeException();
-
+            if (cause instanceof ConstraintViolationException ) {
+                status = com.google.rpc.Status.newBuilder()
+                        .setCode(Code.ALREADY_EXISTS_VALUE)
+                        .setMessage("La entidad que se intenta crear ya existe:\n" + cause.getMessage())
+                        .build();
+            }
+            else if(cause instanceof SocketException){
                 String mensajeError = "Error con los sockets o algo asi: ";
                 status = com.google.rpc.Status.newBuilder()
-                        .setCode(Code.UNAVAILABLE_VALUE)
+                        .setCode(Code.INTERNAL_VALUE)
                         .setMessage(mensajeError + cause.getMessage())
-                        .addDetails(Any.pack(mensajeGenerico))
+                        .addDetails(mensajeGenerico != null ? Any.pack(mensajeGenerico) : Any.getDefaultInstance())
                         .build();
-
-//                // 1. Crea los detalles estructurados del error (opcional pero potente)
-//                BadRequest.FieldViolation violation = BadRequest.FieldViolation.newBuilder()
-//                        .setField("name")
-//                        .setDescription("El campo 'name' no puede exceder los 50 caracteres.")
-//                        .build();
-//                BadRequest badRequestDetails = BadRequest.newBuilder()
-//                        .addFieldViolations(violation)
-//                        .build();
-//
-//                // 2. Construye el objeto com.google.rpc.Status
-//                com.google.rpc.Status statusProto = com.google.rpc.Status.newBuilder()
-//                        .setCode(Code.INVALID_ARGUMENT_VALUE) // ¡Ojo! Es _VALUE para diferenciarlo del de grpc.core
-//                        .setMessage("La petición contiene valores inválidos.")
-//                        .addDetails(Any.pack(badRequestDetails)) // Empaqueta los detalles
-//                        .build();
-//
-//                // 3. Convierte el objeto Protobuf a StatusRuntimeException
-//                //    Aquí entra en juego la clase de utilidad StatusProto.
-//                StatusRuntimeException exception = StatusProto.toStatusRuntimeException(statusProto);
 
             } else {
                 status = com.google.rpc.Status.newBuilder()
                         .setCode(com.google.rpc.Code.INTERNAL_VALUE)
-                        .setMessage("Internal server error")
-                        .addDetails(Any.pack(mensajeGenerico))
+                        .setMessage(cause != null ? "Internal server error:\n"+ cause.getMessage() : "Internal server error")
+                        .addDetails(mensajeGenerico != null ? Any.pack(mensajeGenerico) : Any.getDefaultInstance())
                         .build();
             }
             statusRuntimeException = StatusProto.toStatusRuntimeException(status);

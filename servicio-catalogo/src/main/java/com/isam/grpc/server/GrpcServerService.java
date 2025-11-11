@@ -2,7 +2,6 @@ package com.isam.grpc.server;
 
 
 import com.isam.grpc.catalogo.*;
-import com.isam.grpc.interceptor.ExceptionUtils;
 import com.isam.mapper.CatalogoMapper;
 import com.isam.model.Categoria;
 import com.isam.model.Producto;
@@ -53,8 +52,6 @@ class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
 
     @Override
     public void crearCategoria(CrearCategoriaRequest request, StreamObserver<CrearCategoriaRequest.Response> responseObserver) {
-
-//        try {
             Categoria categoriaEntity = productoMapper.toEntity(request);
 
             Categoria categoriaResp = catalogoService.crearCategoria(categoriaEntity);
@@ -67,8 +64,5 @@ class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-//        } catch (RuntimeException exception){
-//            throw ExceptionUtils.observarError(responseObserver, exception, CrearCategoriaRequest.Response.getDefaultInstance());
-//        }
     }
 }

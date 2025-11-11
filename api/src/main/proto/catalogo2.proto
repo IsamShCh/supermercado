@@ -1,0 +1,559 @@
+syntax = "proto3";
+
+package isam.catalogo;
+
+import "comun.proto";
+
+option java_multiple_files = true;
+option java_package = "com.isam.grpc.catalogo";
+option java_outer_classname = "CatalogoProto";
+
+// ========================================
+// ENUMERACIONES ESPECÍFICAS DE CATÁLOGO
+// ========================================
+
+enum EstadoProducto {
+  ESTADO_PRODUCTO_UNSPECIFIED = 0;
+  PRODUCTO_ACTIVO = 1;
+  PRODUCTO_DESCATALOGADO = 2;
+}
+
+enum EstadoOferta {
+  ESTADO_OFERTA_UNSPECIFIED = 0;
+  OFERTA_ACTIVA = 1;
+  OFERTA_VENCIDA = 2;
+  OFERTA_CANCELADA = 3;
+}
+
+enum TipoReporteCatalogo {
+  TIPO_REPORTE_UNSPECIFIED = 0;
+  LISTA_POR_CATEGORIA = 1;
+  PRODUCTOS_CON_OFERTAS = 2;
+  ESTADISTICAS_GENERALES = 3;
+}
+
+// ========================================
+// MENSAJES DE PRODUCTOS
+// ========================================
+
+message ProductoProto {
+  string sku = 1;
+  oneof identificador {
+    string ean = 2;
+    string plu = 3;
+  }
+  string nombre = 4;
+  string descripcion = 5;
+  double precio_venta = 6;
+  bool caduca = 7;
+  bool es_granel = 8;
+  int64 id_categoria = 9;
+  isam.comun.PoliticaRotacion politica_rotacion = 10;
+  isam.comun.UnidadMedida unidad_medida = 11;
+  repeated string etiquetas = 12;
+  EstadoProducto estado = 13;
+}
+
+message OfertaProductoProto {
+  bool oferta_aplicada = 1;
+  string fecha_inicio_oferta = 2;  // YYYY-MM-DD
+  string fecha_fin_oferta = 3;     // YYYY-MM-DD
+  double precio_promocional = 4;
+}
+
+message ProductoCompleto {
+  ProductoProto producto = 1;
+  OfertaProductoProto oferta = 2;
+  CategoriaProto categoria = 3;
+  ProveedorProto proveedor = 4;
+}
+
+// ========================================
+// MENSAJES DE CATEGORÍAS
+// ========================================
+
+message CategoriaProto {
+  int64 id_categoria = 1;
+  string nombre_categoria = 2;
+  string descripcion = 3;
+}
+
+// ========================================
+// MENSAJES DE PROVEEDORES
+// ========================================
+
+message ProveedorProto {
+  string id_proveedor = 1;
+  string nombre_proveedor = 2;
+  string contacto = 3;
+  string direccion = 4;
+  string telefono = 5;
+  string email = 6;
+}
+
+// ========================================
+// MENSAJES DE OFERTAS
+// ========================================
+
+message OfertaProto {
+  string id_oferta = 1;
+  string sku = 2;
+  double precio_promocional = 3;
+  string tipo_promocion = 4;
+  string fecha_inicio = 5;  // YYYY-MM-DD
+  string fecha_fin = 6;     // YYYY-MM-DD
+  EstadoOferta estado = 7;
+}
+
+// ========================================
+// REQUEST - AC1: CREAR PRODUCTO
+// ========================================
+
+message CrearProductoReq {
+  string sku = 1;
+  oneof identificador {
+    string ean = 2;
+    string plu = 3;
+  }
+  string nombre = 4;
+  string descripcion = 5;
+  double precio_venta = 6;
+  bool caduca = 7;
+  bool es_granel = 8;
+  int64 id_categoria = 9;
+  isam.comun.PoliticaRotacion politica_rotacion = 10;
+  isam.comun.UnidadMedida unidad_medida = 11;
+
+  message Response {
+    ProductoProto producto = 1;
+  }
+}
+
+message ProductoCreado {
+  string sku = 1;
+  string mensaje = 2;
+  DetallesProducto detalles = 3;
+}
+
+message DetallesProducto {
+  string nombre = 1;
+  double precio_venta = 2;
+  int64 id_categoria = 3;
+  isam.comun.UnidadMedida unidad_medida = 4;
+}
+
+// ========================================
+// REQUEST - AC2: MODIFICAR PRODUCTO
+// ========================================
+
+message ModificarProductoReq {
+  string sku = 1;
+  DatosActualizar datos_actualizar = 2;
+
+  message Response {
+    oneof result {
+      ProductoModificado success = 1;
+      isam.comun.ErrorResponse error = 2;
+    }
+  }
+}
+
+message DatosActualizar {
+  optional string nombre = 1;
+  optional string descripcion = 2;
+  optional double precio_venta = 3;
+  optional int64 id_categoria = 4;
+  optional OfertaProductoProto oferta = 5;
+  optional isam.comun.PoliticaRotacion politica_rotacion = 6;
+  optional string id_proveedor = 7;
+  repeated string etiquetas = 8;
+}
+
+message ProductoModificado {
+  string sku = 1;
+  string mensaje = 2;
+  map<string, string> detalles_actualizados = 3;
+}
+
+// ========================================
+// REQUEST - AC3: CONSULTAR PRODUCTO POR SKU
+// ========================================
+
+message ConsultarProductoRequest {
+  string sku = 1;
+
+  message Response {
+    oneof result {
+      ProductoProto success = 1;
+      isam.comun.ErrorResponse error = 2;
+    }
+  }
+}
+
+message DetallesProductoCompleto {
+  string sku = 1;
+  oneof identificador {
+    string ean = 2;
+    string plu = 3;
+  }
+  string nombre = 4;
+  string descripcion = 5;
+  double precio_venta = 6;
+  optional double precio_promocional = 7;
+  int64 id_categoria = 8;
+  string nombre_categoria = 9;
+  isam.comun.UnidadMedida unidad_medida = 10;
+  isam.comun.PoliticaRotacion politica_rotacion = 11;
+  EstadoProducto estado = 12;
+  repeated string etiquetas = 13;
+}
+
+// ========================================
+// REQUEST - AC4: LISTAR TODOS LOS PRODUCTOS
+// ========================================
+
+message ListarProductosRequest {
+  optional isam.comun.PaginationRequest paginacion = 1;
+}
+
+message ListarProductosResponse {
+  oneof result {
+    ListaProductos success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ListaProductos {
+  repeated DetallesProductoCompleto productos = 1;
+  optional isam.comun.PaginationResponse paginacion = 2;
+}
+
+// ========================================
+// REQUEST - AC5: BUSCAR PRODUCTOS POR CRITERIOS
+// ========================================
+
+message BuscarProductosRequest {
+  CriteriosBusqueda criterios = 1;
+  optional isam.comun.PaginationRequest paginacion = 2;
+}
+
+message CriteriosBusqueda {
+  optional string nombre = 1;
+  optional int64 id_categoria = 2;
+  optional double precio_min = 3;
+  optional double precio_max = 4;
+  optional bool es_granel = 5;
+  repeated string etiquetas = 6;
+}
+
+message BuscarProductosResponse {
+  oneof result {
+    ListaProductos success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+// ========================================
+// REQUEST - AC6: DESCATALOGAR PRODUCTO
+// ========================================
+
+message DescatalogarProductoRequest {
+  string sku = 1;
+}
+
+message DescatalogarProductoResponse {
+  oneof result {
+    ProductoDescatalogado success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ProductoDescatalogado {
+  string sku = 1;
+  string mensaje = 2;
+}
+
+// ========================================
+// REQUEST - AC7: RECATALOGAR PRODUCTO
+// ========================================
+
+message RecatalogarProductoRequest {
+  string sku = 1;
+}
+
+message RecatalogarProductoResponse {
+  oneof result {
+    ProductoRecatalogado success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ProductoRecatalogado {
+  string sku = 1;
+  string mensaje = 2;
+}
+
+// ========================================
+// REQUEST - AC8: ELIMINAR PRODUCTO (Opcional)
+// ========================================
+
+message EliminarProductoRequest {
+  string sku = 1;
+}
+
+message EliminarProductoResponse {
+  oneof result {
+    ProductoEliminado success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ProductoEliminado {
+  string sku = 1;
+  string mensaje = 2;
+}
+
+// ========================================
+// REQUEST - AC9: CREAR CATEGORÍA
+// ========================================
+
+message CrearCategoriaRequest {
+  string nombre_categoria = 1;
+  string descripcion = 2;
+
+  message Response {
+    oneof result {
+      CategoriaProto categoria = 1;
+      isam.comun.ErrorResponse error = 2;
+    }
+  }
+}
+
+
+
+message CategoriaCreada {
+  int64 id_categoria = 1;
+  string nombre_categoria = 2;
+  string mensaje = 3;
+}
+
+// ========================================
+// REQUEST - AC10: MODIFICAR CATEGORÍA
+// ========================================
+
+message ModificarCategoriaRequest {
+  int64 id_categoria = 1;
+  optional string nombre_categoria = 2;
+  optional string descripcion = 3;
+
+  message Response {
+    oneof result {
+      CategoriaModificada success = 1;
+      isam.comun.ErrorResponse error = 2;
+    }
+  }
+}
+
+
+
+message CategoriaModificada {
+  int64 id_categoria = 1;
+  string mensaje = 2;
+}
+
+// ========================================
+// REQUEST - AC11: CREAR OFERTA
+// ========================================
+
+message CrearOfertaRequest {
+  string sku = 1;
+  double precio_promocional = 2;
+  string tipo_promocion = 3;
+  string fecha_inicio = 4;  // YYYY-MM-DD
+  string fecha_fin = 5;     // YYYY-MM-DD
+}
+
+message CrearOfertaResponse {
+  oneof result {
+    OfertaCreada success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message OfertaCreada {
+  string id_oferta = 1;
+  string sku = 2;
+  double precio_promocional = 3;
+  string fecha_inicio = 4;
+  string fecha_fin = 5;
+  string mensaje = 6;
+}
+
+// ========================================
+// REQUEST - AC12: ASIGNAR ETIQUETAS
+// ========================================
+
+message AsignarEtiquetasRequest {
+  string sku = 1;
+  repeated string etiquetas = 2;
+}
+
+message AsignarEtiquetasResponse {
+  oneof result {
+    EtiquetasAsignadas success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message EtiquetasAsignadas {
+  string sku = 1;
+  repeated string etiquetas = 2;
+  string mensaje = 3;
+}
+
+// ========================================
+// REQUEST - AC13: TRADUCCIÓN ENTRE IDENTIFICADORES
+// ========================================
+
+message TraducirIdentificadorRequest {
+  oneof codigo {
+    string sku = 1;
+    string ean = 2;
+    string plu = 3;
+  }
+}
+
+message TraducirIdentificadorResponse {
+  oneof result {
+    ResultadoTraduccion success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ResultadoTraduccion {
+  oneof codigo_entrada {
+    string sku_entrada = 1;
+    string ean_entrada = 2;
+    string plu_entrada = 3;
+  }
+  oneof codigo_salida {
+    string sku_salida = 4;
+    string ean_salida = 5;
+    string plu_salida = 6;
+  }
+}
+
+// ========================================
+// REQUEST - AC39: REPORTE DE CATÁLOGO
+// ========================================
+
+message SolicitarReporteCatalogoRequest {
+  TipoReporteCatalogo tipo_reporte = 1;
+  FiltrosReporte filtros = 2;
+}
+
+message FiltrosReporte {
+  optional int64 id_categoria = 1;
+  optional EstadoProducto estado = 2;
+  optional bool es_granel = 3;
+}
+
+message SolicitarReporteCatalogoResponse {
+  oneof result {
+    ReporteCatalogo success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ReporteCatalogo {
+  TipoReporteCatalogo tipo_reporte = 1;
+  string fecha_generacion = 2;  // YYYY-MM-DD
+  repeated DetalleReporte detalles = 3;
+  optional Estadisticas estadisticas = 4;
+}
+
+message DetalleReporte {
+  string sku = 1;
+  string nombre = 2;
+  double precio_venta = 3;
+  optional double precio_promocional = 4;
+  string nombre_categoria = 5;
+  EstadoProducto estado = 6;
+  isam.comun.UnidadMedida unidad_medida = 7;
+}
+
+message Estadisticas {
+  int32 total_productos = 1;
+  int32 productos_activos = 2;
+  int32 productos_descatalogados = 3;
+  int32 productos_con_oferta = 4;
+  optional double promedio_precios = 5;
+}
+
+// ========================================
+// REQUEST - AC43: CREAR PROVEEDOR
+// ========================================
+
+message CrearProveedorRequest {
+  string nombre_proveedor = 1;
+  string contacto = 2;
+  string direccion = 3;
+  string telefono = 4;
+  string email = 5;
+}
+
+message CrearProveedorResponse {
+  oneof result {
+    ProveedorCreado success = 1;
+    isam.comun.ErrorResponse error = 2;
+  }
+}
+
+message ProveedorCreado {
+  string mensaje = 1;
+  DetallesProveedor detalles = 2;
+}
+
+message DetallesProveedor {
+  string id_proveedor = 1;
+  string nombre_proveedor = 2;
+  string contacto = 3;
+  string direccion = 4;
+  string telefono = 5;
+  string email = 6;
+}
+
+// ========================================
+// SERVICIO CATÁLOGO
+// ========================================
+
+service CatalogoService {
+  // Gestión de Productos
+  rpc CrearProducto(CrearProductoReq) returns (CrearProductoReq.Response);
+//  rpc ModificarProducto(ModificarProductoReq) returns (ModificarProductoReq.Response);
+  rpc ConsultarProducto(ConsultarProductoRequest) returns (ConsultarProductoRequest.Response);
+//  rpc ListarProductos(ListarProductosRequest) returns (ListarProductosResponse);
+//  rpc BuscarProductos(BuscarProductosRequest) returns (BuscarProductosResponse);
+//  rpc DescatalogarProducto(DescatalogarProductoRequest) returns (DescatalogarProductoResponse);
+//  rpc RecatalogarProducto(RecatalogarProductoRequest) returns (RecatalogarProductoResponse);
+//  rpc EliminarProducto(EliminarProductoRequest) returns (EliminarProductoResponse);
+//
+//  // Gestión de Categorías
+   rpc CrearCategoria(CrearCategoriaRequest) returns (CrearCategoriaRequest.Response);
+//   rpc ModificarCategoria(ModificarCategoriaRequest) returns (ModificarCategoriaRequest.Response);
+//
+//  // Gestión de Ofertas
+//  rpc CrearOferta(CrearOfertaRequest) returns (CrearOfertaResponse);
+//
+//  // Etiquetas
+//  rpc AsignarEtiquetas(AsignarEtiquetasRequest) returns (AsignarEtiquetasResponse);
+//
+//  // Utilidades
+//  rpc TraducirIdentificador(TraducirIdentificadorRequest) returns (TraducirIdentificadorResponse);
+//
+//  // Reportes
+//  rpc SolicitarReporteCatalogo(SolicitarReporteCatalogoRequest) returns (SolicitarReporteCatalogoResponse);
+//
+//  // Proveedores
+//  rpc CrearProveedor(CrearProveedorRequest) returns (CrearProveedorResponse);
+}
