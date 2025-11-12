@@ -3,17 +3,17 @@ erDiagram
     %% BD AUTENTICACION
     %% ========================================
     USUARIO {
-        string IDUsuario PK
-        string NombreUsuario UK
-        string HashContraseña
-        string Salt
-        string NombreCompleto
-        enum Estado "Activo, Inactivo"
-        timestamp FechaCreacion
-        timestamp FechaUltimoAcceso
-        boolean RequiereCambioContraseña
+    string IDUsuario PK
+    string NombreUsuario UK
+    string HashContraseña
+    string Salt
+    string NombreCompleto
+    enum EstadoUsuario "Activo, Inactivo"
+    timestamp FechaCreacion
+    timestamp FechaUltimoAcceso
+    boolean RequiereCambioContraseña
     }
-    
+
     ROLES {
         string IDRol PK
         string NombreRol
@@ -33,7 +33,7 @@ erDiagram
         string IDUsuario FK
         timestamp FechaHoraInicio
         timestamp FechaHoraFin
-        enum Estado "Activa, Cerrada, Expirada"
+        enum EstadoSesion "Activa, Cerrada, Expirada"
     }
     
     USUARIO_ROLES {
@@ -62,7 +62,7 @@ erDiagram
         enum PoliticaRotacion "FIFO, FEFO, LIFO"
         enum UnidadMedida
         text Etiquetas
-        enum Estado "Activo, Descatalogado"
+        enum EstadoProducto "Activo, Descatalogado"
     }
     
     CATEGORIAS {
@@ -87,7 +87,7 @@ erDiagram
         string TipoPromocion
         date FechaInicio
         date FechaFin
-        enum Estado "Activa, Vencida, Cancelada"
+        enum EstadoOferta "Activa, Vencida, Cancelada"
     }
 
     %% ========================================
@@ -102,7 +102,7 @@ erDiagram
         decimal TotalImpuestos
         decimal Total
         string IDPago FK
-        enum Estado "Temporal, Cerrado, Cancelado"
+        enum EstadoTicket "Temporal, Cerrado, Cancelado"
     }
     
     ITEM_TICKET {
@@ -166,7 +166,7 @@ erDiagram
         string IDProveedor FK
         date FechaIngreso
         enum UnidadMedida
-        enum Estado "Disponible, Bloqueado, Eliminado"
+        enum EstadoLote "Disponible, Bloqueado, Eliminado"
     }
     
     MOVIMIENTOS_INVENTARIO {
@@ -191,7 +191,7 @@ erDiagram
         string SKU FK
         text Mensaje
         timestamp FechaHoraGeneracion
-        enum Estado "Pendiente, Atendida, Ignorada"
+        enum EstadoAlertas "Pendiente, Atendida, Ignorada"
         timestamp FechaHoraAtendida
         string IDUsuarioAtendio FK
     }

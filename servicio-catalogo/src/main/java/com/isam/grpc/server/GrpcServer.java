@@ -54,6 +54,7 @@ public class GrpcServer {
         if(this.server != null){
             server.shutdown();
         }
+        
     }
 
     public void block() throws InterruptedException {

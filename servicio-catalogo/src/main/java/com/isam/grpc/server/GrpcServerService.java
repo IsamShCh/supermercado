@@ -1,6 +1,6 @@
 package com.isam.grpc.server;
 
-
+import com.isam.dto.producto.CrearProductoDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
 import com.isam.model.Categoria;
@@ -20,15 +20,21 @@ class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
     private CatalogoMapper productoMapper;
 
     @Override
-    public void crearProducto(CrearProductoReq request, StreamObserver<CrearProductoReq.Response> responseObserver) {
-        Producto productoEntity = productoMapper.toEntity(request);
-        System.out.println("\n\n\n"+productoEntity.toString()+"\n\n\n");
+    public void crearProducto(CrearProductoRequest request, StreamObserver<CrearProductoRequest.Response> responseObserver) {
+        System.out.println("DEBUG: gRPC request received: " + request);
+        
+        // Step 1: Convert gRPC request to DTO (mapper responsibility)
+        CrearProductoDto productoDto = productoMapper.toDto(request);
+        System.out.println("DEBUG: DTO created: " + productoDto);
 
-        Producto productoEntityResEntidad = catalogoService.crearProducto(productoEntity);
+        // Step 2: Service handles business logic and entity creation
+        Producto productoEntityCreated = catalogoService.crearProducto(productoDto);
+        System.out.println("DEBUG: Product created: " + productoEntityCreated);
 
-        com.isam.grpc.catalogo.ProductoProto productoResGrpc = productoMapper.toProto(productoEntityResEntidad);
+        // Step 3: Convert entity back to gRPC response (mapper responsibility)
+        com.isam.grpc.catalogo.ProductoProto productoResGrpc = productoMapper.toProto(productoEntityCreated);
 
-        com.isam.grpc.catalogo.CrearProductoReq.Response crearProductoRespuesta = com.isam.grpc.catalogo.CrearProductoReq.Response.newBuilder()
+        com.isam.grpc.catalogo.CrearProductoRequest.Response crearProductoRespuesta = com.isam.grpc.catalogo.CrearProductoRequest.Response.newBuilder()
                         .setProducto(productoResGrpc).build();
 
         responseObserver.onNext(crearProductoRespuesta);
@@ -45,7 +51,7 @@ class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
 
         responseObserver.onNext(
                 ConsultarProductoRequest.Response.newBuilder()
-                        .setSuccess(productoProto).build()
+                        .setProducto(productoProto).build()
         );
         responseObserver.onCompleted();
     }
@@ -57,7 +63,6 @@ class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
             Categoria categoriaResp = catalogoService.crearCategoria(categoriaEntity);
 
             CategoriaProto categoriaProtoResp = productoMapper.toProto(categoriaResp);
-
             CrearCategoriaRequest.Response response = CrearCategoriaRequest.Response.newBuilder()
                     .setCategoria(categoriaProtoResp)
                     .build();

@@ -22,18 +22,23 @@ enum UnidadMedida {
   DOCENA = 8;
 }
 
-enum PoliticaRotacion {
-  POLITICA_ROTACION_UNSPECIFIED = 0;
-  FIFO = 1;  // First In, First Out
-  FEFO = 2;  // First Expired, First Out
-  LIFO = 3;  // Last In, First Out
+enum PoliticaRotacion{
+FIFO = 0;
+FEFO = 1;
+LIFO = 2;
 }
 
-enum EstadoGenerico {
-  ESTADO_GENERICO_UNSPECIFIED = 0;
-  ACTIVO = 1;
-  INACTIVO = 2;
+enum EstadoProducto {
+  ACTIVO = 0;
+  DESCATALOGADO = 1;
 }
+
+enum EstadoOferta{
+  ACTIVA= 0;
+  VENCIDA=1;
+  CANCELADA = 2;
+}
+
 
 // ========================================
 // MENSAJES DE RESPUESTA COMUNES
