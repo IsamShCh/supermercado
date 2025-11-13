@@ -99,16 +99,6 @@ public class CatalogoService {
         return savedProduct;
     }
 
-    /**
-     * Legacy method - kept for backward compatibility
-     * Consider deprecating this in favor of the DTO-based method
-     */
-    public Producto crearProducto(Producto productoEntity) {
-        // Guardar el producto
-        productoRepository.save(productoEntity);
-        return productoEntity;
-    }
-
     public Producto consultarProducto(String sku){
         Producto productoEntity = productoRepository.findBySku(sku).get(); // TODO - hacer que tire una excepción
         return productoEntity;

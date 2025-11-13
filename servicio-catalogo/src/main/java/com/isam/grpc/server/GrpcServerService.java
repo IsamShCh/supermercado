@@ -23,15 +23,15 @@ class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
     public void crearProducto(CrearProductoRequest request, StreamObserver<CrearProductoRequest.Response> responseObserver) {
         System.out.println("DEBUG: gRPC request received: " + request);
         
-        // Step 1: Convert gRPC request to DTO (mapper responsibility)
+        // Paso 1: Convertir la solicitud gRPC a DTO (responsabilidad del mapeador)
         CrearProductoDto productoDto = productoMapper.toDto(request);
         System.out.println("DEBUG: DTO created: " + productoDto);
 
-        // Step 2: Service handles business logic and entity creation
+        // Paso 2: El servicio gestiona la lógica de negocio y la creación de entidades.
         Producto productoEntityCreated = catalogoService.crearProducto(productoDto);
         System.out.println("DEBUG: Product created: " + productoEntityCreated);
 
-        // Step 3: Convert entity back to gRPC response (mapper responsibility)
+        // Paso 3: Convertir la entidad de nuevo a una respuesta gRPC (responsabilidad del mapeador)
         com.isam.grpc.catalogo.ProductoProto productoResGrpc = productoMapper.toProto(productoEntityCreated);
 
         com.isam.grpc.catalogo.CrearProductoRequest.Response crearProductoRespuesta = com.isam.grpc.catalogo.CrearProductoRequest.Response.newBuilder()

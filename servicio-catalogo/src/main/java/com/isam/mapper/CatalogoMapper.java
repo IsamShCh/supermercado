@@ -27,9 +27,8 @@ public class CatalogoMapper {
         
         // Extract values for record constructor
         String ean = req.hasEan() ? req.getEan() : null;
-        String plu = null;
+        String plu = req.hasPlu() ? req.getPlu() : null;
         if (req.hasPlu()) {
-            plu = req.getPlu();
             System.out.println("DEBUG: Valor del PLU: '" + plu + "', tamanyo: " + plu.length());
         }
         
