@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+
 import java.util.Optional;
 
 @Service
@@ -100,12 +103,28 @@ public class CatalogoService {
         return savedProduct;
     }
 
+    @Transactional
     public Producto consultarProducto(String sku){
         Producto productoEntity = productoRepository.findBySku(sku).get(); // TODO - hacer que tire una excepción
         return productoEntity;
     }
 
+    @Transactional
     public Categoria crearCategoria(CrearCategoriaDto dto){
+        // Validar el DTO
+        if (dto.nombreCategoria() == null || dto.nombreCategoria().isBlank()) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El nombre de la categoría es requerido")
+                .asRuntimeException();
+        }
+
+        // Verificar duplicado ANTES de crear la entidad
+        if (categoriaRepository.existsByNombreCategoria(dto.nombreCategoria())) {
+            throw Status.ALREADY_EXISTS
+                .withDescription("Ya existe una categoría con el nombre: " + dto.nombreCategoria())
+                .asRuntimeException();
+        }
+
         Categoria categoria = new Categoria();
         categoria.setNombreCategoria(dto.nombreCategoria());
         categoria.setDescripcion(dto.descripcion());
