@@ -1,5 +1,6 @@
 package com.isam.mapper;
 
+import com.isam.dto.categoria.CrearCategoriaDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.grpc.catalogo.CategoriaProto;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
@@ -156,10 +157,10 @@ public class CatalogoMapper {
     public com.isam.grpc.catalogo.ProductoProto toProto(Producto entity) {
         System.out.println("DEBUG: Converting entity to proto. PoliticaRotacion: " + entity.getPoliticaRotacion());
         System.out.println("DEBUG: Entity details: " + entity);
-        
+
         com.isam.grpc.common.PoliticaRotacion protoRotacion = mapPoliticaRotacionToProto(entity.getPoliticaRotacion());
         System.out.println("DEBUG: Mapped PoliticaRotacion to proto: " + protoRotacion);
-        
+
         com.isam.grpc.catalogo.ProductoProto.Builder builder = com.isam.grpc.catalogo.ProductoProto.newBuilder()
                 .setSku(entity.getSku())
                 .setNombre(entity.getNombre())
@@ -191,11 +192,19 @@ public class CatalogoMapper {
     }
 
 
-    public Categoria toEntity(CrearCategoriaRequest crearCategoriaRequest){
+    public CrearCategoriaDto toDto(CrearCategoriaRequest crearCategoriaRequest){
+
+        return new CrearCategoriaDto(
+            crearCategoriaRequest.getNombreCategoria(),
+            crearCategoriaRequest.getDescripcion()
+        );
+    }
+
+    public Categoria toEntity(CrearCategoriaDto dto){
 
         Categoria categoria = new Categoria();
-        categoria.setNombreCategoria(crearCategoriaRequest.getNombreCategoria());
-        categoria.setDescripcion(crearCategoriaRequest.getDescripcion());
+        categoria.setNombreCategoria(dto.nombreCategoria());
+        categoria.setDescripcion(dto.descripcion());
 
         return categoria;
     }

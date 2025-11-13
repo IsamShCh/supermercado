@@ -1,5 +1,6 @@
 package com.isam.service;
 
+import com.isam.dto.categoria.CrearCategoriaDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.model.Categoria;
 import com.isam.model.Producto;
@@ -104,7 +105,11 @@ public class CatalogoService {
         return productoEntity;
     }
 
-    public Categoria crearCategoria(Categoria categoria){
+    public Categoria crearCategoria(CrearCategoriaDto dto){
+        Categoria categoria = new Categoria();
+        categoria.setNombreCategoria(dto.nombreCategoria());
+        categoria.setDescripcion(dto.descripcion());
+
         Categoria categoriaRespEntity = categoriaRepository.save(categoria);
         return categoriaRespEntity;
     }

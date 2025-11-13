@@ -1,5 +1,6 @@
 package com.isam.grpc.server.service;
 
+import com.isam.dto.categoria.CrearCategoriaDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
@@ -58,9 +59,9 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
 
     @Override
     public void crearCategoria(CrearCategoriaRequest request, StreamObserver<CrearCategoriaRequest.Response> responseObserver) {
-            Categoria categoriaEntity = productoMapper.toEntity(request);
+            CrearCategoriaDto categoriaDto = productoMapper.toDto(request);
 
-            Categoria categoriaResp = catalogoService.crearCategoria(categoriaEntity);
+            Categoria categoriaResp = catalogoService.crearCategoria(categoriaDto);
 
             CategoriaProto categoriaProtoResp = productoMapper.toProto(categoriaResp);
             CrearCategoriaRequest.Response response = CrearCategoriaRequest.Response.newBuilder()
