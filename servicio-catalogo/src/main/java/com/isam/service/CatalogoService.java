@@ -34,44 +34,44 @@ public class CatalogoService {
     @Transactional
     public Producto crearProducto(CrearProductoDto dto) {
         System.out.println("DEBUG: Service creating product from DTO: " + dto);
-        System.out.println("DEBUG: DTO PoliticaRotacion: " + dto.getPoliticaRotacion());
-        System.out.println("DEBUG: DTO UnidadMedida: " + dto.getUnidadMedida());
+        System.out.println("DEBUG: DTO PoliticaRotacion: " + dto.politicaRotacion());
+        System.out.println("DEBUG: DTO UnidadMedida: " + dto.unidadMedida());
 
         // Create the base product entity
         Producto producto = new Producto();
         
         // Map basic properties
-        producto.setSku(dto.getSku());
-        producto.setNombre(dto.getNombre());
-        producto.setDescripcion(dto.getDescripcion());
-        producto.setPrecioVenta(dto.getPrecioVenta());
-        producto.setCaduca(dto.getCaduca());
-        producto.setEsGranel(dto.getEsGranel());
-        producto.setPoliticaRotacion(dto.getPoliticaRotacion());
-        producto.setUnidadMedida(dto.getUnidadMedida());
-        producto.setEan(dto.getEan());
-        producto.setPlu(dto.getPlu());
+        producto.setSku(dto.sku());
+        producto.setNombre(dto.nombre());
+        producto.setDescripcion(dto.descripcion());
+        producto.setPrecioVenta(dto.precioVenta());
+        producto.setCaduca(dto.caduca());
+        producto.setEsGranel(dto.esGranel());
+        producto.setPoliticaRotacion(dto.politicaRotacion());
+        producto.setUnidadMedida(dto.unidadMedida());
+        producto.setEan(dto.ean());
+        producto.setPlu(dto.plu());
         
         System.out.println("DEBUG: After mapping - Entity PoliticaRotacion: " + producto.getPoliticaRotacion());
         System.out.println("DEBUG: After mapping - Entity UnidadMedida: " + producto.getUnidadMedida());
         
         // Handle etiquetas
-        if (dto.getEtiquetas() != null && !dto.getEtiquetas().isEmpty()) {
-            String etiquetasString = String.join(",", dto.getEtiquetas());
+        if (dto.etiquetas() != null && !dto.etiquetas().isEmpty()) {
+            String etiquetasString = String.join(",", dto.etiquetas());
             producto.setEtiquetas(etiquetasString);
             System.out.println("DEBUG: Etiquetas set: " + etiquetasString);
         }
         
         // Handle categoria lookup - this is the Service layer responsibility
-        if (dto.getIdCategoria() != null && dto.getIdCategoria() > 0) {
-            System.out.println("DEBUG: Looking up category with ID: " + dto.getIdCategoria());
-            Optional<Categoria> categoriaOpt = categoriaRepository.findById(dto.getIdCategoria());
+        if (dto.idCategoria() != null && dto.idCategoria() > 0) {
+            System.out.println("DEBUG: Looking up category with ID: " + dto.idCategoria());
+            Optional<Categoria> categoriaOpt = categoriaRepository.findById(dto.idCategoria());
             if (categoriaOpt.isPresent()) {
                 producto.setCategoria(categoriaOpt.get());
                 System.out.println("DEBUG: Category found and set: " + categoriaOpt.get().getNombreCategoria());
             } else {
-                System.err.println("ERROR: Category not found for ID: " + dto.getIdCategoria());
-                throw new RuntimeException("Category not found with ID: " + dto.getIdCategoria());
+                System.err.println("ERROR: Category not found for ID: " + dto.idCategoria());
+                throw new RuntimeException("Category not found with ID: " + dto.idCategoria());
             }
         } else {
             System.out.println("DEBUG: No category ID provided");

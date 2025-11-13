@@ -25,40 +25,39 @@ public class CatalogoMapper {
         System.out.println("DEBUG: Request - id_categoria: " + req.getIdCategoria());
         System.out.println("DEBUG: Request - etiquetas count: " + req.getEtiquetasList().size());
         
-        CrearProductoDto dto = new CrearProductoDto();
-
-        // Propiedades fundamentales
-        dto.setSku(req.getSku());
-        dto.setNombre(req.getNombre());
-        dto.setDescripcion(req.getDescripcion());
-        dto.setPrecioVenta(BigDecimal.valueOf(req.getPrecioVenta()));
-        dto.setCaduca(req.getCaduca());
-        dto.setEsGranel(req.getEsGranel());
-
-        // Map enums
-        dto.setPoliticaRotacion(mapPoliticaRotacion(req.getPoliticaRotacion()));
-        dto.setUnidadMedida(mapUnidadMedida(req.getUnidadMedida()));
-
-        // Handle oneof identificador
-        if (req.hasEan()) {
-            dto.setEan(req.getEan());
-        } else if (req.hasPlu()) {
-            String pluValue = req.getPlu();
-            System.out.println("DEBUG: Valor del PLU: '" + pluValue + "', tamanyo: " + pluValue.length());
-            dto.setPlu(pluValue);
+        // Extract values for record constructor
+        String ean = req.hasEan() ? req.getEan() : null;
+        String plu = null;
+        if (req.hasPlu()) {
+            plu = req.getPlu();
+            System.out.println("DEBUG: Valor del PLU: '" + plu + "', tamanyo: " + plu.length());
         }
-
-        // Handle categoria ID
-        if (req.getIdCategoria() > 0) {
-            dto.setIdCategoria(req.getIdCategoria());
-            System.out.println("DEBUG: Category ID set in DTO: " + req.getIdCategoria());
+        
+        Long idCategoria = req.getIdCategoria() > 0 ? req.getIdCategoria() : null;
+        if (idCategoria != null) {
+            System.out.println("DEBUG: Category ID set in DTO: " + idCategoria);
         }
-
-        // Handle etiquetas
-        if (!req.getEtiquetasList().isEmpty()) {
-            dto.setEtiquetas(req.getEtiquetasList());
-            System.out.println("DEBUG: Etiquetas set in DTO: " + req.getEtiquetasList());
+        
+        List<String> etiquetas = !req.getEtiquetasList().isEmpty() ? req.getEtiquetasList() : null;
+        if (etiquetas != null) {
+            System.out.println("DEBUG: Etiquetas set in DTO: " + etiquetas);
         }
+        
+        // Create record using constructor
+        CrearProductoDto dto = new CrearProductoDto(
+            req.getSku(),
+            ean,
+            plu,
+            req.getNombre(),
+            req.getDescripcion(),
+            BigDecimal.valueOf(req.getPrecioVenta()),
+            req.getCaduca(),
+            req.getEsGranel(),
+            idCategoria,
+            mapPoliticaRotacion(req.getPoliticaRotacion()),
+            mapUnidadMedida(req.getUnidadMedida()),
+            etiquetas
+        );
 
         System.out.println("DEBUG: DTO created successfully: " + dto);
         return dto;
@@ -75,27 +74,27 @@ public class CatalogoMapper {
         Producto entity = new Producto();
 
         // Propiedades fundamentales
-        entity.setSku(dto.getSku());
-        entity.setNombre(dto.getNombre());
-        entity.setDescripcion(dto.getDescripcion());
-        entity.setPrecioVenta(dto.getPrecioVenta());
-        entity.setCaduca(dto.getCaduca());
-        entity.setEsGranel(dto.getEsGranel());
+        entity.setSku(dto.sku());
+        entity.setNombre(dto.nombre());
+        entity.setDescripcion(dto.descripcion());
+        entity.setPrecioVenta(dto.precioVenta());
+        entity.setCaduca(dto.caduca());
+        entity.setEsGranel(dto.esGranel());
 
         // Map enums
-        entity.setPoliticaRotacion(dto.getPoliticaRotacion());
-        entity.setUnidadMedida(dto.getUnidadMedida());
+        entity.setPoliticaRotacion(dto.politicaRotacion());
+        entity.setUnidadMedida(dto.unidadMedida());
 
         // Handle identificadores
-        entity.setEan(dto.getEan());
-        entity.setPlu(dto.getPlu());
+        entity.setEan(dto.ean());
+        entity.setPlu(dto.plu());
 
         // Default estado
         entity.setEstado(EstadoProducto.ACTIVO);
 
         // Handle etiquetas
-        if (dto.getEtiquetas() != null && !dto.getEtiquetas().isEmpty()) {
-            String etiquetasString = String.join(",", dto.getEtiquetas());
+        if (dto.etiquetas() != null && !dto.etiquetas().isEmpty()) {
+            String etiquetasString = String.join(",", dto.etiquetas());
             entity.setEtiquetas(etiquetasString);
             System.out.println("DEBUG: Etiquetas set in entity: " + etiquetasString);
         }
