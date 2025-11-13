@@ -289,29 +289,78 @@ public class ExceptionUtils {
         }
 
         // ============================================================
-        // 6) SQL / JDBC EXCEPTIONS
+        // 6) SQL / JDBC EXCEPTIONS (PostgreSQL-specific)
         // ============================================================
-        
-        // SQL integrity constraint violation
+
+        // SQL integrity constraint violation (generic, will be overridden by specific SQLState)
         if (cause instanceof SQLIntegrityConstraintViolationException) {
             return buildStatus(Code.FAILED_PRECONDITION_VALUE,
                 "Violación de restricción SQL: No se cumplen las reglas de integridad",
                 cause, mensajeGenerico);
         }
-        
+
         // SQL timeout
         if (cause instanceof SQLTimeoutException) {
             return buildStatus(Code.DEADLINE_EXCEEDED_VALUE,
                 "Timeout en base de datos: La operación superó el tiempo límite",
                 cause, mensajeGenerico);
         }
-        
-        // Generic SQL exception
+
+        // PostgreSQL-specific SQLState mapping
         if (cause instanceof SQLException) {
             SQLException sqlEx = (SQLException) cause;
+            String sqlState = sqlEx.getSQLState();
+
+            if ("23505".equals(sqlState)) { // unique_violation
+                return buildStatus(Code.ALREADY_EXISTS_VALUE,
+                    "Registro duplicado: Ya existe un registro con estos datos únicos",
+                    cause, mensajeGenerico);
+            } else if ("23503".equals(sqlState)) { // foreign_key_violation
+                return buildStatus(Code.FAILED_PRECONDITION_VALUE,
+                    "Referencia inválida: El registro referenciado no existe",
+                    cause, mensajeGenerico);
+            } else if ("23502".equals(sqlState)) { // not_null_violation
+                return buildStatus(Code.INVALID_ARGUMENT_VALUE,
+                    "Campo requerido: No se puede dejar vacío un campo obligatorio",
+                    cause, mensajeGenerico);
+            } else if ("23514".equals(sqlState)) { // check_violation
+                return buildStatus(Code.FAILED_PRECONDITION_VALUE,
+                    "Violación de regla: Los datos no cumplen las reglas de validación",
+                    cause, mensajeGenerico);
+            } else if ("42P01".equals(sqlState)) { // undefined_table
+                return buildStatus(Code.NOT_FOUND_VALUE,
+                    "Tabla no encontrada: La tabla especificada no existe",
+                    cause, mensajeGenerico);
+            } else if ("42703".equals(sqlState)) { // undefined_column
+                return buildStatus(Code.INVALID_ARGUMENT_VALUE,
+                    "Columna no encontrada: La columna especificada no existe",
+                    cause, mensajeGenerico);
+            } else if ("08003".equals(sqlState)) { // connection_does_not_exist
+                return buildStatus(Code.UNAVAILABLE_VALUE,
+                    "Conexión perdida: La conexión a la base de datos se ha perdido",
+                    cause, mensajeGenerico);
+            } else if ("08006".equals(sqlState)) { // connection_failure
+                return buildStatus(Code.UNAVAILABLE_VALUE,
+                    "Error de conexión: No se pudo conectar a la base de datos",
+                    cause, mensajeGenerico);
+            } else if ("53300".equals(sqlState)) { // too_many_connections
+                return buildStatus(Code.RESOURCE_EXHAUSTED_VALUE,
+                    "Límite de conexiones excedido: Demasiadas conexiones activas",
+                    cause, mensajeGenerico);
+            } else if ("42P07".equals(sqlState)) { // duplicate_table
+                return buildStatus(Code.ALREADY_EXISTS_VALUE,
+                    "Tabla duplicada: La tabla ya existe",
+                    cause, mensajeGenerico);
+            } else if ("42701".equals(sqlState)) { // duplicate_column
+                return buildStatus(Code.ALREADY_EXISTS_VALUE,
+                    "Columna duplicada: La columna ya existe",
+                    cause, mensajeGenerico);
+            }
+
+            // Fallback para SQLState no mapeados específicamente
             String message = "Error SQL";
-            if (sqlEx.getSQLState() != null) {
-                message += " (SQLState: " + sqlEx.getSQLState() + ")";
+            if (sqlState != null) {
+                message += " (SQLState: " + sqlState + ")";
             }
             return buildStatus(Code.INTERNAL_VALUE, message, cause, mensajeGenerico);
         }
