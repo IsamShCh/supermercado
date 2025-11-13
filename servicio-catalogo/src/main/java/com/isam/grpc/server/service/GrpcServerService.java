@@ -1,4 +1,4 @@
-package com.isam.grpc.server;
+package com.isam.grpc.server.service;
 
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.grpc.catalogo.*;
@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
+public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
 
     //private static Log log = LogFactory.getLog(GrpcServerService.class);
     @Autowired

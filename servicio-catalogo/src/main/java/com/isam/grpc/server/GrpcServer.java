@@ -1,6 +1,8 @@
 package com.isam.grpc.server;
 
 import com.isam.grpc.interceptor.ExceptionInterceptor;
+import com.isam.grpc.server.service.GrpcServerService;
+
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.slf4j.LoggerFactory;
