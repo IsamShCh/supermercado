@@ -1,8 +1,10 @@
 package com.isam.mapper;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.grpc.catalogo.CategoriaProto;
+import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
 import com.isam.grpc.catalogo.CrearProductoRequest;
 import com.isam.model.*;
@@ -61,6 +63,11 @@ public class CatalogoMapper {
 
         System.out.println("DEBUG: DTO created successfully: " + dto);
         return dto;
+    }
+
+
+    public ConsultarProductoDto toDto(ConsultarProductoRequest req){
+        return new ConsultarProductoDto(req.getSku());
     }
 
     /**
