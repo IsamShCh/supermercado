@@ -38,7 +38,7 @@ public class ExceptionInterceptor implements ServerInterceptor {
                  super.onHalfClose();
              } catch (RuntimeException exception){
                  manejarExcepcion(exception, serverCall, metadata);
-                 throw exception;
+                //  throw exception;
              }
          }
          @Override
@@ -48,7 +48,7 @@ public class ExceptionInterceptor implements ServerInterceptor {
                 super.onReady();
              } catch (RuntimeException exception){
                     manejarExcepcion(exception, serverCall, metadata);
-                    throw exception;
+                    // throw exception;
              }
 
          }
