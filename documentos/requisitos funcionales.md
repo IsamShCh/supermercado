@@ -1,7 +1,7 @@
 #SECTION - Catalogo
 
 ID: REQ-1
-#NOTE - Nombre: Crear productoEntity en catálogo
+#NOTE - Nombre: Crear producto en catálogo
 Descripción: El sistema permitirá a los administradores de inventario crear nuevos productos en el catálogo especificando SKU único, EAN/PLU, nombre, descripción, precio de venta, oferta aplicada, si caduca, si es a granel, categoría, política de rotacion de existencias y proveedor.
 Precondiciones:
 - Usuario autenticado con permisos de administrador de inventario
@@ -13,44 +13,44 @@ Restricciones:
 - SKU, el EAN o PLU debe cumplir el patrón/longitud definidos por la empresa y ser único.
 - Si se introduce EAN, no se podra introducir PLU y viceversa
 - El precio debe un valor numérico mayor o igual a 0, en formato 2 decimales.
-- Un productoEntity solo puede pertenecer a una sola categoría
+- Un producto solo puede pertenecer a una sola categoría
 Prioridad: Alta
 
 
 ID: REQ-2
-#NOTE - Nombre: Modificar productoEntity en catálogo
+#NOTE - Nombre: Modificar producto en catálogo
 Descripción: El sistema permitirá a los administradores de inventario modificar información de productos existentes incluyendo precio, descripción, nombre, categoría, etc.
 Entradas:
 - ID SKU
 - Información actualizada (precio, descripción, nombre, categoría, etc.)
 Salidas:
 - Confirmación de modificación exitosa
-- Detalles del productoEntity actualizado
+- Detalles del producto actualizado
 Precondiciones:
 - Usuario autenticado
 - Usuario con permisos de administrador de inventario
 - Producto existe en catálogo
 Postcondiciones:
-- Información del productoEntity actualizada
+- Información del producto actualizada
 - Cambios registrados para monitoreo
 Restricciones:
-- No se podrá modificar el SKU del productoEntity.
+- No se podrá modificar el SKU del producto.
 - Si se modifica la oferta, esta debe incluir fecha de inicio y fin válidas.
 - El precio debe ser un valor numérico mayor o igual a 0, en formato de dos decimales.
-- Un productoEntity solo puede pertenecer a una sola categoría
+- Un producto solo puede pertenecer a una sola categoría
 Prioridad: Alta
 
 ID: REQ-3
-#NOTE - Nombre: Consultar productoEntity por SKU
+#NOTE - Nombre: Consultar producto por SKU
 Descripción: El sistema permitirá a los cajeros y a los administradores de inventario consultar productos introduciendo SKU para mostrar sus datos
 Entradas:
-- SKU del productoEntity
+- SKU del producto
 Proceso:
-- Buscar productoEntity por SKU
+- Buscar producto por SKU
 - Recuperar la información de la bbdd
 Salidas:
-- Detalles sobre el productoEntity
-- Error si productoEntity no encontrado
+- Detalles sobre el producto
+- Error si producto no encontrado
 Precondiciones:
 - Usuario autenticado
 - Producto existe en catálogo
@@ -64,7 +64,7 @@ Entradas:
 Proceso:
 - Listar información de la bbdd
 Salidas:
-- Detalles sobre el productoEntity
+- Detalles sobre el producto
 Precondiciones:
 - Usuario autenticado
 Prioridad: Alta
@@ -90,10 +90,10 @@ ID: REQ-6
 #NOTE - Nombre: Descatalogar productos
 Descripción: El sistema permitirá marcar productos como descatalogados sin eliminarlos, impidiendo nuevas ventas y adiciones a inventario, pero conservando información.
 Entradas:
-- ID SKU del productoEntity
+- ID SKU del producto
 Proceso:
 - Buscarlo en la bbdd
-- Marcar productoEntity como inactivo
+- Marcar producto como inactivo
 Salidas:
 - Confirmación de desactivación
 Precondiciones:
@@ -101,34 +101,34 @@ Precondiciones:
 - Producto existe
 Postcondiciones:
 - Producto no puede venderse pero datos preservados
-- El productoEntity no puede tener existencias en estantería
+- El producto no puede tener existencias en estantería
 Prioridad: Media
 
 ID: REQ-7
 #NOTE - Nombre: Volver a catalogar productos
 Descripción: El sistema permitirá marcar productos como descatalogados sin eliminarlos, volviendo a permitir nuevas ventas y adiciones a inventario.
 Entradas:
-- ID SKU del productoEntity
+- ID SKU del producto
 Proceso:
 - Buscarlo en la bbdd
-- Marcar productoEntity como activo
+- Marcar producto como activo
 Salidas:
 - Confirmación de reactivacion
 Precondiciones:
 - Usuario con permisos de administrador de catalogo.
 - Producto existe
 Postcondiciones:
-- Producto puede venderse y se puede volver a agregar nuevo stock de ese productoEntity
+- Producto puede venderse y se puede volver a agregar nuevo stock de ese producto
 Prioridad: Media
 
 ID: REQ-8
 #NOTE - Nombre: Eliminacion de elemento del catálogo
 Descripción: El sistema permitirá eliminación permanente de productos solo si no tienen historial de ventas, devoluciones o movimientos de inventario asociados.
 Entradas:
-- ID del productoEntity
+- ID del producto
 Proceso:
 - Verificar ausencia de historial de transacciones
-- Eliminar productoEntity si no hay asociaciones
+- Eliminar producto si no hay asociaciones
 - Denegar eliminación si hay historial
 Salidas:
 - Confirmación de eliminación o mensaje de error
@@ -176,7 +176,7 @@ ID: REQ-11
 #NOTE - Nombre: Crear ofertas.
 Descripción: El sistema permitirá definir precios promocionales temporales para productos con rangos de fechas de validez.
 Entradas:
-- ID SKU del productoEntity
+- ID SKU del producto
 - Precio promocional
 - Tipo de promocion
 - Fecha de inicio y fin de validez
@@ -190,14 +190,14 @@ Precondiciones:
 Postcondiciones:
 - Precio promocional aplicado durante período de validez
 Restricciones:
-- Solo puede estar activa una oferta a la vez en un productoEntity
+- Solo puede estar activa una oferta a la vez en un producto
 Prioridad: Media
 
 ID: REQ-12
 #NOTE - Nombre: Asignar etiqutas personalizadas a productos.
 Descripción: El sistema permitirá asignar etiquetas personalizadas a productos para mejorar capacidad de búsqueda.
 Entradas:
-- ID del productoEntity
+- ID del producto
 - Nombres de etiquetas
 Proceso:
 - Asignar etiquetas a productos
@@ -221,26 +221,26 @@ Entradas:
 - Precio por kilogramo
 - Demás datos
 Proceso:
-- Configurar productoEntity por peso
+- Configurar producto por peso
 - Establecer reglas de decodificación de códigos de barras
 Salidas:
 - Producto configurado para ventas por peso
 Precondiciones:
 - El PLU y el SKU no deben existir previamente en el catálogo.
 Postcondiciones:
-- El productoEntity queda disponible para operaciones de inventario y venta que reconozcan su naturaleza de peso variable.
+- El producto queda disponible para operaciones de inventario y venta que reconozcan su naturaleza de peso variable.
 Restricciones:
 - El SKU y el PLU deben ser validos en su formato.
 - El precio debe ser un valor numérico mayor o igual a 0, expresado en formato de dos decimales y correspondiente al precio por unidad de peso.
-- No se podrán registrar simultáneamente EAN y PLU para este tipo de productoEntity.
-- Si el productoEntity tiene oferta activa, esta debe incluir fecha de inicio y fin válidas.
+- No se podrán registrar simultáneamente EAN y PLU para este tipo de producto.
+- Si el producto tiene oferta activa, esta debe incluir fecha de inicio y fin válidas.
 Prioridad: Alta
 
 
 
 ID: REQ-14
 #NOTE - Nombre: Soporte para distintas unidades de medida en productos del catálogo
-Descripción: El sistema permitirá definir y gestionar distintas unidades de medida para los productos registrados en el catálogo del supermercado. Al crear o modificar un productoEntity, el administrador de inventario podrá seleccionar la unidad de medida adecuada según la naturaleza del productoEntity (por ejemplo: unidad, kilogramo, gramo, litro, mililitro, metro, paquete, docena, etc.). El sistema deberá utilizar la unidad seleccionada en todas las operaciones relacionadas con el productoEntity, como cálculo de precios, presentación en el punto de venta y gestión de inventario.
+Descripción: El sistema permitirá definir y gestionar distintas unidades de medida para los productos registrados en el catálogo del supermercado. Al crear o modificar un producto, el administrador de inventario podrá seleccionar la unidad de medida adecuada según la naturaleza del producto (por ejemplo: unidad, kilogramo, gramo, litro, mililitro, metro, paquete, docena, etc.). El sistema deberá utilizar la unidad seleccionada en todas las operaciones relacionadas con el producto, como cálculo de precios, presentación en el punto de venta y gestión de inventario.
 Entradas:
 Proceso:
 Salidas:
@@ -248,22 +248,22 @@ Precondiciones:
 Postcondiciones:
 Restricciones:
 - Las unidades de medida deben seleccionarse de un catálogo predefinido configurado por la empresa.
-- No se permitirá registrar un productoEntity sin una unidad de medida válida.
+- No se permitirá registrar un producto sin una unidad de medida válida.
 Prioridad: Alta
 
 
 
 ID: REQ-15
 #NOTE - Nombre: Restricción de identificadores exclusivos en productos
-Descripción: El sistema garantizará que cada productoEntity registrado en el catálogo tenga asignado únicamente un tipo de identificador entre PLU o EAN. No se permitirá que un productoEntity tenga ambos identificadores simultáneamente. Esta restricción asegura la unicidad y consistencia de los productos en el catálogo y evita conflictos en la gestión de inventario y ventas.
+Descripción: El sistema garantizará que cada producto registrado en el catálogo tenga asignado únicamente un tipo de identificador entre PLU o EAN. No se permitirá que un producto tenga ambos identificadores simultáneamente. Esta restricción asegura la unicidad y consistencia de los productos en el catálogo y evita conflictos en la gestión de inventario y ventas.
 Entradas:
 Proceso:
 Salidas:
 Precondiciones:
 Postcondiciones:
 Restricciones:
-- Solo se permite uno de los dos identificadores por productoEntity (PLU o EAN).
-- Esta validación se aplica tanto al crear como al modificar un productoEntity.
+- Solo se permite uno de los dos identificadores por producto (PLU o EAN).
+- Esta validación se aplica tanto al crear como al modificar un producto.
 - No se permiten combinaciones de ambos en ninguna operación del catálogo.
 Prioridad: Alta
 
@@ -271,7 +271,7 @@ Prioridad: Alta
 
 ID: REQ-16
 #NOTE - Nombre: Traducción entre identificadores
-Descripción: El sistema permitirá a los usuarios autenticados obtener los identificadores de un productoEntity a partir de otro identificador. Es decir, se podrá ingresar un SKU para consultar el PLU o EAN correspondiente, o ingresar un PLU o EAN para obtener el SKU asociado. Esta funcionalidad facilita la identificación cruzada de productos en el catálogo e inventario y asegura consistencia entre los distintos sistemas de gestión de productos.
+Descripción: El sistema permitirá a los usuarios autenticados obtener los identificadores de un producto a partir de otro identificador. Es decir, se podrá ingresar un SKU para consultar el PLU o EAN correspondiente, o ingresar un PLU o EAN para obtener el SKU asociado. Esta funcionalidad facilita la identificación cruzada de productos en el catálogo e inventario y asegura consistencia entre los distintos sistemas de gestión de productos.
 Entradas:
 - El PLU o EAN, o el SKU.
 Proceso:
@@ -294,70 +294,70 @@ Prioridad: Alta
 
 ID: REQ-17
 #NOTE - Nombre: Agregar nuevas existencias
-Descripción: El sistema permitirá registrar entradas nuevas de existencias especificando productoEntity, EAN,cantidad inicial, unidad de medida, lote, fecha de caducidad y proveedor para productos existentes.
+Descripción: El sistema permitirá registrar entradas nuevas de existencias especificando producto, EAN,cantidad inicial, unidad de medida, lote, fecha de caducidad y proveedor para productos existentes.
 Entradas:v
-- ID SKU del productoEntity
+- ID SKU del producto
 - EAN
 - Cantidad
 - Número de lote
 - Fecha de caducidad, si es que caduca
 - Proveedor
 Proceso:
-- Validar existencia del productoEntity
+- Validar existencia del producto
 - Registrar movimiento de nuevas existencias a inventario con un identificador unico
 - Calculamos el total de stock sumando las cantidades disponibles de todos los productos.
 Salidas:
 - Información de las nuevas exitencias introducidas
-- Stock total del productoEntity
+- Stock total del producto
 Precondiciones:
 - Usuario con permisos de administrador de inventario
-- El productoEntity existe en el catalogo y no se encuentra descatalogado.
+- El producto existe en el catalogo y no se encuentra descatalogado.
 Postcondiciones:
-- Nuevo lote de productoEntity agregado.
+- Nuevo lote de producto agregado.
 - Se registra que la cantidad de existencias de ese lote en las estanterias es 0 unidades (la unidad que corresponda)
 - Se registra que la cantidad de existencias de ese lote en almacén es de X unidades, siendo X = cantidad inicial.
 Restricciones:
 - La cantidad agregada debe ser un valor numérico positivo.
-- Si el productoEntity es perecedero, la fecha de caducidad debe ser posterior a la fecha de ingreso.
+- Si el producto es perecedero, la fecha de caducidad debe ser posterior a la fecha de ingreso.
 - El SKU debe estar en un formato valido
 - Cada lote deberá tener un identificador único
 - Las unidad de medida del lote debe ser igual a la unidad de medida recogida en el catálogo.
-- El EAN del lote debe coincidir con el EAN del productoEntity.
+- El EAN del lote debe coincidir con el EAN del producto.
 Prioridad: Alta
 
 
 
 ID: REQ-18
 #NOTE - Nombre: Agregar nuevas existencias de productos a granel
-Descripción: El sistema permitirá registrar entradas nuevas de existencias de productos a granel especificando productoEntity, la cantidad ingresada, unidad de medida, lote, fecha de caducidad y proveedor para productos existentes.
+Descripción: El sistema permitirá registrar entradas nuevas de existencias de productos a granel especificando producto, la cantidad ingresada, unidad de medida, lote, fecha de caducidad y proveedor para productos existentes.
 Entradas:
-- ID SKU del productoEntity
+- ID SKU del producto
 - PLU
 - Cantidad
 - Número de lote
 - Fecha de caducidad, si es que caduca, o su fecha de cosecha, fecha de consumo preferente, vida util estimada.
 - Proveedor
 Proceso:
-- Validar existencia del productoEntity
+- Validar existencia del producto
 - Registrar movimiento de nuevas existencias a inventario con un identificador unico
 - Calculamos el total de stock sumando las cantidades disponibles de todos los productos.
 Salidas:
 - Información de las nuevas exitencias introducidas
-- Stock total del productoEntity
+- Stock total del producto
 Precondiciones:
 - Usuario con permisos de administrador de inventario
-- El productoEntity existe en el catalogo y no se encuentra descatalogado.
+- El producto existe en el catalogo y no se encuentra descatalogado.
 Postcondiciones:
-- Nuevo lote de productoEntity agregado.
+- Nuevo lote de producto agregado.
 - Se registra que la cantidad de existencias de ese lote en las estanterias es 0 unidades (la unidad que corresponda)
 - Se registra que la cantidad de existencias de ese lote en almacén es de X unidades, siendo X = la cantidad ingresada.
 Restricciones:
-- La cantidad agregada debe ser un valor positivo y expresada en la unidad de medida definida para el productoEntity.
-- Si el productoEntity es perecedero, la fecha de caducidad debe ser posterior a la fecha de ingreso.
+- La cantidad agregada debe ser un valor positivo y expresada en la unidad de medida definida para el producto.
+- Si el producto es perecedero, la fecha de caducidad debe ser posterior a la fecha de ingreso.
 - El SKU y PLU debe estar en un formato valido
 - Cada lote deberá tener un identificador único
 - Las unidad de medida del lote debe ser igual a la unidad de medida recogida en el catálogo.
-- El PLU del lote debe coincidir con el PLU del productoEntity.
+- El PLU del lote debe coincidir con el PLU del producto.
 Prioridad: Alta
 
 
@@ -384,9 +384,9 @@ ID: REQ-20
 #NOTE - Nombre: Ajuste manual de inventario
 Descripción: El sistema permitirá ajustes manuales de inventario especificando tipo de ajuste, cantidad y motivo detallado.
 Entradas:
-- ID SKU del productoEntity
+- ID SKU del producto
 - Cantidad de ajuste
-- Tipo de ajuste (merma, robo, caducado, error de conteo, productoEntity encontrado)
+- Tipo de ajuste (merma, robo, caducado, error de conteo, producto encontrado)
 - Motivo detallado
 Proceso:
 - Aplicar ajuste
@@ -428,16 +428,16 @@ Entradas:
 - Cantidad a transladar
 - Unidades de medida
 Proceso:
-- Buscar el productoEntity en el catálogo 
+- Buscar el producto en el catálogo 
 - Buscar el lote en el inventario
-- Asegurarse de que el movimiento no contraviene la politica de rotación de existencias asociada al productoEntity (ese dato viene recogido en el catálogo). (FIFO, FEFO, LIFO)
-- Incrementar la cantidad de productoEntity en estantería
-- Decrementar la cantidad de productoEntity en almacén
+- Asegurarse de que el movimiento no contraviene la politica de rotación de existencias asociada al producto (ese dato viene recogido en el catálogo). (FIFO, FEFO, LIFO)
+- Incrementar la cantidad de producto en estantería
+- Decrementar la cantidad de producto en almacén
 Salidas:
 - Detalles sobre el movimiento o mensaje de error (no se cumple con la politica, esta cadudado, )
 Precondiciones:
 - Usuario autenticado con permisos de administrador de inventario.
-- El productoEntity identificado por el SKU debe existir en el catálogo y el lote debe existir
+- El producto identificado por el SKU debe existir en el catálogo y el lote debe existir
 - El lote no está caducado
 Postcondiciones:
 - Las existencias en el almacén se reducen según la cantidad trasladada.
@@ -451,12 +451,12 @@ Prioridad: Alta
 
 ID: REQ-23
 #NOTE - Nombre: Contabilización manual de stock
-Descripción: El sistema debe permitir iniciar procesos de contabilización manual de stock en inventario y en almacen de un productoEntity, de forma que se puedan ver las discrepancias entre el stock fisico y el lógico de un productoEntity. 
-IMPORTANTE: una vez los productos pasan fisicamente a estantería perdemos su trazabilidad. Ya no podemos saber a que lote pertenece cada productoEntity de la estantería
+Descripción: El sistema debe permitir iniciar procesos de contabilización manual de stock en inventario y en almacen de un producto, de forma que se puedan ver las discrepancias entre el stock fisico y el lógico de un producto. 
+IMPORTANTE: una vez los productos pasan fisicamente a estantería perdemos su trazabilidad. Ya no podemos saber a que lote pertenece cada producto de la estantería
 Entradas:
 - SKU
-- Stock del productoEntity en estanterias
-- Stock dek productoEntity en almacén
+- Stock del producto en estanterias
+- Stock dek producto en almacén
 Proceso:
 - Comparar físico total en estanteria vs lógico total en estanteria
 - Comparar físico total en almacen vs lógico total en almacen
@@ -466,7 +466,7 @@ Salidas:
 - Reportes de discrepancias
 Precondiciones:
 - Usuario autenticado con permisos de administrador de inventario.
-- El productoEntity a contabilizar debe existir en el catálogo y tener registro de stock en el sistema.
+- El producto a contabilizar debe existir en el catálogo y tener registro de stock en el sistema.
 Postcondiciones:
 - Niveles de stock corregidos
 - Se registra en el sistema la fecha, el usuario y los ajustes realizados durante la contabilización.
@@ -476,22 +476,22 @@ Prioridad: Media
 
 
 ID: REQ-24
-#NOTE - Nombre: Consultar inventario de un productoEntity
-Descripción: El sistema permitirá a los usuarios autenticados obtener la información de inventario de un productoEntity específico. Para ello, el usuario deberá indicar el SKU productoEntity. El sistema mostrará las existencias totales disponibles tanto en almacen como en estantería, desglosadas por lote incluyendo fechas de caducidad, unidad de medida y cualquier información relevante
+#NOTE - Nombre: Consultar inventario de un producto
+Descripción: El sistema permitirá a los usuarios autenticados obtener la información de inventario de un producto específico. Para ello, el usuario deberá indicar el SKU producto. El sistema mostrará las existencias totales disponibles tanto en almacen como en estantería, desglosadas por lote incluyendo fechas de caducidad, unidad de medida y cualquier información relevante
 Entradas:
 - SKU
 - Opcionalmente el lote
 Proceso:
 Salidas:
-- Toda la informacion del inventario del productoEntity
+- Toda la informacion del inventario del producto
 Precondiciones:
 - Usuario autenticado con permisos de consulta de inventario.
-- productoEntity consultado debe existir en el catálogo.
+- producto consultado debe existir en el catálogo.
 Postcondiciones:
-- Se muestra el inventario actual del productoEntity con detalles por lote.
+- Se muestra el inventario actual del producto con detalles por lote.
 - 
 Restricciones:
-- Solo se puede consultar un productoEntity por operación.
+- Solo se puede consultar un producto por operación.
 Prioridad: Alta
 
 
@@ -527,12 +527,12 @@ Descripción: El sistema permitirá procesar devoluciones de productos introduci
 Entradas:
 - Número de ticket
 - SKUs de productos a devolver
-- Cantidades a devolver por cada productoEntity
+- Cantidades a devolver por cada producto
 Proceso:
 - Validar que el ticket existe en el sistema
 - Validar que la fecha de compra no supera los 30 días desde la fecha actual
-- Validar que ningún productoEntity a devolver pertenece a la categoría "frescos"
-- Calcular monto a reembolsar: suma de (precio_original_ticket × cantidad_devuelta) para cada productoEntity
+- Validar que ningún producto a devolver pertenece a la categoría "frescos"
+- Calcular monto a reembolsar: suma de (precio_original_ticket × cantidad_devuelta) para cada producto
 - Registrar la devolución en la base de datos con: ticket_id, fecha_devolución, productos_devueltos, cantidades, monto_total
 Salidas:
 - Confirmación de devolución procesada o mensaje de rechazo indicando motivo
@@ -556,11 +556,11 @@ ID: REQ-26
 Descripción: El sistema aplicará una política de devolución única y fija para todas las transacciones. Los productos podrán ser devueltos en un plazo máximo de 30 días desde la fecha de compra, presentando el ticket original. Quedan excluidos de esta política los productos de la categoría "frescos", los cuales no admiten devolución bajo ninguna circunstancia.
 Entradas:
 - Fecha de la venta original (obtenida del ticket)
-- Categoría del productoEntity a devolver (obtenida del catálogo)
+- Categoría del producto a devolver (obtenida del catálogo)
 Proceso:
 - Al procesar una devolución, el sistema valida automáticamente:
     1. Que la fecha de la devolución no supere los 30 días desde la fecha de compra
-    2. Que el productoEntity a devolver no pertenezca a la categoría "frescos"
+    2. Que el producto a devolver no pertenezca a la categoría "frescos"
 - Si alguna condición no se cumple, la devolución se rechaza automáticamente
 Salidas:
 - Autorización o denegación de la devolución basada en el cumplimiento de la política
@@ -581,15 +581,15 @@ ID: REQ-27
 Descripción: El sistema permitirá generar reportes de devoluciones procesadas en un período de tiempo especificado, mostrando productos devueltos, cantidades y montos totales reembolsados. Este reporte permite al negocio analizar patrones de devolución y calcular pérdidas por merma.
 Entradas:
 - Rango de fechas (fecha_inicio, fecha_fin)
-- Opcionalmente: filtro por productoEntity, categoría o cajero
+- Opcionalmente: filtro por producto, categoría o cajero
 Proceso:
 - Consultar base de datos de devoluciones en el rango especificado
-- Agrupar devoluciones por productoEntity (SKU)
-- Calcular totales: cantidad_devuelta y monto_reembolsado por productoEntity
+- Agrupar devoluciones por producto (SKU)
+- Calcular totales: cantidad_devuelta y monto_reembolsado por producto
 - Calcular total general de todas las devoluciones del período
 Salidas:
 - Reporte conteniendo:
-    - Por cada productoEntity: SKU, nombre, categoría, cantidad_total_devuelta, monto_total_reembolsado
+    - Por cada producto: SKU, nombre, categoría, cantidad_total_devuelta, monto_total_reembolsado
     - Resumen general: total_productos_devueltos, monto_total_reembolsado_período
     - Número total de transacciones de devolución procesadas
 Precondiciones:
@@ -631,12 +631,12 @@ Prioridad: Alta
 
 ID: REQ-29
 #NOTE - Nombre: Añadir productos al ticket
-Descripción: El sistema permitirá añadir un productoEntity al ticket temporal junto con sus datos.
+Descripción: El sistema permitirá añadir un producto al ticket temporal junto con sus datos.
 Entradas:
-- Código de barras del productoEntity
-- SKU del productoEntity
+- Código de barras del producto
+- SKU del producto
 Proceso:
-- Recuperar productoEntity
+- Recuperar producto
 - Añadir al ticket
 Salidas:
 - Producto añadido al ticket
@@ -654,7 +654,7 @@ Entradas:
 - ID del ticket temporal
 Proceso:
 - Decodificar código de barras
-- Recuperar productoEntity
+- Recuperar producto
 - Añadir al ticket
 Salidas:
 - Producto añadido al ticket
@@ -671,7 +671,7 @@ Descripción: El sistema permitirá eliminar productos del ticket temporal actua
 Entradas:
 - Producto a eliminar
 Proceso:
-- Identificar productoEntity en ticket
+- Identificar producto en ticket
 - Eliminar del ticket
 Salidas:
 - Producto eliminado
@@ -705,12 +705,12 @@ Prioridad: Alta
 
 ID: REQ-33
 #NOTE - Nombre: Procesar códigos de barras por peso
-Descripción: El sistema decodificará automáticamente códigos de barras especiales para productos a granel extraerá código sku de productoEntity, peso/precio y añadirá al ticket.
+Descripción: El sistema decodificará automáticamente códigos de barras especiales para productos a granel extraerá código sku de producto, peso/precio y añadirá al ticket.
 Entradas:
 - Código de barras variable (prefijo 2)
 Proceso:
 - Decodificar peso/precio
-- Buscar productoEntity
+- Buscar producto
 - Calcular monto correcto
 - Añadir al ticket mostrando peso
 Salidas:
@@ -724,7 +724,7 @@ Prioridad: Alta
 
 #TODO - ID: REQ-34
 #NOTE - Nombre: Sistema especial para procesar venta de productos basados en peso (granel)
-Descripción: El sistema permitirá venta de productos a granel basándose en peso decodificado del código especial de barras variable escaneado en caja para productos por peso cuando se complete la venta. Este codigo de barras especial no es ni PLU ni EAN, sino uno generado en la tienda cuando los clientes pesan su productoEntity. Este es escaneado en caja. Este codigo de barras especial para granel nos dice que productoEntity es y cuando peso de ese productoEntity hay.
+Descripción: El sistema permitirá venta de productos a granel basándose en peso decodificado del código especial de barras variable escaneado en caja para productos por peso cuando se complete la venta. Este codigo de barras especial no es ni PLU ni EAN, sino uno generado en la tienda cuando los clientes pesan su producto. Este es escaneado en caja. Este codigo de barras especial para granel nos dice que producto es y cuando peso de ese producto hay.
 NOTA: como diablos voy a saber yo si me esta llegando mercancia constantemente de productos PLU, de que lote tengo yo que descrementar. Como apaño puedo intentar decrementar del primero que halla llegado y que no esté caducado y que este en estantería
 Entradas:
 - Código especial de barras variable decodificado para granel
@@ -743,12 +743,12 @@ ID: REQ-35
 #NOTE - Nombre: Correspondencia entre stock lógico y físico al vender
 Descripción: El sistema mantendrá coherencia entre stock físico y lógico al decrementar automáticamente stock [de estanteria] cuando se venden productos. Esto incluye los productos a granel también.
 Entradas:
-- SKU del productoEntity
+- SKU del producto
 - Cantidad
 - Unidades de medida
 Proceso:
-- Deducir a que lote pertenecía el productoEntity aplicando la politica de rotación de existendias correspondiente. (FIFO, FEFO, LIFO)
-- Decrementar el stock en la estanteria de ese productoEntity en el lote deducido.
+- Deducir a que lote pertenecía el producto aplicando la politica de rotación de existendias correspondiente. (FIFO, FEFO, LIFO)
+- Decrementar el stock en la estanteria de ese producto en el lote deducido.
 Salidas:
 - Niveles de stock actualizados
 Precondiciones:
@@ -803,7 +803,7 @@ Proceso:
 Salidas:
 - Información completa del ticket cerrado
 Precondiciones:
-- Al menos un productoEntity agregado
+- Al menos un producto agregado
 - Pago procesado exitosamente
 Postcondiciones:
 - Ticket cerrado
@@ -833,7 +833,7 @@ ID: REQ-40
 #NOTE - Nombre: Validar stock antes de venta
 Descripción: El sistema verificará disponibilidad de stock suficiente antes de añadir productos al ticket y emitirá un aviso en caso de incoherencia con el stock logico. La venta se completará de todos modos
 Entradas:
-- Selección de productoEntity
+- Selección de producto
 Proceso:
 - Verificar stock disponible
 - Emitir evento si hay incoherencia
@@ -1088,7 +1088,7 @@ ID: REQ-55
 #NOTE - Nombre: Aletas por stock mínimo
 Descripción: El sistema permitirá establecer umbrales de stock mínimo y alertará cuando existencias bajen de ese nivel.
 Entradas:
-- Umbrales de stock mínimo por productoEntity
+- Umbrales de stock mínimo por producto
 Proceso:
 - Monitorear niveles de stock
 - Generar alertas cuando se rompen umbrales
