@@ -1,15 +1,27 @@
 package com.isam.grpc.server.service;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
 import com.isam.model.Categoria;
 import com.isam.model.Producto;
 import com.isam.service.CatalogoService;
+
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
+
 
 @Service
 public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
@@ -19,14 +31,34 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
     private CatalogoService catalogoService;
     @Autowired
     private CatalogoMapper productoMapper;
+    @Autowired
+    private Validator validator;
 
     @Override
     public void crearProducto(CrearProductoRequest request, StreamObserver<CrearProductoRequest.Response> responseObserver) {
         System.out.println("DEBUG: gRPC request received: " + request);
-        
+        System.out.println(">>" + request.hasEan());
+        System.out.println(">>" + request.hasPlu());
+
         // Paso 1: Convertir la solicitud gRPC a DTO (responsabilidad del mapeador)
         CrearProductoDto productoDto = productoMapper.toDto(request);
         System.out.println("DEBUG: DTO created: " + productoDto);
+
+        // Validamos
+        Set<ConstraintViolation<CrearProductoDto>> violations = validator.validate(productoDto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
 
         // Paso 2: El servicio gestiona la lógica de negocio y la creación de entidades.
         Producto productoEntityCreated = catalogoService.crearProducto(productoDto);
@@ -44,7 +76,27 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
 
 
     @Override
+    @Transactional
     public void consultarProducto(ConsultarProductoRequest request, StreamObserver<ConsultarProductoRequest.Response> responseObserver) {
+
+        ConsultarProductoDto consultarProductoDto = productoMapper.toDto(request);
+        
+
+
+        // Validamos
+        Set<ConstraintViolation<ConsultarProductoDto>> violations = validator.validate(consultarProductoDto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
 
         Producto productoEntity = catalogoService.consultarProducto(request.getSku());
 
@@ -59,16 +111,39 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
 
     @Override
     public void crearCategoria(CrearCategoriaRequest request, StreamObserver<CrearCategoriaRequest.Response> responseObserver) {
-            CrearCategoriaDto categoriaDto = productoMapper.toDto(request);
+        CrearCategoriaDto categoriaDto = productoMapper.toDto(request);
 
-            Categoria categoriaResp = catalogoService.crearCategoria(categoriaDto);
+        // Validamos
+        Set<ConstraintViolation<CrearCategoriaDto>> violations = validator.validate(categoriaDto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
 
-            CategoriaProto categoriaProtoResp = productoMapper.toProto(categoriaResp);
-            CrearCategoriaRequest.Response response = CrearCategoriaRequest.Response.newBuilder()
-                    .setCategoria(categoriaProtoResp)
-                    .build();
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
 
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
+        Categoria categoriaResp = catalogoService.crearCategoria(categoriaDto);
+
+        CategoriaProto categoriaProtoResp = productoMapper.toProto(categoriaResp);
+        CrearCategoriaRequest.Response response = CrearCategoriaRequest.Response.newBuilder()
+                .setCategoria(categoriaProtoResp)
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+
+    
+
+    // Utils
+    private boolean isNotNullOrEmpty(String str) {
+        return str != null && !str.trim().isEmpty();
     }
 }

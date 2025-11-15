@@ -41,7 +41,15 @@ public class CatalogoService {
         System.out.println("DEBUG: DTO PoliticaRotacion: " + dto.politicaRotacion());
         System.out.println("DEBUG: DTO UnidadMedida: " + dto.unidadMedida());
 
-        // Create the base product entity
+        // Comprobamos que solo tengamos ean o plu, y no los 2 a la vez.
+        // NOTE - Realmente no puede darse esto porque en el contrato esta definido como "one of", asi que siempre llega solo uno aunque se hayan enviado 2 a la vez, pero como metodo defensivo dejaremos la comprobación activa.
+        if (isNotNullOrEmpty(dto.ean()) && isNotNullOrEmpty(dto.plu()) ) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("Un producto solo puede tener o EAN o PLU, pero no los 2 a la vez")
+                .asRuntimeException();
+        }
+
+        // Creamos el producto
         Producto producto = new Producto();
         
         // Map basic properties
@@ -131,5 +139,11 @@ public class CatalogoService {
 
         Categoria categoriaRespEntity = categoriaRepository.save(categoria);
         return categoriaRespEntity;
+    }
+
+
+        // Utils
+    private boolean isNotNullOrEmpty(String str) {
+        return str != null && !str.trim().isEmpty();
     }
 }
