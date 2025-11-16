@@ -103,49 +103,49 @@ public class ExceptionUtils {
         // Duplicate key violations (unique constraint)
         if (cause instanceof DuplicateKeyException) {
             return buildStatus(Code.ALREADY_EXISTS_VALUE,
-                "Registro duplicado: La entidad con estos datos ya existe",
+                "Registro duplicado. La entidad con estos datos ya existe",
                 cause, mensajeGenerico);
         }
         
         // Data integrity violations (FK, constraints)
         if (cause instanceof DataIntegrityViolationException) {
             return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                "Violación de integridad de datos: No se cumplen las restricciones de la base de datos",
+                "Violación de integridad de datos. No se cumplen las restricciones de la base de datos",
                 cause, mensajeGenerico);
         }
         
         // Empty result when one was expected
         if (cause instanceof EmptyResultDataAccessException) {
             return buildStatus(Code.NOT_FOUND_VALUE,
-                "Recurso no encontrado: La consulta no devolvió resultados",
+                "Recurso no encontrado. La consulta no devolvió resultados",
                 cause, mensajeGenerico);
         }
         
         // Incorrect result size
         if (cause instanceof IncorrectResultSizeDataAccessException) {
             return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                "Resultado inesperado: Se esperaba un único resultado pero se obtuvieron múltiples",
+                "Resultado inesperado. Se esperaba un único resultado pero se obtuvieron múltiples",
                 cause, mensajeGenerico);
         }
         
         // Data retrieval failure
         if (cause instanceof DataRetrievalFailureException) {
             return buildStatus(Code.INTERNAL_VALUE,
-                "Error al recuperar datos: Fallo en la lectura desde la base de datos",
+                "Error al recuperar datos. Fallo en la lectura desde la base de datos",
                 cause, mensajeGenerico);
         }
         
         // Invalid API usage
         if (cause instanceof InvalidDataAccessApiUsageException) {
             return buildStatus(Code.INVALID_ARGUMENT_VALUE,
-                "Uso incorrecto de la API de datos: Operación inválida",
+                "Uso incorrecto de la API de datos. Operación inválida",
                 cause, mensajeGenerico);
         }
         
         // Optimistic locking failure (Spring)
         if (cause instanceof OptimisticLockingFailureException) {
             return buildStatus(Code.ABORTED_VALUE,
-                "Conflicto de concurrencia: El recurso fue modificado por otra transacción",
+                "Conflicto de concurrencia. El recurso fue modificado por otra transacción",
                 cause, mensajeGenerico);
         }
         
@@ -170,35 +170,35 @@ public class ExceptionUtils {
         // Entity not found
         if (cause instanceof EntityNotFoundException) {
             return buildStatus(Code.NOT_FOUND_VALUE,
-                "Entidad no encontrada: No existe el recurso solicitado",
+                "Entidad no encontrada. No existe el recurso solicitado",
                 cause, mensajeGenerico);
         }
         
         // No result from getSingleResult()
         if (cause instanceof NoResultException) {
             return buildStatus(Code.NOT_FOUND_VALUE,
-                "Sin resultados: La consulta no devolvió ningún resultado",
+                "Sin resultados. La consulta no devolvió ningún resultado",
                 cause, mensajeGenerico);
         }
         
         // Multiple results from getSingleResult()
         if (cause instanceof NonUniqueResultException) {
             return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                "Resultado no único: Se esperaba un único resultado pero se obtuvieron múltiples",
+                "Resultado no único. Se esperaba un único resultado pero se obtuvieron múltiples",
                 cause, mensajeGenerico);
         }
         
         // Optimistic lock exception (JPA)
         if (cause instanceof OptimisticLockException) {
             return buildStatus(Code.ABORTED_VALUE,
-                "Conflicto de versión optimista: El recurso fue modificado por otra transacción",
+                "Conflicto de versión optimista. El recurso fue modificado por otra transacción",
                 cause, mensajeGenerico);
         }
         
         // Rollback exception
         if (cause instanceof RollbackException) {
             return buildStatus(Code.ABORTED_VALUE,
-                "Transacción revertida: La operación no pudo completarse",
+                "Transacción revertida. La operación no pudo completarse",
                 cause, mensajeGenerico);
         }
         
@@ -227,28 +227,28 @@ public class ExceptionUtils {
         // Lazy initialization exception
         if (cause instanceof LazyInitializationException) {
             return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                "Error de inicialización lazy: Se intentó acceder a datos fuera de la sesión de persistencia",
+                "Error de inicialización lazy. Se intentó acceder a datos fuera de la sesión de persistencia",
                 cause, mensajeGenerico);
         }
         
         // Stale object state (optimistic locking)
         if (cause instanceof StaleObjectStateException) {
             return buildStatus(Code.ABORTED_VALUE,
-                "Estado obsoleto: El objeto fue modificado o eliminado por otra transacción",
+                "Estado obsoleto. El objeto fue modificado o eliminado por otra transacción",
                 cause, mensajeGenerico);
         }
         
         // JDBC connection exception
         if (cause instanceof JDBCConnectionException) {
             return buildStatus(Code.UNAVAILABLE_VALUE,
-                "Error de conexión a la base de datos: No se pudo establecer o mantener la conexión",
+                "Error de conexión a la base de datos. No se pudo establecer o mantener la conexión",
                 cause, mensajeGenerico);
         }
         
         // Hibernate query exception
         if (cause instanceof QueryException) {
             return buildStatus(Code.INVALID_ARGUMENT_VALUE,
-                "Error en la consulta: La query HQL/JPQL contiene errores",
+                "Error en la consulta. La query HQL/JPQL contiene errores",
                 cause, mensajeGenerico);
         }
 
@@ -277,7 +277,7 @@ public class ExceptionUtils {
         // Transaction system exception
         if (cause instanceof TransactionSystemException) {
             return buildStatus(Code.INTERNAL_VALUE,
-                "Error del sistema transaccional: Fallo al gestionar la transacción",
+                "Error del sistema transaccional. Fallo al gestionar la transacción",
                 cause, mensajeGenerico);
         }
         
@@ -295,14 +295,14 @@ public class ExceptionUtils {
         // SQL integrity constraint violation (generic, will be overridden by specific SQLState)
         if (cause instanceof SQLIntegrityConstraintViolationException) {
             return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                "Violación de restricción SQL: No se cumplen las reglas de integridad",
+                "Violación de restricción SQL. No se cumplen las reglas de integridad",
                 cause, mensajeGenerico);
         }
 
         // SQL timeout
         if (cause instanceof SQLTimeoutException) {
             return buildStatus(Code.DEADLINE_EXCEEDED_VALUE,
-                "Timeout en base de datos: La operación superó el tiempo límite",
+                "Timeout en base de datos. La operación superó el tiempo límite",
                 cause, mensajeGenerico);
         }
 
@@ -313,47 +313,47 @@ public class ExceptionUtils {
 
             if ("23505".equals(sqlState)) { // unique_violation
                 return buildStatus(Code.ALREADY_EXISTS_VALUE,
-                    "Registro duplicado: Ya existe un registro con estos datos únicos",
+                    "Registro duplicado. Ya existe un registro con estos datos únicos",
                     cause, mensajeGenerico);
             } else if ("23503".equals(sqlState)) { // foreign_key_violation
                 return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                    "Referencia inválida: El registro referenciado no existe",
+                    "Referencia inválida. El registro referenciado no existe",
                     cause, mensajeGenerico);
             } else if ("23502".equals(sqlState)) { // not_null_violation
                 return buildStatus(Code.INVALID_ARGUMENT_VALUE,
-                    "Campo requerido: No se puede dejar vacío un campo obligatorio",
+                    "Campo requerido. No se puede dejar vacío un campo obligatorio",
                     cause, mensajeGenerico);
             } else if ("23514".equals(sqlState)) { // check_violation
                 return buildStatus(Code.FAILED_PRECONDITION_VALUE,
-                    "Violación de regla: Los datos no cumplen las reglas de validación",
+                    "Violación de regla. Los datos no cumplen las reglas de validación",
                     cause, mensajeGenerico);
             } else if ("42P01".equals(sqlState)) { // undefined_table
                 return buildStatus(Code.NOT_FOUND_VALUE,
-                    "Tabla no encontrada: La tabla especificada no existe",
+                    "Tabla no encontrada. La tabla especificada no existe",
                     cause, mensajeGenerico);
             } else if ("42703".equals(sqlState)) { // undefined_column
                 return buildStatus(Code.INVALID_ARGUMENT_VALUE,
-                    "Columna no encontrada: La columna especificada no existe",
+                    "Columna no encontrada. La columna especificada no existe",
                     cause, mensajeGenerico);
             } else if ("08003".equals(sqlState)) { // connection_does_not_exist
                 return buildStatus(Code.UNAVAILABLE_VALUE,
-                    "Conexión perdida: La conexión a la base de datos se ha perdido",
+                    "Conexión perdida. La conexión a la base de datos se ha perdido",
                     cause, mensajeGenerico);
             } else if ("08006".equals(sqlState)) { // connection_failure
                 return buildStatus(Code.UNAVAILABLE_VALUE,
-                    "Error de conexión: No se pudo conectar a la base de datos",
+                    "Error de conexión. No se pudo conectar a la base de datos",
                     cause, mensajeGenerico);
             } else if ("53300".equals(sqlState)) { // too_many_connections
                 return buildStatus(Code.RESOURCE_EXHAUSTED_VALUE,
-                    "Límite de conexiones excedido: Demasiadas conexiones activas",
+                    "Límite de conexiones excedido. Demasiadas conexiones activas",
                     cause, mensajeGenerico);
             } else if ("42P07".equals(sqlState)) { // duplicate_table
                 return buildStatus(Code.ALREADY_EXISTS_VALUE,
-                    "Tabla duplicada: La tabla ya existe",
+                    "Tabla duplicada. La tabla ya existe",
                     cause, mensajeGenerico);
             } else if ("42701".equals(sqlState)) { // duplicate_column
                 return buildStatus(Code.ALREADY_EXISTS_VALUE,
-                    "Columna duplicada: La columna ya existe",
+                    "Columna duplicada. La columna ya existe",
                     cause, mensajeGenerico);
             }
 
