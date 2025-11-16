@@ -81,8 +81,6 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
 
         ConsultarProductoDto consultarProductoDto = productoMapper.toDto(request);
         
-
-
         // Validamos
         Set<ConstraintViolation<ConsultarProductoDto>> violations = validator.validate(consultarProductoDto);
         if (!violations.isEmpty()) {
@@ -98,7 +96,7 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
             return;
         }
 
-        Producto productoEntity = catalogoService.consultarProducto(request.getSku());
+        Producto productoEntity = catalogoService.consultarProducto(consultarProductoDto);
 
         ProductoProto productoProto = productoMapper.toProto(productoEntity);
 

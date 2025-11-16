@@ -1,21 +1,23 @@
 package com.isam.service;
 
+import java.util.Optional;
+
+import org.hibernate.Hibernate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.model.Categoria;
 import com.isam.model.Producto;
 import com.isam.repository.CategoriaRepository;
 import com.isam.repository.OfertaRepository;
 import com.isam.repository.ProductoRepository;
-import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-
-import java.util.Optional;
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class CatalogoService {
@@ -112,8 +114,11 @@ public class CatalogoService {
     }
 
     @Transactional
-    public Producto consultarProducto(String sku){
-        Producto productoEntity = productoRepository.findBySku(sku).get(); // TODO - hacer que tire una excepción
+    public Producto consultarProducto(ConsultarProductoDto consultarProductoDto){
+        Producto productoEntity = productoRepository.findBySku(consultarProductoDto.sku())
+        .orElseThrow(() -> new EntityNotFoundException(
+            "Producto no encontrado con SKU '" + consultarProductoDto.sku() + "'"
+        ));
         return productoEntity;
     }
 
