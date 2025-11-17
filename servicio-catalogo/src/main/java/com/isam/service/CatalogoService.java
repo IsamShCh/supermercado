@@ -333,12 +333,13 @@ public class CatalogoService {
                 "Producto no encontrado con SKU '" + dto.sku() + "'"
             ));
         
-        // Verificar que el producto no esté ya descatalogado
-        if (producto.getEstado() == EstadoProducto.DESCATALOGADO) {
-            throw Status.FAILED_PRECONDITION
-                .withDescription("El producto con SKU '" + dto.sku() + "' ya está descatalogado")
-                .asRuntimeException();
-        }
+        //NOTE - No es necesario hacer esta comprobación. La operación puede ser idempotente
+        // // Verificar que el producto no esté ya descatalogado
+        // if (producto.getEstado() == EstadoProducto.DESCATALOGADO) {
+        //     throw Status.FAILED_PRECONDITION
+        //         .withDescription("El producto con SKU '" + dto.sku() + "' ya está descatalogado")
+        //         .asRuntimeException();
+        // }
         
         // Cambiar el estado a DESCATALOGADO
         producto.setEstado(EstadoProducto.DESCATALOGADO);
@@ -365,12 +366,13 @@ public class CatalogoService {
                 "Producto no encontrado con SKU '" + dto.sku() + "'"
             ));
         
-        // Verificar que el producto esté descatalogado
-        if (producto.getEstado() == EstadoProducto.ACTIVO) {
-            throw Status.FAILED_PRECONDITION
-                .withDescription("El producto con SKU '" + dto.sku() + "' ya está activo")
-                .asRuntimeException();
-        }
+        //NOTE - No es necesario hacer esta comprobación. La operación puede ser idempotente.
+        // // Verificar que el producto esté descatalogado
+        // if (producto.getEstado() == EstadoProducto.ACTIVO) {
+        //     throw Status.FAILED_PRECONDITION
+        //         .withDescription("El producto con SKU '" + dto.sku() + "' ya está activo")
+        //         .asRuntimeException();
+        // }
         
         // Cambiar el estado a ACTIVO
         producto.setEstado(EstadoProducto.ACTIVO);
