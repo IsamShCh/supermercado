@@ -94,6 +94,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- H2 Database para poder testear -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 
