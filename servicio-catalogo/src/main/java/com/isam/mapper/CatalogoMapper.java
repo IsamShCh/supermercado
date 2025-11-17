@@ -1,26 +1,38 @@
 package com.isam.mapper;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.comun.PaginacionDto;
+import com.isam.dto.oferta.OfertaDto;
+import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.ListaProductosDto;
+import com.isam.dto.producto.ProductoDto;
+import com.isam.grpc.catalogo.BuscarProductosRequest;
 import com.isam.grpc.catalogo.CategoriaProto;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
 import com.isam.grpc.catalogo.CrearProductoRequest;
+import com.isam.grpc.catalogo.ListaProductos;
+import com.isam.grpc.catalogo.DetallesProductoCompleto;
+import com.isam.grpc.catalogo.OfertaProto;
+import com.isam.grpc.common.PaginationResponse;
 import com.isam.model.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class CatalogoMapper {
 
     /**
-     * Converts gRPC CrearProductoRequest to DTO
-     * This method only handles the mapping between protocols, not business logic
+     * Convierte gRPC CrearProductoRequest a DTO.
+     * Este método solo gestiona la asignación entre protocolos, no la lógica empresarial.
      */
     public CrearProductoDto toDto(CrearProductoRequest req) {
         System.out.println("DEBUG: Converting gRPC request to DTO");
@@ -28,7 +40,7 @@ public class CatalogoMapper {
         System.out.println("DEBUG: Request - id_categoria: " + req.getIdCategoria());
         System.out.println("DEBUG: Request - etiquetas count: " + req.getEtiquetasList().size());
         
-        // Extract values for record constructor
+        // Extraer valores para el constructor de registros
         String ean = req.hasEan() ? req.getEan() : null;
         String plu = req.hasPlu() ? req.getPlu() : null;
         if (req.hasPlu()) {
@@ -45,7 +57,7 @@ public class CatalogoMapper {
             System.out.println("DEBUG: Etiquetas set in DTO: " + etiquetas);
         }
         
-        // Create record using constructor
+        // Crear registro utilizando el constructor
         CrearProductoDto dto = new CrearProductoDto(
             req.getSku(),
             ean,
@@ -70,9 +82,34 @@ public class CatalogoMapper {
         return new ConsultarProductoDto(req.getSku());
     }
 
+    public BuscarProductosDto toDto(BuscarProductosRequest req) {
+        BuscarProductosDto.CriteriosBusquedaDto criterios = null;
+        
+        if (req.hasCriterios()) {
+            criterios = new BuscarProductosDto.CriteriosBusquedaDto(
+                req.getCriterios().hasNombre() ? req.getCriterios().getNombre() : null,
+                req.getCriterios().getIdCategoria() > 0 ? req.getCriterios().getIdCategoria() : null,
+                req.getCriterios().hasPrecioMin() ? req.getCriterios().getPrecioMin() : null,
+                req.getCriterios().hasPrecioMax() ? req.getCriterios().getPrecioMax() : null,
+                req.getCriterios().hasEsGranel() ? req.getCriterios().getEsGranel() : null,
+                !req.getCriterios().getEtiquetasList().isEmpty() ? req.getCriterios().getEtiquetasList() : null
+            );
+        }
+        
+        PaginacionDto paginacion = null;
+        if (req.hasPaginacion()) {
+            paginacion = new PaginacionDto(
+                req.getPaginacion().getPage() > 0 ? req.getPaginacion().getPage() : null,
+                req.getPaginacion().getPageSize() > 0 ? req.getPaginacion().getPageSize() : null
+            );
+        }
+        
+        return new BuscarProductosDto(criterios, paginacion);
+    }
+
     /**
-     * Converts DTO to Entity
-     * Note: Categoria will be null here - it should be populated by the Service layer
+     * Convierte DTO a Entidad.
+     * Nota: Categoria será nulo aquí; debe ser rellenado por la capa de servicio.
      */
     public Producto toEntity(CrearProductoDto dto) {
         System.out.println("DEBUG: Converting DTO to Entity");
@@ -92,21 +129,22 @@ public class CatalogoMapper {
         entity.setPoliticaRotacion(dto.politicaRotacion());
         entity.setUnidadMedida(dto.unidadMedida());
 
-        // Handle identificadores
+        // Manejar identificadores ean y plu del producto
         entity.setEan(dto.ean());
         entity.setPlu(dto.plu());
 
-        // Default estado
+        // Establecemos un estado por defecto 
+        //NOTE - Deberia establecerlo por defecto asi?
         entity.setEstado(EstadoProducto.ACTIVO);
 
-        // Handle etiquetas
+        // Manejar etiquetas
         if (dto.etiquetas() != null && !dto.etiquetas().isEmpty()) {
             String etiquetasString = String.join(",", dto.etiquetas());
             entity.setEtiquetas(etiquetasString);
             System.out.println("DEBUG: Etiquetas set in entity: " + etiquetasString);
         }
 
-        // NOTE: Categoria will be null here - Service layer responsibility to populate it
+        // NOTA: Categoria será nulo aquí. Es responsabilidad de la capa de servicio rellenarlo.
         System.out.println("DEBUG: Entity created (without categoria): " + entity);
         return entity;
     }
@@ -117,7 +155,7 @@ public class CatalogoMapper {
             System.out.println("DEBUG: Enum ordinal: " + protoEnum.getNumber());
         } catch (IllegalArgumentException e) {
             System.out.println("DEBUG: Cannot get number for enum " + protoEnum + ", treating as UNRECOGNIZED");
-            return PoliticaRotacion.FIFO; // Default to FIFO for problematic enum values
+            return PoliticaRotacion.FIFO; // Por defecto, FIFO para valores enumerados problemáticos.
         }
         
         switch (protoEnum) {
@@ -134,7 +172,7 @@ public class CatalogoMapper {
                 return PoliticaRotacion.POLITICA_ROTACION_UNSPECIFIED;
             default:
                 System.out.println("DEBUG: Unmapped enum value: " + protoEnum + ", defaulting to FIFO");
-                return PoliticaRotacion.FIFO; // Default to FIFO instead of UNSPECIFIED
+                return PoliticaRotacion.FIFO; // Por defecto, FIFO en lugar de NO ESPECIFICADO.
         }
     }
 
@@ -294,5 +332,171 @@ public class CatalogoMapper {
             return Collections.emptyList();
         }
         return Arrays.asList(etiquetas.split(","));
+    }
+
+    public ListaProductos toProto(ListaProductosDto dto) {
+        ListaProductos.Builder builder = ListaProductos.newBuilder();
+        
+        // Map productos
+        if (dto.productos() != null) {
+            List<DetallesProductoCompleto> detallesProto = dto.productos().stream()
+                .map(this::toDetallesProductoCompletoProto)
+                .collect(Collectors.toList());
+            builder.addAllProductos(detallesProto);
+        }
+        
+        // Map paginacion
+        if (dto.paginacion() != null) {
+            PaginationResponse paginacionProto = PaginationResponse.newBuilder()
+                .setPage(dto.paginacion().page())
+                .setPageSize(dto.paginacion().pageSize())
+                .setTotalPages(dto.paginacion().totalPages())
+                .setTotalElements(dto.paginacion().totalElements())
+                .build();
+            builder.setPaginacion(paginacionProto);
+        }
+        
+        return builder.build();
+    }
+
+    private DetallesProductoCompleto toDetallesProductoCompletoProto(ListaProductosDto.DetallesProductoCompletoDto dto) {
+        DetallesProductoCompleto.Builder builder = DetallesProductoCompleto.newBuilder();
+        
+        // Map producto
+        if (dto.producto() != null) {
+            builder.setProducto(toProductoProto(dto.producto()));
+        }
+        
+        // Map ofertas
+        if (dto.ofertas() != null) {
+            List<OfertaProto> ofertasProto = dto.ofertas().stream()
+                .map(this::toOfertaProto)
+                .collect(Collectors.toList());
+            builder.addAllOferta(ofertasProto);
+        }
+        
+        return builder.build();
+    }
+
+    private com.isam.grpc.catalogo.ProductoProto toProductoProto(ProductoDto dto) {
+        com.isam.grpc.catalogo.ProductoProto.Builder builder = com.isam.grpc.catalogo.ProductoProto.newBuilder()
+            .setSku(dto.sku())
+            .setNombre(dto.nombre())
+            .setPrecioVenta(dto.precioVenta())
+            .setCaduca(dto.caduca())
+            .setEsGranel(dto.esGranel());
+        
+        if (dto.ean() != null) {
+            builder.setEan(dto.ean());
+        } else if (dto.plu() != null) {
+            builder.setPlu(dto.plu());
+        }
+        
+        if (dto.descripcion() != null) {
+            builder.setDescripcion(dto.descripcion());
+        }
+        
+        if (dto.categoria() != null) {
+            CategoriaProto categoriaProto = CategoriaProto.newBuilder()
+                .setIdCategoria(dto.categoria().idCategoria())
+                .setNombreCategoria(dto.categoria().nombreCategoria())
+                .setDescripcion(dto.categoria().descripcion() != null ? dto.categoria().descripcion() : "")
+                .build();
+            builder.setCategoria(categoriaProto);
+        }
+        
+        if (dto.politicaRotacion() != null) {
+            builder.setPoliticaRotacion(mapStringToPoliticaRotacionProto(dto.politicaRotacion()));
+        }
+        
+        if (dto.unidadMedida() != null) {
+            builder.setUnidadMedida(mapStringToUnidadMedidaProto(dto.unidadMedida()));
+        }
+        
+        if (dto.etiquetas() != null) {
+            builder.addAllEtiquetas(dto.etiquetas());
+        }
+        
+        if (dto.estado() != null) {
+            builder.setEstado(mapStringToEstadoProductoProto(dto.estado()));
+        }
+        
+        return builder.build();
+    }
+
+    private OfertaProto toOfertaProto(OfertaDto dto) {
+        OfertaProto.Builder builder = OfertaProto.newBuilder()
+            .setIdOferta(dto.idOferta())
+            .setSku(dto.sku())
+            .setPrecioPromocional(dto.precioPromocional())
+            .setTipoPromocion(dto.tipoPromocion())
+            .setFechaInicio(dto.fechaInicio())
+            .setFechaFin(dto.fechaFin());
+        
+        if (dto.estado() != null) {
+            builder.setEstado(mapStringToEstadoOfertaProto(dto.estado()));
+        }
+        
+        return builder.build();
+    }
+
+    private com.isam.grpc.common.PoliticaRotacion mapStringToPoliticaRotacionProto(String value) {
+        switch (value) {
+            case "FIFO":
+                return com.isam.grpc.common.PoliticaRotacion.FIFO;
+            case "FEFO":
+                return com.isam.grpc.common.PoliticaRotacion.FEFO;
+            case "LIFO":
+                return com.isam.grpc.common.PoliticaRotacion.LIFO;
+            default:
+                return com.isam.grpc.common.PoliticaRotacion.UNRECOGNIZED;
+        }
+    }
+
+    private com.isam.grpc.common.UnidadMedida mapStringToUnidadMedidaProto(String value) {
+        switch (value) {
+            case "UNIDAD":
+                return com.isam.grpc.common.UnidadMedida.UNIDAD;
+            case "KILOGRAMO":
+                return com.isam.grpc.common.UnidadMedida.KILOGRAMO;
+            case "GRAMO":
+                return com.isam.grpc.common.UnidadMedida.GRAMO;
+            case "LITRO":
+                return com.isam.grpc.common.UnidadMedida.LITRO;
+            case "MILILITRO":
+                return com.isam.grpc.common.UnidadMedida.MILILITRO;
+            case "METRO":
+                return com.isam.grpc.common.UnidadMedida.METRO;
+            case "PAQUETE":
+                return com.isam.grpc.common.UnidadMedida.PAQUETE;
+            case "DOCENA":
+                return com.isam.grpc.common.UnidadMedida.DOCENA;
+            default:
+                return com.isam.grpc.common.UnidadMedida.UNIDAD_MEDIDA_UNSPECIFIED;
+        }
+    }
+
+    private com.isam.grpc.common.EstadoProducto mapStringToEstadoProductoProto(String value) {
+        switch (value) {
+            case "ACTIVO":
+                return com.isam.grpc.common.EstadoProducto.ACTIVO;
+            case "DESCATALOGADO":
+                return com.isam.grpc.common.EstadoProducto.DESCATALOGADO;
+            default:
+                return com.isam.grpc.common.EstadoProducto.UNRECOGNIZED;
+        }
+    }
+
+    private com.isam.grpc.common.EstadoOferta mapStringToEstadoOfertaProto(String value) {
+        switch (value) {
+            case "ACTIVA":
+                return com.isam.grpc.common.EstadoOferta.ACTIVA;
+            case "VENCIDA":
+                return com.isam.grpc.common.EstadoOferta.VENCIDA;
+            case "CANCELADA":
+                return com.isam.grpc.common.EstadoOferta.CANCELADA;
+            default:
+                return com.isam.grpc.common.EstadoOferta.UNRECOGNIZED;
+        }
     }
 }

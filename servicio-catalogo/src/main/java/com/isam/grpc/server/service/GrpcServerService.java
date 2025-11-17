@@ -1,8 +1,10 @@
 package com.isam.grpc.server.service;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.ListaProductosDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
 import com.isam.model.Categoria;
@@ -137,8 +139,41 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         responseObserver.onCompleted();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public void buscarProductos(BuscarProductosRequest request, StreamObserver<BuscarProductosRequest.Response> responseObserver) {
+        // Convert gRPC request to DTO
+        BuscarProductosDto buscarProductosDto = productoMapper.toDto(request);
+        
+        // Validate
+        Set<ConstraintViolation<BuscarProductosDto>> violations = validator.validate(buscarProductosDto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
 
-    
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Call service layer
+        ListaProductosDto listaProductosDto = catalogoService.buscarProductos(buscarProductosDto);
+        
+        // Convert to proto
+        ListaProductos listaProductosProto = productoMapper.toProto(listaProductosDto);
+        
+        // Build response
+        BuscarProductosRequest.Response response = BuscarProductosRequest.Response.newBuilder()
+            .setListaProductos(listaProductosProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
 
     // Utils
     private boolean isNotNullOrEmpty(String str) {
