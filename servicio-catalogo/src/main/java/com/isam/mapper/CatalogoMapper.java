@@ -6,13 +6,17 @@ import com.isam.dto.oferta.OfertaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.ProductoDto;
+import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.BuscarProductosRequest;
 import com.isam.grpc.catalogo.CategoriaProto;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
 import com.isam.grpc.catalogo.CrearProductoRequest;
+import com.isam.grpc.catalogo.DescatalogarProductoRequest;
+import com.isam.grpc.catalogo.RecatalogarProductoRequest;
 import com.isam.grpc.catalogo.ListaProductos;
 import com.isam.grpc.catalogo.DetallesProductoCompleto;
 import com.isam.grpc.catalogo.OfertaProto;
@@ -105,6 +109,20 @@ public class CatalogoMapper {
         }
         
         return new BuscarProductosDto(criterios, paginacion);
+    }
+
+    /**
+     * Convierte gRPC DescatalogarProductoRequest a DTO.
+     */
+    public DescatalogarProductoDto toDto(DescatalogarProductoRequest req) {
+        return new DescatalogarProductoDto(req.getSku());
+    }
+
+    /**
+     * Convierte gRPC RecatalogarProductoRequest a DTO.
+     */
+    public RecatalogarProductoDto toDto(RecatalogarProductoRequest req) {
+        return new RecatalogarProductoDto(req.getSku());
     }
 
     /**

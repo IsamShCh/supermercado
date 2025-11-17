@@ -4,7 +4,9 @@ import com.isam.dto.categoria.CrearCategoriaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
+import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
 import com.isam.model.Categoria;
@@ -169,6 +171,84 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         // Build response
         BuscarProductosRequest.Response response = BuscarProductosRequest.Response.newBuilder()
             .setListaProductos(listaProductosProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Descataloga un producto cambiando su estado a DESCATALOGADO.
+     */
+    @Override
+    @Transactional
+    public void descatalogarProducto(DescatalogarProductoRequest request, StreamObserver<DescatalogarProductoRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        DescatalogarProductoDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<DescatalogarProductoDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        Producto productoDescatalogado = catalogoService.descatalogarProducto(dto);
+        
+        // Convertir a proto
+        ProductoProto productoProto = productoMapper.toProto(productoDescatalogado);
+        
+        // Construir respuesta
+        DescatalogarProductoRequest.Response response = DescatalogarProductoRequest.Response.newBuilder()
+            .setProducto(productoProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Recataloga un producto cambiando su estado a ACTIVO.
+     */
+    @Override
+    @Transactional
+    public void recatalogarProducto(RecatalogarProductoRequest request, StreamObserver<RecatalogarProductoRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        RecatalogarProductoDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<RecatalogarProductoDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        Producto productoRecatalogado = catalogoService.recatalogarProducto(dto);
+        
+        // Convertir a proto
+        ProductoProto productoProto = productoMapper.toProto(productoRecatalogado);
+        
+        // Construir respuesta
+        RecatalogarProductoRequest.Response response = RecatalogarProductoRequest.Response.newBuilder()
+            .setProducto(productoProto)
             .build();
         
         responseObserver.onNext(response);

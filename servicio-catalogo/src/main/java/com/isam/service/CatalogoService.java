@@ -21,10 +21,13 @@ import com.isam.dto.oferta.OfertaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.ProductoDto;
+import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.model.Categoria;
 import com.isam.model.EstadoOferta;
+import com.isam.model.EstadoProducto;
 import com.isam.model.Oferta;
 import com.isam.model.Producto;
 import com.isam.repository.CategoriaRepository;
@@ -316,6 +319,70 @@ public class CatalogoService {
         }
         
         return predicatesWhere;
+    }
+    
+    /**
+     * Descataloga un producto cambiando su estado a DESCATALOGADO.
+     * @param dto DTO con el SKU del producto a descatalogar
+     * @return El producto descatalogado
+     */
+    @Transactional
+    public Producto descatalogarProducto(DescatalogarProductoDto dto) {
+        Producto producto = productoRepository.findBySku(dto.sku())
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Producto no encontrado con SKU '" + dto.sku() + "'"
+            ));
+        
+        // Verificar que el producto no esté ya descatalogado
+        if (producto.getEstado() == EstadoProducto.DESCATALOGADO) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El producto con SKU '" + dto.sku() + "' ya está descatalogado")
+                .asRuntimeException();
+        }
+        
+        // Cambiar el estado a DESCATALOGADO
+        producto.setEstado(EstadoProducto.DESCATALOGADO);
+        
+        Producto productoDescatalogado = productoRepository.save(producto);
+        
+        // Asegurar que la categoría está cargada
+        if (productoDescatalogado.getCategoria() != null) {
+            Hibernate.initialize(productoDescatalogado.getCategoria());
+        }
+        
+        return productoDescatalogado;
+    }
+    
+    /**
+     * Recataloga un producto cambiando su estado a ACTIVO.
+     * @param dto DTO con el SKU del producto a recatalogar
+     * @return El producto recatalogado
+     */
+    @Transactional
+    public Producto recatalogarProducto(RecatalogarProductoDto dto) {
+        Producto producto = productoRepository.findBySku(dto.sku())
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Producto no encontrado con SKU '" + dto.sku() + "'"
+            ));
+        
+        // Verificar que el producto esté descatalogado
+        if (producto.getEstado() == EstadoProducto.ACTIVO) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El producto con SKU '" + dto.sku() + "' ya está activo")
+                .asRuntimeException();
+        }
+        
+        // Cambiar el estado a ACTIVO
+        producto.setEstado(EstadoProducto.ACTIVO);
+        
+        Producto productoRecatalogado = productoRepository.save(producto);
+        
+        // Asegurar que la categoría está cargada
+        if (productoRecatalogado.getCategoria() != null) {
+            Hibernate.initialize(productoRecatalogado.getCategoria());
+        }
+        
+        return productoRecatalogado;
     }
     
     private boolean isNotNullOrEmpty(String str) {
