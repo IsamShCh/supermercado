@@ -3,9 +3,7 @@ package com.isam.dto.oferta;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
-public record OfertaDto(
-    @NotBlank(message = "El ID de la oferta es obligatorio")
-    String idOferta,
+public record CrearOfertaDto(
     
     @NotBlank(message = "El SKU es obligatorio")
     @Size(max = 50, message = "El SKU no puede exceder 50 caracteres")
@@ -14,10 +12,10 @@ public record OfertaDto(
     @NotNull(message = "El precio promocional es obligatorio")
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio promocional debe ser mayor que 0")
     @Digits(integer = 10, fraction = 2, message = "El precio debe tener máximo 10 dígitos enteros y 2 decimales")
-    Double precioPromocional,
+    BigDecimal precioPromocional,
     
     @NotBlank(message = "El tipo de promoción es obligatorio")
-    @Size(max = 50, message = "El tipo de promoción no puede exceder 50 caracteres")
+    @Size(max = 100, message = "El tipo de promoción no puede exceder 100 caracteres")
     String tipoPromocion,
     
     @NotBlank(message = "La fecha de inicio es obligatoria")
@@ -26,8 +24,5 @@ public record OfertaDto(
     
     @NotBlank(message = "La fecha de fin es obligatoria")
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "La fecha de fin debe tener el formato YYYY-MM-DD")
-    String fechaFin,
-    
-    @NotBlank(message = "El estado es obligatorio")
-    String estado
+    String fechaFin
 ) {}
