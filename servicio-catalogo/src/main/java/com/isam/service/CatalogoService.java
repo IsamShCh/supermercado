@@ -24,6 +24,7 @@ import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
+import com.isam.dto.producto.ListarProductosRequestDto;
 import com.isam.dto.producto.ProductoDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.model.Categoria;
@@ -148,6 +149,90 @@ public class CatalogoService {
             "Producto no encontrado con SKU '" + consultarProductoDto.sku() + "'"
         ));
         return productoEntity;
+    }
+
+    @Transactional(readOnly = true)
+    public ListaProductosDto listarProductos(ListarProductosRequestDto dto) {
+        // Paginación por defecto
+        Integer page = 1;
+        Integer pageSize = 10;
+        
+        if (dto.paginacion() != null) {
+            if (dto.paginacion().page() != null) {
+                page = dto.paginacion().page();
+            }
+            if (dto.paginacion().pageSize() != null) {
+                pageSize = dto.paginacion().pageSize();
+            }
+        }
+        
+        // Crear el Pageable (Spring usa índices basados en 0)
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
+        
+        // Obtener los productos paginados
+        Page<Producto> productosPage = productoRepository.findAll(pageable);
+        List<Producto> productos = productosPage.getContent();
+        
+        // Asegurar que todas las categorías estén cargadas antes de accederlas
+        productos.forEach(p -> {
+            if (p.getCategoria() != null) {
+                Hibernate.initialize(p.getCategoria());
+            }
+        });
+        
+        // Convertir la lista de productos en formato entidad en una lista de productosCompletos (= producto + ofertas del producto) en formato DTO
+        List<ListaProductosDto.DetallesProductoCompletoDto> detalles = productos.stream()
+            .map(p -> {
+                // Obtenemos las ofertas de cada producto
+                List<Oferta> ofertas = ofertaRepository.findByProducto_Sku(p.getSku());
+                
+                // Convertimos la lista de ofertas en DTOs
+                List<OfertaDto> ofertasDto = ofertas.stream()
+                    .map(o -> new OfertaDto(
+                        o.getIdOferta(),
+                        o.getProducto().getSku(),
+                        o.getPrecioPromocional().doubleValue(),
+                        o.getTipoPromocion(),
+                        o.getFechaInicio().toString(),
+                        o.getFechaFin().toString(),
+                        o.getEstado().name()
+                    ))
+                    .collect(Collectors.toList());
+                
+                // Convertimos el producto en DTO
+                ProductoDto productoDto = new ProductoDto(
+                    p.getSku(),
+                    p.getEan(),
+                    p.getPlu(),
+                    p.getNombre(),
+                    p.getDescripcion(),
+                    p.getPrecioVenta().doubleValue(),
+                    p.getCaduca(),
+                    p.getEsGranel(),
+                    p.getCategoria() != null ? new CategoriaDto(
+                        p.getCategoria().getIdCategoria(),
+                        p.getCategoria().getNombreCategoria(),
+                        p.getCategoria().getDescripcion()
+                    ) : null,
+                    p.getPoliticaRotacion() != null ? p.getPoliticaRotacion().name() : null,
+                    p.getUnidadMedida() != null ? p.getUnidadMedida().name() : null,
+                    p.getEtiquetas() != null ? Arrays.asList(p.getEtiquetas().split(",")) : null,
+                    p.getEstado().name()
+                );
+                
+                // retornamos un producto con sus datos y su correspondiente oferta
+                return new ListaProductosDto.DetallesProductoCompletoDto(productoDto, ofertasDto);
+            })
+            .collect(Collectors.toList());
+        
+        PaginacionResponseDto paginacionDto = new PaginacionResponseDto(
+            page,
+            pageSize,
+            productosPage.getTotalPages(),
+            productosPage.getTotalElements()
+        );
+        
+        return new ListaProductosDto(detalles, paginacionDto);
     }
 
     @Transactional

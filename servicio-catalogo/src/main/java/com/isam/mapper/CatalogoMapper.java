@@ -8,10 +8,12 @@ import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
+import com.isam.dto.producto.ListarProductosRequestDto;
 import com.isam.dto.producto.ProductoDto;
 import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.BuscarProductosRequest;
+import com.isam.grpc.catalogo.ListarProductosRequest;
 import com.isam.grpc.catalogo.CategoriaProto;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
@@ -111,6 +113,18 @@ public class CatalogoMapper {
         }
         
         return new BuscarProductosDto(criterios, paginacion);
+    }
+
+    public ListarProductosRequestDto toDto(ListarProductosRequest req) {
+        PaginacionDto paginacion = null;
+        if (req.hasPaginacion()) {
+            paginacion = new PaginacionDto(
+                req.getPaginacion().getPage() > 0 ? req.getPaginacion().getPage() : null,
+                req.getPaginacion().getPageSize() > 0 ? req.getPaginacion().getPageSize() : null
+            );
+        }
+        
+        return new ListarProductosRequestDto(paginacion);
     }
 
     /**

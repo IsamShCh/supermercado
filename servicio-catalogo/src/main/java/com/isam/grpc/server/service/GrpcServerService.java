@@ -7,6 +7,7 @@ import com.isam.dto.producto.CrearProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.dto.producto.ListaProductosDto;
+import com.isam.dto.producto.ListarProductosRequestDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
@@ -172,6 +173,45 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         
         // Build response
         BuscarProductosRequest.Response response = BuscarProductosRequest.Response.newBuilder()
+            .setListaProductos(listaProductosProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Lista todos los productos con paginación opcional.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void listarProductos(ListarProductosRequest request, StreamObserver<ListarProductosRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        ListarProductosRequestDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<ListarProductosRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        ListaProductosDto listaProductosDto = catalogoService.listarProductos(dto);
+        
+        // Convertir a proto
+        ListaProductos listaProductosProto = productoMapper.toProto(listaProductosDto);
+        
+        // Construir respuesta
+        ListarProductosRequest.Response response = ListarProductosRequest.Response.newBuilder()
             .setListaProductos(listaProductosProto)
             .build();
         
