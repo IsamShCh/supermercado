@@ -40,11 +40,8 @@ import com.isam.repository.ProductoRepository;
 import io.grpc.Status;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import org.springframework.data.jpa.domain.Specification;
 
 @Service
 public class CatalogoService {
@@ -261,17 +258,7 @@ public class CatalogoService {
 
     @Transactional(readOnly = true)
     public ListaProductosDto buscarProductos(BuscarProductosDto dto) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Producto> cqSQL = cb.createQuery(Producto.class); // equivalente a una query SQL
-        Root<Producto> productoFrom = cqSQL.from(Producto.class); // el equivalente a la tabla principal del FROM PRODUCTO
-        
-        List<Predicate> predicatesWhere = buildPredicates(cb, productoFrom, dto.criterios()); // equivalente a una colección de condiciones WHERE que vas acumulando dinámicamente según los filtros del DTO
-        
-        cqSQL.where(predicatesWhere.toArray(new Predicate[0])); // Convertimos la lista de predicados en un array de predicados y se lo pasamos a la query para que lo consuma
-        
-        TypedQuery<Producto> PREquery = entityManager.createQuery(cqSQL); // es un objeto que representa una consulta ya preparada pero aún no ejecutada, y que además garantiza el tipo del resultado
-        
-        // Manejamos la paginación
+        // Manejamos la paginación (Igual que en listarProductos)
         Integer page = 1;
         Integer pageSize = 10;
         
@@ -284,22 +271,14 @@ public class CatalogoService {
             }
         }
         
-        // Contamos el total de elementos - crear nuevos predicados "when" para contar cuantos productos en total tenemos al filtrar
-        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
-        Root<Producto> countRoot = countQuery.from(Producto.class);
-        countQuery.select(cb.count(countRoot));
-        List<Predicate> countPredicates = buildPredicates(cb, countRoot, dto.criterios());
-        countQuery.where(countPredicates.toArray(new Predicate[0]));
-        Long totalElements = entityManager.createQuery(countQuery).getSingleResult();
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
         
-        // Calculamos la paginacion
-        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
-        int offset = (page - 1) * pageSize;
+        // Creamos la especificación con los filtros (equivalente al WHERE dinámico)
+        Specification<Producto> spec = buildSpecification(dto.criterios());
         
-        PREquery.setFirstResult(offset);
-        PREquery.setMaxResults(pageSize);
-        
-        List<Producto> productos = PREquery.getResultList();
+        // Ejecutamos la consulta: Spring Data se encarga del Query de datos, el Count, el Offset y el Limit automáticamente
+        Page<Producto> productosPage = productoRepository.findAll(spec, pageable);
+        List<Producto> productos = productosPage.getContent();
         
         // Asegúrate de que todas las categorías estén cargadas antes accederlas (evitamos asi un LazyInitializationException).
         productos.forEach(p -> {
@@ -309,7 +288,7 @@ public class CatalogoService {
         });
         
         // Convertimos la lista de productos en formato entidad en una lista de productosCompletos (= producto + ofertas del producto) en formato DTO. 
-        List<ListaProductosDto.DetallesProductoCompletoDto> detalles = productos.stream()
+        List<ListaProductosDto.DetallesProductoCompletoDto> listaDetallesProductosCompletoDto = productos.stream()
             .map(p -> {
                 // Obtenemos las ofertas de cara producto
                 List<Oferta> ofertas = ofertaRepository.findByProducto_Sku(p.getSku());
@@ -356,56 +335,57 @@ public class CatalogoService {
         PaginacionResponseDto paginacionDto = new PaginacionResponseDto(
             page,
             pageSize,
-            totalPages,
-            totalElements
+            productosPage.getTotalPages(),
+            productosPage.getTotalElements()
         );
         
-        return new ListaProductosDto(detalles, paginacionDto);
+        return new ListaProductosDto(listaDetallesProductosCompletoDto, paginacionDto);
     }
 
-    // Utils
-    private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<Producto> productoFrom,
-                                           BuscarProductosDto.CriteriosBusquedaDto criterios) {
-        List<Predicate> predicatesWhere = new ArrayList<>();
-        
-        if (criterios == null) {
-            return predicatesWhere;
-        }
-        
-        if (isNotNullOrEmpty(criterios.nombre())) {
-            predicatesWhere.add(cb.like(cb.lower(productoFrom.get("nombre")),
-                "%" + criterios.nombre().toLowerCase() + "%"));
-        }
-        
-        if (criterios.idCategoria() != null) {
-            predicatesWhere.add(cb.equal(productoFrom.get("categoria").get("idCategoria"),
-                criterios.idCategoria()));
-        }
-        
-        if (criterios.precioMin() != null) {
-            predicatesWhere.add(cb.greaterThanOrEqualTo(productoFrom.get("precioVenta"),
-                criterios.precioMin()));
-        }
-        
-        if (criterios.precioMax() != null) {
-            predicatesWhere.add(cb.lessThanOrEqualTo(productoFrom.get("precioVenta"),
-                criterios.precioMax()));
-        }
-        
-        if (criterios.esGranel() != null) {
-            predicatesWhere.add(cb.equal(productoFrom.get("esGranel"), criterios.esGranel()));
-        }
-        
-        if (criterios.etiquetas() != null && !criterios.etiquetas().isEmpty()) {
-            List<Predicate> etiquetaPredicates = new ArrayList<>();
-            for (String etiqueta : criterios.etiquetas()) {
-                etiquetaPredicates.add(cb.like(productoFrom.get("etiquetas"),
-                    "%" + etiqueta + "%"));
+    // Utils - Specification for Spring Data
+    private Specification<Producto> buildSpecification(BuscarProductosDto.CriteriosBusquedaDto criterios) {
+        return (root, query, cb) -> {
+            List<Predicate> predicadosWhere = new ArrayList<>();
+            
+            if (criterios == null) {
+                return cb.and(predicadosWhere.toArray(new Predicate[0]));
             }
-            predicatesWhere.add(cb.or(etiquetaPredicates.toArray(new Predicate[0])));
-        }
-        
-        return predicatesWhere;
+            
+            if (isNotNullOrEmpty(criterios.nombre())) {
+                predicadosWhere.add(cb.like(cb.lower(root.get("nombre")),
+                    "%" + criterios.nombre().toLowerCase() + "%"));
+            }
+            
+            if (criterios.idCategoria() != null) {
+                predicadosWhere.add(cb.equal(root.get("categoria").get("idCategoria"),
+                    criterios.idCategoria()));
+            }
+            
+            if (criterios.precioMin() != null) {
+                predicadosWhere.add(cb.greaterThanOrEqualTo(root.get("precioVenta"),
+                    criterios.precioMin()));
+            }
+            
+            if (criterios.precioMax() != null) {
+                predicadosWhere.add(cb.lessThanOrEqualTo(root.get("precioVenta"),
+                    criterios.precioMax()));
+            }
+            
+            if (criterios.esGranel() != null) {
+                predicadosWhere.add(cb.equal(root.get("esGranel"), criterios.esGranel()));
+            }
+            
+            if (criterios.etiquetas() != null && !criterios.etiquetas().isEmpty()) {
+                List<Predicate> etiquetaPredicates = new ArrayList<>();
+                for (String etiqueta : criterios.etiquetas()) {
+                    etiquetaPredicates.add(cb.like(root.get("etiquetas"),
+                        "%" + etiqueta + "%"));
+                }
+                predicadosWhere.add(cb.or(etiquetaPredicates.toArray(new Predicate[0])));
+            }
+            
+            return cb.and(predicadosWhere.toArray(new Predicate[0]));
+        };
     }
     
     /**
@@ -533,7 +513,7 @@ public class CatalogoService {
         }
         
         // Generar ID único para la oferta
-        String idOferta = "OF-" + dto.sku() + "-" + System.currentTimeMillis();
+        String idOferta = "OF-" + dto.sku() + "-" + System.currentTimeMillis(); //NOTE - De momento lo dejamos asi para no tener que cambiar el contrato, pero habria que reflexionar si es mejor cambiar la entidads para que la autogenere.
         
         // Crear la oferta
         Oferta oferta = new Oferta();
