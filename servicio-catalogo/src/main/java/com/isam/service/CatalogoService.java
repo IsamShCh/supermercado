@@ -1,5 +1,6 @@
 package com.isam.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,7 @@ import com.isam.model.Oferta;
 import com.isam.model.Producto;
 import com.isam.repository.CategoriaRepository;
 import com.isam.repository.OfertaRepository;
+import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.repository.ProductoRepository;
 
 import io.grpc.Status;
@@ -389,5 +391,83 @@ public class CatalogoService {
     
     private boolean isNotNullOrEmpty(String str) {
         return str != null && !str.trim().isEmpty();
+    }
+
+
+    
+    /**
+     * Crea una oferta a partir de DTO, gestionando la búsqueda del producto y la creación de la entidad oferta.
+     * Este método contiene la lógica empresarial para la creación de ofertas.
+     */
+    @Transactional
+    public Oferta crearOferta(CrearOfertaDto dto) {
+        // Verificar que el producto existe
+        Producto producto = productoRepository.findBySku(dto.sku())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Producto no encontrado con SKU '" + dto.sku() + "'")
+                .asRuntimeException());
+        
+        // Verificar que el producto está activo (lógica de negocio)
+        if (producto.getEstado() == EstadoProducto.DESCATALOGADO) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("No se puede crear una oferta para un producto descatalogado")
+                .asRuntimeException();
+        }
+        
+        // Parsear las fechas
+        LocalDate fechaInicio;
+        LocalDate fechaFin;
+        try {
+            fechaInicio = LocalDate.parse(dto.fechaInicio());
+            fechaFin = LocalDate.parse(dto.fechaFin());
+        } catch (Exception e) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("Error al parsear las fechas: " + e.getMessage())
+                .asRuntimeException();
+        }
+        
+        // Verificar que la fecha de fin es posterior a la fecha de inicio (lógica de negocio)
+        if (fechaFin.isBefore(fechaInicio)) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("La fecha de fin debe ser posterior a la fecha de inicio")
+                .asRuntimeException();
+        }
+        
+        // Verificar que la fecha de inicio no es anterior a hoy (lógica de negocio)
+        if (fechaInicio.isBefore(LocalDate.now())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("La fecha de inicio no puede ser anterior a hoy")
+                .asRuntimeException();
+        }
+        
+        // Verificar que el precio promocional es menor que el precio de venta (lógica de negocio)
+        if (dto.precioPromocional().compareTo(producto.getPrecioVenta()) >= 0) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El precio promocional debe ser menor que el precio de venta del producto")
+                .asRuntimeException();
+        }
+        
+        // Generar ID único para la oferta
+        String idOferta = "OF-" + dto.sku() + "-" + System.currentTimeMillis();
+        
+        // Crear la oferta
+        Oferta oferta = new Oferta();
+        oferta.setIdOferta(idOferta);
+        oferta.setProducto(producto);
+        oferta.setPrecioPromocional(dto.precioPromocional());
+        oferta.setTipoPromocion(dto.tipoPromocion());
+        oferta.setFechaInicio(fechaInicio);
+        oferta.setFechaFin(fechaFin);
+        oferta.setEstado(EstadoOferta.ACTIVA);
+        
+        // Guardar la oferta
+        Oferta ofertaGuardada = ofertaRepository.save(oferta);
+        
+        // Asegurar que el producto está cargado antes de usarlo (prevenir LazyInitializationException)
+        if (ofertaGuardada.getProducto() != null) {
+            Hibernate.initialize(ofertaGuardada.getProducto());
+        }
+        
+        return ofertaGuardada;
     }
 }

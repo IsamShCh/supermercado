@@ -5,10 +5,12 @@ import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
+import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.*;
 import com.isam.mapper.CatalogoMapper;
+import com.isam.model.Oferta;
 import com.isam.model.Categoria;
 import com.isam.model.Producto;
 import com.isam.service.CatalogoService;
@@ -249,6 +251,45 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         // Construir respuesta
         RecatalogarProductoRequest.Response response = RecatalogarProductoRequest.Response.newBuilder()
             .setProducto(productoProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Crea una oferta para un producto.
+     */
+    @Override
+    @Transactional
+    public void crearOferta(CrearOfertaRequest request, StreamObserver<CrearOfertaRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        CrearOfertaDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<CrearOfertaDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        Oferta ofertaCreada = catalogoService.crearOferta(dto);
+        
+        // Convertir a proto
+        OfertaProto ofertaProto = productoMapper.toProto(ofertaCreada);
+        
+        // Construir respuesta
+        CrearOfertaRequest.Response response = CrearOfertaRequest.Response.newBuilder()
+            .setOferta(ofertaProto)
             .build();
         
         responseObserver.onNext(response);

@@ -9,12 +9,14 @@ import com.isam.dto.producto.CrearProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.ProductoDto;
+import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.BuscarProductosRequest;
 import com.isam.grpc.catalogo.CategoriaProto;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
 import com.isam.grpc.catalogo.CrearProductoRequest;
+import com.isam.grpc.catalogo.CrearOfertaRequest;
 import com.isam.grpc.catalogo.DescatalogarProductoRequest;
 import com.isam.grpc.catalogo.RecatalogarProductoRequest;
 import com.isam.grpc.catalogo.ListaProductos;
@@ -517,4 +519,47 @@ public class CatalogoMapper {
                 return com.isam.grpc.common.EstadoOferta.UNRECOGNIZED;
         }
     }
+    
+    /**
+     * Convierte gRPC CrearOfertaRequest a DTO.
+     */
+    public CrearOfertaDto toDto(CrearOfertaRequest req) {
+        return new CrearOfertaDto(
+            req.getSku(),
+            BigDecimal.valueOf(req.getPrecioPromocional()),
+            req.getTipoPromocion(),
+            req.getFechaInicio(),
+            req.getFechaFin()
+        );
+    }
+
+    /**
+     * Convierte entidad Oferta a proto OfertaProto.
+     */
+    public OfertaProto toProto(Oferta oferta) {
+        OfertaProto.Builder builder = OfertaProto.newBuilder()
+            .setIdOferta(oferta.getIdOferta())
+            .setSku(oferta.getProducto().getSku())
+            .setPrecioPromocional(oferta.getPrecioPromocional().doubleValue())
+            .setTipoPromocion(oferta.getTipoPromocion())
+            .setFechaInicio(oferta.getFechaInicio().toString())
+            .setFechaFin(oferta.getFechaFin().toString())
+            .setEstado(mapEstadoOfertaToProto(oferta.getEstado()));
+        
+        return builder.build();
+    }
+
+    private com.isam.grpc.common.EstadoOferta mapEstadoOfertaToProto(EstadoOferta entityEnum) {
+        switch (entityEnum) {
+            case ACTIVA:
+                return com.isam.grpc.common.EstadoOferta.ACTIVA;
+            case VENCIDA:
+                return com.isam.grpc.common.EstadoOferta.VENCIDA;
+            case CANCELADA:
+                return com.isam.grpc.common.EstadoOferta.CANCELADA;
+            default:
+                return com.isam.grpc.common.EstadoOferta.UNRECOGNIZED;
+        }
+    }
+
 }
