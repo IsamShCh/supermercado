@@ -301,7 +301,7 @@ message TraducirIdentificadorRequest {
     string plu = 3;
   }
   message Response {
-    ResultadoTraduccion resultado_tracuccion = 1;
+    ResultadoTraduccion resultado_traduccion = 1;
   }
 }
 
