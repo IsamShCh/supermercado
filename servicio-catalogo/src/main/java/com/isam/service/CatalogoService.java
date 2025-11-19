@@ -632,4 +632,133 @@ public class CatalogoService {
 
         return productoModificado;
     }
+
+        /**
+     * Asigna etiquetas a un producto existente.
+     * Las nuevas etiquetas se concatenan al final de las etiquetas existentes.
+     * @param dto DTO con el SKU del producto y las nuevas etiquetas
+     * @return El producto con las etiquetas actualizadas
+     */
+    @Transactional
+    public Producto asignarEtiquetas(com.isam.dto.producto.AsignarEtiquetasDto dto) {
+        // Buscar el producto por SKU
+        Producto producto = productoRepository.findBySku(dto.sku())
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Producto no encontrado con SKU '" + dto.sku() + "'"
+            ));
+
+        // Concatenar las nuevas etiquetas al final de las existentes
+        String etiquetasExistentes = producto.getEtiquetas();
+        String nuevasEtiquetas = String.join(",", dto.etiquetas());
+        
+        String etiquetasCombinadas;
+        if (etiquetasExistentes != null && !etiquetasExistentes.trim().isEmpty()) {
+            etiquetasCombinadas = etiquetasExistentes + "," + nuevasEtiquetas;
+        } else {
+            etiquetasCombinadas = nuevasEtiquetas;
+        }
+        
+        // Validar que no se exceda el límite de 500 caracteres
+        if (etiquetasCombinadas.length() > 500) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("Las etiquetas exceden el límite de 500 caracteres")
+                .asRuntimeException();
+        }
+        
+        producto.setEtiquetas(etiquetasCombinadas);
+
+        // Guardar cambios
+        Producto productoActualizado = productoRepository.save(producto);
+
+        // Asegurar que la categoría está cargada
+        if (productoActualizado.getCategoria() != null) {
+            Hibernate.initialize(productoActualizado.getCategoria());
+        }
+
+        return productoActualizado;
+    }
+
+    /**
+     * Traduce entre identificadores de productos (SKU, EAN, PLU).
+     * Dado un identificador y su tipo, devuelve los otros identificadores del mismo producto.
+     * @param dto DTO con el código a traducir y su tipo
+     * @return ResultadoTraduccionDto con el código de entrada y los códigos de salida
+     */
+    @Transactional(readOnly = true)
+    public com.isam.dto.producto.ResultadoTraduccionDto traducirIdentificador(com.isam.dto.producto.TraducirIdentificadorRequestDto dto) {
+        String codigo = dto.codigo();
+        com.isam.dto.producto.TraducirIdentificadorRequestDto.TipoIdentificador tipoEntrada = dto.tipoIdentificador();
+        Producto producto = null;
+        
+        // Buscar el producto según el tipo de identificador especificado
+        Optional<Producto> productoOpt;
+        switch (tipoEntrada) {
+            case SKU:
+                productoOpt = productoRepository.findBySku(codigo);
+                break;
+            case EAN:
+                productoOpt = productoRepository.findByEan(codigo);
+                break;
+            case PLU:
+                productoOpt = productoRepository.findByPlu(codigo);
+                break;
+            default:
+                throw Status.INVALID_ARGUMENT
+                    .withDescription("Tipo de identificador no válido: " + tipoEntrada)
+                    .asRuntimeException();
+        }
+        
+        // Si no se encontró el producto
+        if (!productoOpt.isPresent()) {
+            throw new EntityNotFoundException(
+                "No se encontró ningún producto con el " + tipoEntrada + " '" + codigo + "'"
+            );
+        }
+        
+        producto = productoOpt.get();
+        
+        // Pasamos de TraducirIdentificadorRequestDto.TipoIdentificador a ResultadoTraduccionDto.TipoIdentificador
+        com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador tipoEntradaResultado =
+            com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador.valueOf(tipoEntrada.name());
+        
+        // Determinar el código de salida
+        String codigoSalida = null;
+        com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador tipoSalida = null;
+        
+        switch (tipoEntrada) {
+            case SKU:
+                // Si entró SKU, devolvemos EAN o PLU
+                if (producto.getEan() != null && !producto.getEan().trim().isEmpty()) {
+                    codigoSalida = producto.getEan();
+                    tipoSalida = com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador.EAN;
+                } else if (producto.getPlu() != null && !producto.getPlu().trim().isEmpty()) {
+                    codigoSalida = producto.getPlu();
+                    tipoSalida = com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador.PLU;
+                }
+                break;
+            case EAN:
+                // Si entró EAN, devolvemos SKU
+                codigoSalida = producto.getSku();
+                tipoSalida = com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador.SKU;
+                break;
+            case PLU:
+                // Si entró PLU, devolvemos SKU
+                codigoSalida = producto.getSku();
+                tipoSalida = com.isam.dto.producto.ResultadoTraduccionDto.TipoIdentificador.SKU;
+                break;
+        }
+        
+        if (codigoSalida == null) {
+            throw Status.NOT_FOUND
+                .withDescription("El producto no tiene un identificador alternativo")
+                .asRuntimeException();
+        }
+        
+        return new com.isam.dto.producto.ResultadoTraduccionDto(
+            codigo,
+            codigoSalida,
+            tipoEntradaResultado,
+            tipoSalida
+        );
+    }
 }

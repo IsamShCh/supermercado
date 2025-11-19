@@ -613,4 +613,78 @@ public class CatalogoMapper {
         );
     }
 
+    
+    /**
+     * Convierte gRPC AsignarEtiquetasRequest a DTO.
+     */
+    public com.isam.dto.producto.AsignarEtiquetasDto toDto(com.isam.grpc.catalogo.AsignarEtiquetasRequest req) {
+        return new com.isam.dto.producto.AsignarEtiquetasDto(
+            req.getSku(),
+            req.getEtiquetasList()
+        );
+    }
+
+    /**
+     * Convierte gRPC TraducirIdentificadorRequest a DTO.
+     */
+    public com.isam.dto.producto.TraducirIdentificadorRequestDto toDto(com.isam.grpc.catalogo.TraducirIdentificadorRequest req) {
+        String codigo = null;
+        com.isam.dto.producto.TraducirIdentificadorRequestDto.TipoIdentificador tipo = null;
+        
+        // Extraer el código y tipo del oneof
+        switch (req.getCodigoCase()) {
+            case SKU:
+                codigo = req.getSku();
+                tipo = com.isam.dto.producto.TraducirIdentificadorRequestDto.TipoIdentificador.SKU;
+                break;
+            case EAN:
+                codigo = req.getEan();
+                tipo = com.isam.dto.producto.TraducirIdentificadorRequestDto.TipoIdentificador.EAN;
+                break;
+            case PLU:
+                codigo = req.getPlu();
+                tipo = com.isam.dto.producto.TraducirIdentificadorRequestDto.TipoIdentificador.PLU;
+                break;
+            case CODIGO_NOT_SET:
+                throw new IllegalArgumentException("No se proporcionó ningún código (SKU, EAN o PLU)");
+        }
+        
+        return new com.isam.dto.producto.TraducirIdentificadorRequestDto(codigo, tipo);
+    }
+
+    /**
+     * Convierte ResultadoTraduccionDto a proto ResultadoTraduccion.
+     */
+    public com.isam.grpc.catalogo.ResultadoTraduccion toProto(com.isam.dto.producto.ResultadoTraduccionDto dto) {
+        com.isam.grpc.catalogo.ResultadoTraduccion.Builder builder = com.isam.grpc.catalogo.ResultadoTraduccion.newBuilder();
+        
+        // Mapear código de entrada según su tipo
+        switch (dto.tipoEntrada()) {
+            case SKU:
+                builder.setSkuEntrada(dto.codigoEntrada());
+                break;
+            case EAN:
+                builder.setEanEntrada(dto.codigoEntrada());
+                break;
+            case PLU:
+                builder.setPluEntrada(dto.codigoEntrada());
+                break;
+        }
+        
+        // Mapear código de salida según su tipo
+        switch (dto.tipoSalida()) {
+            case SKU:
+                builder.setSkuSalida(dto.codigoSalida());
+                break;
+            case EAN:
+                builder.setEanSalida(dto.codigoSalida());
+                break;
+            case PLU:
+                builder.setPluSalida(dto.codigoSalida());
+                break;
+        }
+        
+        return builder.build();
+    }
+
 }

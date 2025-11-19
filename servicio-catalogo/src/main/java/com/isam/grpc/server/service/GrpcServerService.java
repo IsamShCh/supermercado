@@ -416,6 +416,85 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         responseObserver.onCompleted();
     }
 
+    
+    /**
+     * Asigna etiquetas a un producto existente.
+     */
+    @Override
+    @Transactional
+    public void asignarEtiquetas(AsignarEtiquetasRequest request, StreamObserver<AsignarEtiquetasRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        com.isam.dto.producto.AsignarEtiquetasDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<com.isam.dto.producto.AsignarEtiquetasDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        Producto productoActualizado = catalogoService.asignarEtiquetas(dto);
+        
+        // Convertir a proto
+        ProductoProto productoProto = productoMapper.toProto(productoActualizado);
+        
+        // Construir respuesta
+        AsignarEtiquetasRequest.Response response = AsignarEtiquetasRequest.Response.newBuilder()
+            .setProducto(productoProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Traduce entre identificadores de productos (SKU, EAN, PLU).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void traducirIdentificador(TraducirIdentificadorRequest request, StreamObserver<TraducirIdentificadorRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        com.isam.dto.producto.TraducirIdentificadorRequestDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<com.isam.dto.producto.TraducirIdentificadorRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        com.isam.dto.producto.ResultadoTraduccionDto resultado = catalogoService.traducirIdentificador(dto);
+        
+        // Convertir a proto
+        ResultadoTraduccion resultadoProto = productoMapper.toProto(resultado);
+        
+        // Construir respuesta
+        TraducirIdentificadorRequest.Response response = TraducirIdentificadorRequest.Response.newBuilder()
+            .setResultadoTraduccion(resultadoProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
     // Utils
     private boolean isNotNullOrEmpty(String str) {
         return str != null && !str.trim().isEmpty();
