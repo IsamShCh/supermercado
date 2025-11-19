@@ -1,11 +1,13 @@
 package com.isam.mapper;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.categoria.ModificarCategoriaDto;
 import com.isam.dto.comun.PaginacionDto;
 import com.isam.dto.oferta.OfertaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.ModificarProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.ListarProductosRequestDto;
@@ -14,10 +16,13 @@ import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.BuscarProductosRequest;
 import com.isam.grpc.catalogo.ListarProductosRequest;
+import com.isam.grpc.catalogo.ModificarCategoriaRequest;
+import com.isam.grpc.catalogo.ModificarProductoRequest;
 import com.isam.grpc.catalogo.CategoriaProto;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.CrearCategoriaRequest;
 import com.isam.grpc.catalogo.CrearProductoRequest;
+import com.isam.grpc.catalogo.DatosActualizar;
 import com.isam.grpc.catalogo.CrearOfertaRequest;
 import com.isam.grpc.catalogo.DescatalogarProductoRequest;
 import com.isam.grpc.catalogo.RecatalogarProductoRequest;
@@ -574,6 +579,38 @@ public class CatalogoMapper {
             default:
                 return com.isam.grpc.common.EstadoOferta.UNRECOGNIZED;
         }
+    }
+
+
+
+    /**
+     * Convierte gRPC ModificarCategoriaRequest a DTO.
+     */
+    public ModificarCategoriaDto toDto(ModificarCategoriaRequest req) {
+        return new ModificarCategoriaDto(
+            req.getIdCategoria(),
+            req.hasNombreCategoria() ? req.getNombreCategoria() : null,
+            req.hasDescripcion() ? req.getDescripcion() : null
+        );
+    }
+
+    /**
+     * Convierte gRPC ModificarProductoRequest a DTO.
+     */
+    public ModificarProductoDto toDto(ModificarProductoRequest req) {
+        DatosActualizar datos = req.getDatosActualizar();
+        
+        List<String> etiquetas = !datos.getEtiquetasList().isEmpty() ? datos.getEtiquetasList() : null;
+        
+        return new ModificarProductoDto(
+            req.getSku(),
+            datos.hasNombre() ? datos.getNombre() : null,
+            datos.hasDescripcion() ? datos.getDescripcion() : null,
+            datos.hasPrecioVenta() ? BigDecimal.valueOf(datos.getPrecioVenta()) : null,
+            datos.hasIdCategoria() ? datos.getIdCategoria() : null,
+            datos.hasPoliticaRotacion() ? mapPoliticaRotacion(datos.getPoliticaRotacion()) : null,
+            etiquetas
+        );
     }
 
 }

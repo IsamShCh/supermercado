@@ -1,9 +1,11 @@
 package com.isam.grpc.server.service;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.categoria.ModificarCategoriaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.ModificarProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.oferta.CrearOfertaDto;
 import com.isam.dto.producto.ListaProductosDto;
@@ -330,6 +332,84 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         // Construir respuesta
         CrearOfertaRequest.Response response = CrearOfertaRequest.Response.newBuilder()
             .setOferta(ofertaProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Modifica una categoría existente.
+     */
+    @Override
+    @Transactional
+    public void modificarCategoria(ModificarCategoriaRequest request, StreamObserver<ModificarCategoriaRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        ModificarCategoriaDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<ModificarCategoriaDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        Categoria categoriaModificada = catalogoService.modificarCategoria(dto);
+        
+        // Convertir a proto
+        CategoriaProto categoriaProto = productoMapper.toProto(categoriaModificada);
+        
+        // Construir respuesta
+        ModificarCategoriaRequest.Response response = ModificarCategoriaRequest.Response.newBuilder()
+            .setCategoria(categoriaProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    /**
+     * Modifica un producto existente.
+     */
+    @Override
+    @Transactional
+    public void modificarProducto(ModificarProductoRequest request, StreamObserver<ModificarProductoRequest.Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        ModificarProductoDto dto = productoMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<ModificarProductoDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        Producto productoModificado = catalogoService.modificarProducto(dto);
+        
+        // Convertir a proto
+        ProductoProto productoProto = productoMapper.toProto(productoModificado);
+        
+        // Construir respuesta
+        ModificarProductoRequest.Response response = ModificarProductoRequest.Response.newBuilder()
+            .setProducto(productoProto)
             .build();
         
         responseObserver.onNext(response);

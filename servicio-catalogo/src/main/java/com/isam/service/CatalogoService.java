@@ -17,11 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.isam.dto.categoria.CategoriaDto;
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.categoria.ModificarCategoriaDto;
 import com.isam.dto.comun.PaginacionResponseDto;
 import com.isam.dto.oferta.OfertaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.producto.CrearProductoDto;
+import com.isam.dto.producto.ModificarProductoDto;
 import com.isam.dto.producto.DescatalogarProductoDto;
 import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.ListarProductosRequestDto;
@@ -534,5 +536,100 @@ public class CatalogoService {
         }
         
         return ofertaGuardada;
+    }
+
+    /**
+     * Modifica una categoría existente.
+     * @param dto DTO con los datos a modificar
+     * @return La categoría modificada
+     */
+    @Transactional
+    public Categoria modificarCategoria(ModificarCategoriaDto dto) {
+        // Buscar la categoría por ID
+        Categoria categoria = categoriaRepository.findById(dto.idCategoria())
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Categoría no encontrada con ID '" + dto.idCategoria() + "'"
+            ));
+
+        // Actualizar nombre si se proporciona
+        if (dto.nombreCategoria() != null && !dto.nombreCategoria().isBlank()) {
+            // Verificar unicidad si el nombre ha cambiado
+            if (!dto.nombreCategoria().equals(categoria.getNombreCategoria()) &&
+                categoriaRepository.existsByNombreCategoria(dto.nombreCategoria())) {
+                throw Status.ALREADY_EXISTS
+                    .withDescription("Ya existe una categoría con el nombre: " + dto.nombreCategoria())
+                    .asRuntimeException();
+            }
+            categoria.setNombreCategoria(dto.nombreCategoria());
+        }
+
+        // Actualizar descripción si se proporciona
+        if (dto.descripcion() != null) {
+            categoria.setDescripcion(dto.descripcion());
+        }
+
+        // Guardar cambios
+        Categoria categoriaModificada = categoriaRepository.save(categoria);
+        return categoriaModificada;
+    }
+
+    /**
+     * Modifica un producto existente.
+     * @param dto DTO con los datos a modificar
+     * @return El producto modificado
+     */
+    @Transactional
+    public Producto modificarProducto(ModificarProductoDto dto) {
+        // Buscar el producto por SKU
+        Producto producto = productoRepository.findBySku(dto.sku())
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Producto no encontrado con SKU '" + dto.sku() + "'"
+            ));
+
+        // Actualizar nombre si se proporciona
+        if (dto.nombre() != null && !dto.nombre().isBlank()) {
+            producto.setNombre(dto.nombre());
+        }
+
+        // Actualizar descripción si se proporciona
+        if (dto.descripcion() != null) {
+            producto.setDescripcion(dto.descripcion());
+        }
+
+        // Actualizar precio de venta si se proporciona
+        if (dto.precioVenta() != null) {
+            producto.setPrecioVenta(dto.precioVenta());
+        }
+
+        // Actualizar categoría si se proporciona
+        if (dto.idCategoria() != null) {
+            Optional<Categoria> categoriaOpt = categoriaRepository.findById(dto.idCategoria());
+            if (categoriaOpt.isPresent()) {
+                producto.setCategoria(categoriaOpt.get());
+            } else {
+                throw new RuntimeException("Categoría no encontrada con ID: " + dto.idCategoria());
+            }
+        }
+
+        // Actualizar política de rotación si se proporciona
+        if (dto.politicaRotacion() != null) {
+            producto.setPoliticaRotacion(dto.politicaRotacion());
+        }
+
+        // Actualizar etiquetas si se proporcionan
+        if (dto.etiquetas() != null && !dto.etiquetas().isEmpty()) {
+            String etiquetasString = String.join(",", dto.etiquetas());
+            producto.setEtiquetas(etiquetasString);
+        }
+
+        // Guardar cambios
+        Producto productoModificado = productoRepository.save(producto);
+
+        // Asegurar que la categoría está cargada
+        if (productoModificado.getCategoria() != null) {
+            Hibernate.initialize(productoModificado.getCategoria());
+        }
+
+        return productoModificado;
     }
 }
