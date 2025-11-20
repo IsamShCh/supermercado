@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package isam.inventario;
+
+import "comun.proto";
+
+option java_multiple_files = true;
+option java_package = "com.isam.grpc.inventario";
+option java_outer_classname = "InventarioServiceProto";
+
+// ========================================
+//SECTION - INFO Inventario
+// ========================================
+
+// ========================================
+// ENUMERACIONES ESPECÍFICAS DE INVENTARIO
+// ========================================
+
+enum EstadoLote {
+  ESTADO_LOTE_UNSPECIFIED = 0;
+  DISPONIBLE = 1;
+  BLOQUEADO = 2;
+  ELIMINADO = 3;
+}
+
+enum TipoMovimiento {
+  TIPO_MOVIMIENTO_UNSPECIFIED = 0;
+  ENTRADA = 1;
+  SALIDA = 2;
+  AJUSTE = 3;
+  TRASLADO_ESTANTERIA = 4;
+  VENTA = 5;
+  DEVOLUCION = 6;
+  MERMA = 7;
+}
+
+enum TipoAjuste {
+  TIPO_AJUSTE_UNSPECIFIED = 0;
+  AJUSTE_MERMA = 1;
+  ROBO = 2;
+  CADUCADO = 3;
+  ERROR_CONTEO = 4;
+  PRODUCTO_ENCONTRADO = 5;
+}
+
+// ========================================
+// MENSAJES DE PROVEEDORES
+// ========================================
+
+message ProveedorProto {
+  string id_proveedor = 1;
+  string nombre_proveedor = 2;
+  string contacto = 3;
+  string direccion = 4;
+  string telefono = 5;
+  string email = 6;
+}
+
+// ========================================
+// MENSAJES DE INVENTARIO
+// ========================================
+
+message InventarioProto {
+  string id_inventario = 1;
+  string sku = 2;
+  double cantidad_almacen = 3;
+  double cantidad_estanteria = 4;
+  isam.comun.UnidadMedida unidad_medida = 5;
+}
+
+// ========================================
+// MENSAJES DE LOTES
+// ========================================
+
+message LoteProto {
+  string id_lote = 1;
+  string sku = 2;
+  string id_inventario = 3;
+  oneof identificador {
+    string ean = 4;
+    string plu = 5;
+  }
+  string numero_lote = 6;
+  double cantidad = 7;
+  optional string fecha_caducidad = 8;  // YYYY-MM-DD
+  string id_proveedor = 9;
+  string fecha_ingreso = 10;   // YYYY-MM-DD
+  isam.comun.UnidadMedida unidad_medida = 11;
+  EstadoLote estado = 12;
+}
+
+// ========================================
+// MENSAJES DE MOVIMIENTOS DE INVENTARIO
+// ========================================
+
+message MovimientoInventarioProto {
+  string id_movimiento = 1;
+  string sku = 2;
+  string id_lote = 3;
+  TipoMovimiento tipo_movimiento = 4;
+  double cantidad = 5;
+  isam.comun.UnidadMedida unidad_medida = 6;
+  string fecha_hora = 7;  // YYYY-MM-DD HH:MM:SS
+  string id_usuario = 8;
+  string motivo = 9;
+  string observaciones = 10;
+}
+
+// ========================================
+// Complejos
+// ========================================
+
+message DetallesInventarioCompleto {
+  string sku = 1;
+  string nombre_producto = 2;
+  double stock_total_almacen = 3;
+  double stock_total_estanteria = 4;
+  isam.comun.UnidadMedida unidad_medida = 5;
+  repeated DetalleLote lote = 6;
+}
+
+message DetalleLote {
+  string id_lote = 1;
+  string numero_lote = 2;
+  double cantidad_almacen = 3;
+  double cantidad_estanteria = 4;
+  optional string fecha_caducidad = 5;  // YYYY-MM-DD
+  string fecha_ingreso = 6;    // YYYY-MM-DD
+}
+
+// ========================================
+//!SECTION - INFO Inventario
+// ========================================
+
+// ========================================
+//SECTION - Messages
+// ========================================
+
+// ========================================
+// AC14. Registrar nuevas existencias
+// ========================================
+
+message RegistrarNuevasExistenciasRequest {
+  string sku = 1;
+  oneof identificador {
+    string ean = 2;
+    string plu = 3;
+  }
+  double cantidad = 4;
+  string numero_lote = 5;
+  optional string fecha_caducidad = 6;  // YYYY-MM-DD
+  string id_proveedor = 7;
+  isam.comun.UnidadMedida unidad_medida = 8;
+
+  message Response {
+    LoteProto lote = 1;
+    InventarioProto inventario = 2;
+  }
+}
+
+// ========================================
+// AC16. Ajustar inventario manualmente
+// ========================================
+
+message AjustarInventarioManualRequest {
+  string sku = 1;
+  double cantidad_ajuste = 2;
+  TipoAjuste tipo_ajuste = 3;
+  string motivo_detallado = 4;
+
+  message Response {
+    InventarioProto inventario = 1;
+    MovimientoInventarioProto movimiento = 2;
+  }
+}
+
+// ========================================
+// AC18. Mover stock a estanterías
+// ========================================
+
+message MoverStockEstanteriaRequest {
+  string sku = 1;
+  string id_lote = 2;
+  double cantidad_transladar = 3;
+  isam.comun.UnidadMedida unidad_medida = 4;
+
+  message Response {
+    InventarioProto inventario = 1;
+    MovimientoInventarioProto movimiento = 2;
+  }
+}
+
+// ========================================
+// AC19. Contabilizar stock manualmente
+// ========================================
+
+message ContabilizarStockManualRequest {
+  string sku = 1;
+  double stock_fisico_estanteria = 2;
+  double stock_fisico_almacen = 3;
+
+  message Response {
+    InventarioProto inventario = 1;
+    repeated MovimientoInventarioProto movimientos = 2;
+  }
+}
+
+// ========================================
+// AC20. Consultar inventario
+// ========================================
+
+message ConsultarInventarioRequest {
+  string sku = 1;
+
+  message Response {
+    DetallesInventarioCompleto detalles_inventario = 1;
+  }
+}
+
+// ========================================
+// AC43. Agregar proveedor
+// ========================================
+
+message AgregarProveedorRequest {
+  string nombre_proveedor = 1;
+  string contacto = 2;
+  string direccion = 3;
+  string telefono = 4;
+  string email = 5;
+
+  message Response {
+    ProveedorProto proveedor = 1;
+  }
+}
+
+// ========================================
+//!SECTION - Messages
+// ========================================
+
+// ========================================
+//SECTION - Servicios
+// ========================================
+
+service InventarioService {
+  // Gestión de Existencias
+  rpc RegistrarNuevasExistencias(RegistrarNuevasExistenciasRequest) returns (RegistrarNuevasExistenciasRequest.Response);
+  rpc AjustarInventarioManual(AjustarInventarioManualRequest) returns (AjustarInventarioManualRequest.Response);
+  rpc MoverStockEstanteria(MoverStockEstanteriaRequest) returns (MoverStockEstanteriaRequest.Response);
+  rpc ContabilizarStockManual(ContabilizarStockManualRequest) returns (ContabilizarStockManualRequest.Response);
+
+  // Consultas
+  rpc ConsultarInventario(ConsultarInventarioRequest) returns (ConsultarInventarioRequest.Response);
+
+  // Gestión de Proveedores
+  rpc AgregarProveedor(AgregarProveedorRequest) returns (AgregarProveedorRequest.Response);
+}
+
+// ========================================
+//!SECTION - Servicios
+// ========================================

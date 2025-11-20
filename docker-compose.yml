@@ -9,8 +9,21 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata_compose:/var/lib/postgresql/data
+      - pgdata_catalogo:/var/lib/postgresql/data
+
+  inventario-db:
+    image: postgres:15-alpine
+    container_name: inventario-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: contrasena_secreta
+      POSTGRES_DB: inventario-db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_inventario:/var/lib/postgresql/data
 
 
 volumes:
-  pgdata_compose:
+  pgdata_catalogo:
+  pgdata_inventario:
