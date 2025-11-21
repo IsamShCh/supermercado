@@ -213,4 +213,40 @@ public class InventarioService {
         return str != null && !str.trim().isEmpty();
     }
 
+
+
+    @Transactional
+    public InventarioDto crearInventario(CrearInventarioRequestDto dto) {
+        // Comprobamos que no exista un inventario ya existente. Si existe y es igual a los datos del dto, lo dejamos pasar, si no, tiramos error
+        Optional<Inventario> inventarioExistenteOpt = inventarioRepository.findBySku(dto.sku());
+        
+        if (inventarioExistenteOpt.isPresent()) {
+            Inventario inventarioExistente = inventarioExistenteOpt.get();
+            if (!inventarioExistente.getUnidadMedida().equals(dto.unidadMedida())) {
+                throw Status.ALREADY_EXISTS
+                    .withDescription("Ya existe un inventario para SKU '" + dto.sku() + "' con unidad de medida diferente")
+                    .asRuntimeException();
+            }
+            // Si existe y coincide, devolver el DTO existente
+            return new InventarioDto(
+                inventarioExistente.getIdInventario(),
+                inventarioExistente.getSku(),
+                inventarioExistente.getCantidadAlmacen().doubleValue(),
+                inventarioExistente.getCantidadEstanteria().doubleValue(),
+                inventarioExistente.getUnidadMedida().name()
+            );
+        } else {
+            // Crear nuevo inventario
+            Inventario nuevoInventario = new Inventario(dto.sku(), BigDecimal.ZERO, BigDecimal.ZERO, dto.unidadMedida());
+            Inventario inventarioGuardado = inventarioRepository.save(nuevoInventario);
+            return new InventarioDto(
+                inventarioGuardado.getIdInventario(),
+                inventarioGuardado.getSku(),
+                inventarioGuardado.getCantidadAlmacen().doubleValue(),
+                inventarioGuardado.getCantidadEstanteria().doubleValue(),
+                inventarioGuardado.getUnidadMedida().name()
+            );
+        }
+    }
+
 }

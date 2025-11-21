@@ -1,6 +1,10 @@
 package com.isam.grpc.server.service;
 
+import com.isam.dto.inventario.CrearInventarioRequestDto;
+import com.isam.dto.inventario.InventarioDto;
 import com.isam.grpc.inventario.*;
+import com.isam.grpc.inventario.CrearInventarioRequest.Response;
+
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import jakarta.validation.ConstraintViolation;
@@ -35,11 +39,11 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
 
-        responseObserver.onError(
+            responseObserver.onError(
                 Status.INVALID_ARGUMENT
                     .withDescription(errores)
-                .asRuntimeException()
-        );
+                    .asRuntimeException()
+            );
             return;
         }
         
@@ -135,4 +139,42 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void crearInventario(CrearInventarioRequest request, StreamObserver<Response> responseObserver) {
+        // Convertir la solicitud gRPC a DTO
+        CrearInventarioRequestDto dto = inventarioMapper.toDto(request);
+
+        // Validar
+        Set<ConstraintViolation<CrearInventarioRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+
+        // Llamar al servicio
+        InventarioDto inventarioDto = inventarioService.crearInventario(dto);
+
+        // Convertir a proto
+        InventarioProto inventarioProto = inventarioMapper.toProto(inventarioDto);
+        
+        // Construir respuesta
+        CrearInventarioRequest.Response response = CrearInventarioRequest.Response.newBuilder()
+            .setInventario(inventarioProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+
+
+    }
+
 }

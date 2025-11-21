@@ -152,7 +152,7 @@ message RegistrarNuevasExistenciasRequest {
   string id_proveedor = 7;
   isam.comun.UnidadMedida unidad_medida = 8;
 
-  message Response {
+  message Response { //NOTE -  No coincide exactamente con el dato respuesta definido en los acontecimientos, pero nos vale.
     LoteProto lote = 1;
     InventarioProto inventario = 2;
   }
@@ -233,6 +233,21 @@ message AgregarProveedorRequest {
   }
 }
 
+
+
+// ========================================
+// AC43. Crear inventario
+// ========================================
+message CrearInventarioRequest{
+  string sku = 1;
+  isam.comun.UnidadMedida unidad_medida = 3;
+
+  message Response {
+    InventarioProto inventario = 1;
+  }
+
+}
+
 // ========================================
 //!SECTION - Messages
 // ========================================
@@ -253,6 +268,9 @@ service InventarioService {
 
   // Gestión de Proveedores
   rpc AgregarProveedor(AgregarProveedorRequest) returns (AgregarProveedorRequest.Response);
+
+  // Creacion de inventario
+  rpc CrearInventario(CrearInventarioRequest) returns (CrearInventarioRequest.Response);
 }
 
 // ========================================
