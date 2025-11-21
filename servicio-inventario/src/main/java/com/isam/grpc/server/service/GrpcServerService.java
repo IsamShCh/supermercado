@@ -23,13 +23,41 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
     private Validator validator;
 
     @Override
+    @Transactional
     public void registrarNuevasExistencias(RegistrarNuevasExistenciasRequest request, StreamObserver<RegistrarNuevasExistenciasRequest.Response> responseObserver) {
-        // TODO: Implementar
+        // Convertir la solicitud gRPC a DTO
+        com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto dto = inventarioMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
         responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Method registrarNuevasExistencias not yet implemented")
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
                 .asRuntimeException()
         );
+            return;
+        }
+        
+        // Llamar al servicio
+        com.isam.dto.existencias.RegistrarNuevasExistenciasResponseDto responseDto = inventarioService.registrarNuevasExistencias(dto);
+        
+        // Convertir DTOs directamente a proto
+        LoteProto loteProto = inventarioMapper.toProto(responseDto.lote());
+        InventarioProto inventarioProto = inventarioMapper.toProto(responseDto.inventario());
+        
+        // Construir respuesta
+        RegistrarNuevasExistenciasRequest.Response response = RegistrarNuevasExistenciasRequest.Response.newBuilder()
+            .setLote(loteProto)
+            .setInventario(inventarioProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override
@@ -97,15 +125,7 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
         com.isam.dto.proveedor.ProveedorDto proveedorDto = inventarioService.agregarProveedor(dto);
         
         // Convertir a proto usando el mapper
-        com.isam.model.Proveedor proveedorEntity = new com.isam.model.Proveedor();
-        proveedorEntity.setIdProveedor(proveedorDto.idProveedor());
-        proveedorEntity.setNombreProveedor(proveedorDto.nombreProveedor());
-        proveedorEntity.setContacto(proveedorDto.contacto());
-        proveedorEntity.setDireccion(proveedorDto.direccion());
-        proveedorEntity.setTelefono(proveedorDto.telefono());
-        proveedorEntity.setEmail(proveedorDto.email());
-        
-        ProveedorProto proveedorProto = inventarioMapper.toProto(proveedorEntity);
+        ProveedorProto proveedorProto = inventarioMapper.toProto(proveedorDto);
         
         // Construir respuesta
         AgregarProveedorRequest.Response response = AgregarProveedorRequest.Response.newBuilder()
