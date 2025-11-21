@@ -10,6 +10,17 @@ import com.isam.repository.MovimientoInventarioRepository;
 import com.isam.repository.ProveedorRepository;
 import com.isam.dto.proveedor.AgregarProveedorRequestDto;
 import com.isam.dto.proveedor.ProveedorDto;
+import com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto;
+import com.isam.dto.existencias.RegistrarNuevasExistenciasResponseDto;
+import com.isam.dto.lote.LoteDto;
+import com.isam.dto.inventario.CrearInventarioRequestDto;
+import com.isam.dto.inventario.InventarioDto;
+import com.isam.model.EstadoLote;
+import com.isam.model.TipoMovimiento;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,4 +95,122 @@ public class InventarioService {
             proveedorGuardado.getEmail()
         );
     }
+
+    /**
+     * Registra nuevas existencias en el inventario (AC14).
+     * Este método crea un nuevo lote y actualiza el inventario correspondiente.
+     */
+    @Transactional
+    public RegistrarNuevasExistenciasResponseDto registrarNuevasExistencias(RegistrarNuevasExistenciasRequestDto dto) {
+        
+        // Validar que solo tenga EAN o PLU, no ambos (esto es muy defensivo, el validator lo deberia haber filtrado ya)
+        if (isNotNullOrEmpty(dto.ean()) && isNotNullOrEmpty(dto.plu())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("Un producto solo puede tener o EAN o PLU, pero no ambos")
+                .asRuntimeException();
+        }
+
+        // Verificar que el proveedor existe
+        Proveedor proveedor = proveedorRepository.findById(dto.idProveedor())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Proveedor no encontrado con ID '" + dto.idProveedor() + "'")
+                .asRuntimeException());
+
+        // Buscar o crear el inventario para este SKU
+        // esto no sirve, porque necesito creacion implicita.
+       // Buscar el inventario para este SKU
+        Inventario inventario = inventarioRepository.findBySku(dto.sku())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Inventario no encontrado para SKU '" + dto.sku() + "'")
+                .asRuntimeException());
+
+        // Validar que la unidad de medida coincida
+        if (!inventario.getUnidadMedida().equals(dto.unidadMedida())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("La unidad de medida no coincide con la del inventario existente")
+                .asRuntimeException();
+        }
+
+        // Guardar inventario si es nuevo
+        if (inventario.getIdInventario() == null) {
+            inventario = inventarioRepository.save(inventario);
+        }
+
+        // Parsear fecha de caducidad si existe
+        LocalDate fechaCaducidad = null;
+        if (dto.fechaCaducidad() != null && !dto.fechaCaducidad().isBlank()) {
+            try {
+                fechaCaducidad = LocalDate.parse(dto.fechaCaducidad());
+            } catch (Exception e) {
+                throw Status.INVALID_ARGUMENT
+                    .withDescription("Formato de fecha de caducidad inválido. Use YYYY-MM-DD")
+                    .asRuntimeException();
+            }
+        }
+
+        // Crear el nuevo lote
+        Lote lote = new Lote();
+        lote.setSku(dto.sku());
+        lote.setIdInventario(inventario.getIdInventario());
+        lote.setEan(dto.ean());
+        lote.setPlu(dto.plu());
+        lote.setNumeroLote(dto.numeroLote());
+        lote.setCantidad(dto.cantidad());
+        lote.setFechaCaducidad(fechaCaducidad);
+        lote.setIdProveedor(dto.idProveedor());
+        lote.setFechaIngreso(LocalDate.now());
+        lote.setUnidadMedida(dto.unidadMedida());
+        lote.setEstado(EstadoLote.DISPONIBLE);
+
+        // Guardar el lote
+        Lote loteGuardado = loteRepository.save(lote);
+
+        // Actualizar el inventario: sumar la cantidad al almacén
+        inventario.setCantidadAlmacen(inventario.getCantidadAlmacen().add(dto.cantidad()));
+        Inventario inventarioActualizado = inventarioRepository.save(inventario);
+
+        // Crear movimiento de inventario
+        MovimientoInventario movimiento = new MovimientoInventario();
+        movimiento.setSku(dto.sku());
+        movimiento.setIdLote(loteGuardado.getIdLote());
+        movimiento.setTipoMovimiento(TipoMovimiento.ENTRADA);
+        movimiento.setCantidad(dto.cantidad());
+        movimiento.setUnidadMedida(dto.unidadMedida());
+        movimiento.setFechaHora(LocalDateTime.now());
+        movimiento.setIdUsuario("SYSTEM"); // TODO: Obtener del contexto de seguridad
+        movimiento.setMotivo("Registro de nuevas existencias - Lote: " + dto.numeroLote());
+        movimiento.setObservaciones("Proveedor: " + proveedor.getNombreProveedor());
+        movimientoRepository.save(movimiento);
+
+        // Convertir entidades a DTOs
+        LoteDto loteDto = new LoteDto(
+            loteGuardado.getIdLote(),
+            loteGuardado.getSku(),
+            loteGuardado.getIdInventario(),
+            loteGuardado.getEan(),
+            loteGuardado.getPlu(),
+            loteGuardado.getNumeroLote(),
+            loteGuardado.getCantidad().doubleValue(),
+            loteGuardado.getFechaCaducidad() != null ? loteGuardado.getFechaCaducidad().toString() : null,
+            loteGuardado.getIdProveedor(),
+            loteGuardado.getFechaIngreso().toString(),
+            loteGuardado.getUnidadMedida().name(),
+            loteGuardado.getEstado().name()
+        );
+
+        InventarioDto inventarioDto = new InventarioDto(
+            inventarioActualizado.getIdInventario(),
+            inventarioActualizado.getSku(),
+            inventarioActualizado.getCantidadAlmacen().doubleValue(),
+            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getUnidadMedida().name()
+        );
+
+        return new RegistrarNuevasExistenciasResponseDto(loteDto, inventarioDto);
+    }
+
+    private boolean isNotNullOrEmpty(String str) {
+        return str != null && !str.trim().isEmpty();
+    }
+
 }
