@@ -141,6 +141,7 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
     }
 
     @Override
+    @Transactional
     public void crearInventario(CrearInventarioRequest request, StreamObserver<Response> responseObserver) {
         // Convertir la solicitud gRPC a DTO
         CrearInventarioRequestDto dto = inventarioMapper.toDto(request);
