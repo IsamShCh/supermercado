@@ -319,6 +319,13 @@ public class InventarioService {
                 .withDescription("Lote no encontrado con ID '" + idLote + "'")
                 .asRuntimeException());
 
+        // Validar estado del lote
+        if (lote.getEstado() != EstadoLote.DISPONIBLE) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("No se puede mover stock de un lote que no está DISPONIBLE (Estado actual: " + lote.getEstado() + ")")
+                .asRuntimeException();
+        }
+
         // Validar que el SKU coincida
         if (!lote.getSku().equals(sku)) {
             throw Status.INVALID_ARGUMENT
