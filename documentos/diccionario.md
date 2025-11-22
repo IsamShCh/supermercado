@@ -76,11 +76,13 @@ Estado = [Activa | Vencida | Cancelada]
 ### INVENTARIO
 
 ```
-INVENTARIO = {@IDInventario + SKU + CantidadAlmacen + 
+INVENTARIO = {@IDInventario + SKU + [EAN | PLU] + CantidadAlmacen +
               CantidadEstanteria + UnidadMedida}
 
 @IDInventario = *Identificador único del registro de inventario*
 SKU = *SKU del productoEntity*
+EAN = *Código EAN del productoEntity*
+PLU = *Código PLU del productoEntity a granel*
 CantidadAlmacen = *Cantidad disponible en almacén*
 CantidadEstanteria = *Cantidad disponible en estantería*
 UnidadMedida = *Unidad de medida correspondiente*
@@ -90,15 +92,13 @@ UnidadMedida = *Unidad de medida correspondiente*
 ### LOTES
 
 ```
-LOTES = {@IDLote + SKU + [EAN | PLU] + NumeroLote + Cantidad + 
-         (FechaCaducidad) + IDProveedor + FechaIngreso + UnidadMedida + 
+LOTES = {@IDLote + SKU + IDInventario + NumeroLote + Cantidad +
+         (FechaCaducidad) + IDProveedor + FechaIngreso + UnidadMedida +
          Estado}
 
 @IDLote = *Identificador único del lote*
 IDInventario = *Identificador del inventario*
 SKU = *SKU del productoEntity*
-EAN = *Código EAN del productoEntity*
-PLU = *Código PLU del productoEntity a granel*
 NumeroLote = *Número de lote del proveedor*
 Cantidad = *Cantidad total ingresada*
 FechaCaducidad = *Fecha de caducidad en formato YYYY-MM-DD*
@@ -414,10 +414,11 @@ Codigo = [SKU | EAN | PLU]
 #### INFO_NUEVAS_EXISTENCIAS
 
 ```
-INFO_NUEVAS_EXISTENCIAS = SKU + [EAN|PLU] + Cantidad + NumeroLote + 
+INFO_NUEVAS_EXISTENCIAS = SKU + Cantidad + NumeroLote +
                           (FechaCaducidad) + IDProveedor + UnidadMedida
 
 **Usado en AC14**
+**Nota: EAN/PLU se obtienen del inventario asociado al SKU**
 
 ```
 

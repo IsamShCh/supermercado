@@ -1,13 +1,13 @@
 package com.isam.dto;
 
-import com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto;
+import com.isam.dto.inventario.CrearInventarioRequestDto;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class EanPluValidator implements ConstraintValidator<EanOrPlu, RegistrarNuevasExistenciasRequestDto> {
+public class EanPluValidator implements ConstraintValidator<EanOrPlu, CrearInventarioRequestDto> {
 
     @Override
-    public boolean isValid(RegistrarNuevasExistenciasRequestDto dto, ConstraintValidatorContext context) {
+    public boolean isValid(CrearInventarioRequestDto dto, ConstraintValidatorContext context) {
         if (dto == null) {
             return true;
         }

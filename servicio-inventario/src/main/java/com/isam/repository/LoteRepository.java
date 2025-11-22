@@ -31,6 +31,8 @@ public interface LoteRepository extends JpaRepository<Lote, String>, JpaSpecific
     @Query("SELECT l FROM Lote l WHERE l.fechaCaducidad BETWEEN :fechaInicio AND :fechaFin")
     List<Lote> findLotesCaducandoEntre(@Param("fechaInicio") LocalDate fechaInicio, @Param("fechaFin") LocalDate fechaFin);
 
-    @Query("SELECT l FROM Lote l WHERE l.sku = :sku AND l.estado = :estado AND l.cantidad > 0")
+    @Query("SELECT l FROM Lote l WHERE l.sku = :sku AND l.estado = :estado AND (l.cantidadAlmacen + l.cantidadEstanteria) > 0")
     List<Lote> findLotesDisponiblesPorSku(@Param("sku") String sku, @Param("estado") EstadoLote estado);
+
+    List<Lote> findBySkuAndEstadoOrderByFechaIngresoAsc(String sku, EstadoLote estado);
 }

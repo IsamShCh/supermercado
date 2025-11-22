@@ -8,12 +8,19 @@ import com.isam.dto.proveedor.ProveedorDto;
 import com.isam.dto.proveedor.AgregarProveedorRequestDto;
 import com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto;
 import com.isam.dto.inventario.CrearInventarioRequestDto;
+import com.isam.dto.inventario.DetallesInventarioCompletoDto;
+import com.isam.dto.inventario.ConsultarInventarioRequestDto;
+import com.isam.dto.inventario.ConsultarInventarioResponseDto;
+import com.isam.dto.lote.DetalleLoteDto;
 import com.isam.grpc.inventario.AgregarProveedorRequest;
 import com.isam.grpc.inventario.CrearInventarioRequest;
+import com.isam.grpc.inventario.ConsultarInventarioRequest;
 import com.isam.grpc.inventario.ProveedorProto;
 import com.isam.grpc.inventario.RegistrarNuevasExistenciasRequest;
 import com.isam.grpc.inventario.LoteProto;
 import com.isam.grpc.inventario.InventarioProto;
+import com.isam.grpc.inventario.DetallesInventarioCompleto;
+import com.isam.grpc.inventario.DetalleLote;
 import com.isam.model.UnidadMedida;
 import com.isam.model.EstadoLote;
 
@@ -90,14 +97,10 @@ public class InventarioMapper {
 
     // Mapeo para Registrar Nuevas Existencias
     public RegistrarNuevasExistenciasRequestDto toDto(RegistrarNuevasExistenciasRequest req) {
-        String ean = req.hasEan() ? req.getEan() : null;
-        String plu = req.hasPlu() ? req.getPlu() : null;
         String fechaCaducidad = req.hasFechaCaducidad() ? req.getFechaCaducidad() : null;
         
         return new RegistrarNuevasExistenciasRequestDto(
             req.getSku(),
-            ean,
-            plu,
             BigDecimal.valueOf(req.getCantidad()),
             req.getNumeroLote(),
             fechaCaducidad,
@@ -112,19 +115,15 @@ public class InventarioMapper {
             .setSku(lote.getSku())
             .setIdInventario(lote.getIdInventario())
             .setNumeroLote(lote.getNumeroLote())
-            .setCantidad(lote.getCantidad().doubleValue())
+            .setCantidadEntrada(lote.getCantidadEntrada() != null ? lote.getCantidadEntrada().doubleValue() : 0.0)
+            .setCantidadAlmacen(lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen().doubleValue() : 0.0)
+            .setCantidadEstanteria(lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria().doubleValue() : 0.0)
             .setIdProveedor(lote.getIdProveedor())
-            .setFechaIngreso(lote.getFechaIngreso().toString())
+            .setFechaIngreso(lote.getFechaIngreso() != null ? lote.getFechaIngreso().toString() : "")
             .setUnidadMedida(mapUnidadMedidaToProto(lote.getUnidadMedida()))
             .setEstado(mapEstadoLoteToProto(lote.getEstado()));
         
         // Campos opcionales
-        if (lote.getEan() != null) {
-            builder.setEan(lote.getEan());
-        } else if (lote.getPlu() != null) {
-            builder.setPlu(lote.getPlu());
-        }
-        
         if (lote.getFechaCaducidad() != null) {
             builder.setFechaCaducidad(lote.getFechaCaducidad().toString());
         }
@@ -133,13 +132,21 @@ public class InventarioMapper {
     }
 
     public InventarioProto toProto(Inventario inventario) {
-        return InventarioProto.newBuilder()
+        InventarioProto.Builder builder = InventarioProto.newBuilder()
             .setIdInventario(inventario.getIdInventario())
             .setSku(inventario.getSku())
-            .setCantidadAlmacen(inventario.getCantidadAlmacen().doubleValue())
-            .setCantidadEstanteria(inventario.getCantidadEstanteria().doubleValue())
-            .setUnidadMedida(mapUnidadMedidaToProto(inventario.getUnidadMedida()))
-            .build();
+            .setCantidadAlmacen(inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen().doubleValue() : 0.0)
+            .setCantidadEstanteria(inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria().doubleValue() : 0.0)
+            .setUnidadMedida(mapUnidadMedidaToProto(inventario.getUnidadMedida()));
+        
+        // Campos opcionales EAN/PLU - usar oneof
+        if (inventario.getEan() != null) {
+            builder.setEan(inventario.getEan());
+        } else if (inventario.getPlu() != null) {
+            builder.setPlu(inventario.getPlu());
+        }
+        
+        return builder.build();
     }
     public LoteProto toProto(com.isam.dto.lote.LoteDto dto) {
         LoteProto.Builder builder = LoteProto.newBuilder()
@@ -147,19 +154,15 @@ public class InventarioMapper {
             .setSku(dto.sku())
             .setIdInventario(dto.idInventario())
             .setNumeroLote(dto.numeroLote())
-            .setCantidad(dto.cantidad())
+            .setCantidadEntrada(dto.cantidadEntrada())
+            .setCantidadAlmacen(dto.cantidadAlmacen())
+            .setCantidadEstanteria(dto.cantidadEstanteria())
             .setIdProveedor(dto.idProveedor())
             .setFechaIngreso(dto.fechaIngreso())
             .setUnidadMedida(mapUnidadMedidaToProto(UnidadMedida.valueOf(dto.unidadMedida())))
             .setEstado(mapEstadoLoteToProto(EstadoLote.valueOf(dto.estado())));
         
         // Campos opcionales
-        if (dto.ean() != null) {
-            builder.setEan(dto.ean());
-        } else if (dto.plu() != null) {
-            builder.setPlu(dto.plu());
-        }
-        
         if (dto.fechaCaducidad() != null) {
             builder.setFechaCaducidad(dto.fechaCaducidad());
         }
@@ -168,22 +171,82 @@ public class InventarioMapper {
     }
 
     public InventarioProto toProto(com.isam.dto.inventario.InventarioDto dto) {
-        return InventarioProto.newBuilder()
+        InventarioProto.Builder builder = InventarioProto.newBuilder()
             .setIdInventario(dto.idInventario())
             .setSku(dto.sku())
             .setCantidadAlmacen(dto.cantidadAlmacen())
             .setCantidadEstanteria(dto.cantidadEstanteria())
-            .setUnidadMedida(mapUnidadMedidaToProto(UnidadMedida.valueOf(dto.unidadMedida())))
-            .build();
+            .setUnidadMedida(mapUnidadMedidaToProto(UnidadMedida.valueOf(dto.unidadMedida())));
+        
+        // Campos opcionales EAN/PLU - usar oneof
+        if (dto.ean() != null) {
+            builder.setEan(dto.ean());
+        } else if (dto.plu() != null) {
+            builder.setPlu(dto.plu());
+        }
+        
+        return builder.build();
     }
 
 
 
     public CrearInventarioRequestDto toDto(CrearInventarioRequest req){
+        String ean = null;
+        String plu = null;
+        
+        // Manejar el campo oneof identificador
+        if (req.hasEan()) {
+            ean = req.getEan();
+        } else if (req.hasPlu()) {
+            plu = req.getPlu();
+        }
+        
         return new CrearInventarioRequestDto(
             req.getSku(),
+            ean,
+            plu,
             mapUnidadMedida(req.getUnidadMedida())
         );
+    }
+
+    // Mapeo para Consultar Inventario
+    public ConsultarInventarioRequestDto toDto(ConsultarInventarioRequest req) {
+        return new ConsultarInventarioRequestDto(req.getSku());
+    }
+
+    public DetallesInventarioCompleto toProto(ConsultarInventarioResponseDto dto) {
+        // DEBUG: Fixed method access - need to get the nested DTO first
+        DetallesInventarioCompletoDto detallesDto = dto.detallesInventario();
+        
+        DetallesInventarioCompleto.Builder builder = DetallesInventarioCompleto.newBuilder()
+            .setSku(detallesDto.sku())
+            .setNombreProducto(detallesDto.nombreProducto())
+            .setStockTotalAlmacen(detallesDto.stockTotalAlmacen())
+            .setStockTotalEstanteria(detallesDto.stockTotalEstanteria())
+            .setUnidadMedida(mapUnidadMedidaToProto(detallesDto.unidadMedida()));
+        
+        // Añadir detalles de lotes
+        for (DetalleLoteDto loteDto : detallesDto.lotes()) {
+            DetalleLote loteProto = toProtoDetalleLote(loteDto);
+            builder.addLote(loteProto);
+        }
+        
+        return builder.build();
+    }
+
+    private DetalleLote toProtoDetalleLote(DetalleLoteDto dto) {
+        DetalleLote.Builder builder = DetalleLote.newBuilder()
+            .setIdLote(dto.idLote())
+            .setNumeroLote(dto.numeroLote())
+            .setCantidadAlmacen(dto.cantidadAlmacen())
+            .setCantidadEstanteria(dto.cantidadEstanteria())
+            .setFechaIngreso(dto.fechaIngreso());
+        
+        if (dto.fechaCaducidad() != null) {
+            builder.setFechaCaducidad(dto.fechaCaducidad());
+        }
+        
+        return builder.build();
     }
 
     // Mappers de enums

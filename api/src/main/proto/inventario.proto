@@ -63,9 +63,13 @@ message ProveedorProto {
 message InventarioProto {
   string id_inventario = 1;
   string sku = 2;
-  double cantidad_almacen = 3;
-  double cantidad_estanteria = 4;
-  isam.comun.UnidadMedida unidad_medida = 5;
+  oneof identificador {
+    string ean = 3;
+    string plu = 4;
+  }
+  double cantidad_almacen = 5;
+  double cantidad_estanteria = 6;
+  isam.comun.UnidadMedida unidad_medida = 7;
 }
 
 // ========================================
@@ -76,12 +80,10 @@ message LoteProto {
   string id_lote = 1;
   string sku = 2;
   string id_inventario = 3;
-  oneof identificador {
-    string ean = 4;
-    string plu = 5;
-  }
-  string numero_lote = 6;
-  double cantidad = 7;
+  string numero_lote = 4;
+  double cantidad_entrada = 5;      // Cantidad original al ingresar
+  double cantidad_almacen = 6;      // Cantidad actual en almacén
+  double cantidad_estanteria = 7;    // Cantidad actual en estantería
   optional string fecha_caducidad = 8;  // YYYY-MM-DD
   string id_proveedor = 9;
   string fecha_ingreso = 10;   // YYYY-MM-DD
@@ -142,15 +144,11 @@ message DetalleLote {
 
 message RegistrarNuevasExistenciasRequest {
   string sku = 1;
-  oneof identificador {
-    string ean = 2;
-    string plu = 3;
-  }
-  double cantidad = 4;
-  string numero_lote = 5;
-  optional string fecha_caducidad = 6;  // YYYY-MM-DD
-  string id_proveedor = 7;
-  isam.comun.UnidadMedida unidad_medida = 8;
+  double cantidad = 2;
+  string numero_lote = 3;
+  optional string fecha_caducidad = 4;  // YYYY-MM-DD
+  string id_proveedor = 5;
+  isam.comun.UnidadMedida unidad_medida = 6;
 
   message Response { //NOTE -  No coincide exactamente con el dato respuesta definido en los acontecimientos, pero nos vale.
     LoteProto lote = 1;
@@ -240,7 +238,11 @@ message AgregarProveedorRequest {
 // ========================================
 message CrearInventarioRequest{
   string sku = 1;
-  isam.comun.UnidadMedida unidad_medida = 3;
+  oneof identificador {
+    string ean = 2;
+    string plu = 3;
+  }
+  isam.comun.UnidadMedida unidad_medida = 4;
 
   message Response {
     InventarioProto inventario = 1;

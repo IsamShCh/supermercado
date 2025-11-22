@@ -149,6 +149,8 @@ erDiagram
     INVENTARIO {
         string IDInventario PK
         string SKU FK
+        string EAN UK
+        string PLU UK
         decimal CantidadAlmacen
         decimal CantidadEstanteria
         enum UnidadMedida
@@ -157,11 +159,11 @@ erDiagram
     LOTES {
         string IDLote PK
         string SKU FK
-                string IDInventario FK
-        string EAN
-        string PLU
+        string IDInventario FK
         string NumeroLote
-        decimal Cantidad
+        decimal CantidadEntrada
+        decimal CantidadAlmacen
+        decimal CantidadEstanteria
         date FechaCaducidad
         string IDProveedor FK
         date FechaIngreso

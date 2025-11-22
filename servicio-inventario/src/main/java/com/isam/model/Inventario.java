@@ -3,6 +3,7 @@ package com.isam.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import lombok.Getter;
@@ -24,6 +25,12 @@ public class Inventario {
     @NotBlank(message = "El SKU es obligatorio")
     @Column(name = "SKU", length = 50, nullable = false)
     private String sku;
+
+    @Column(name = "EAN", length = 13)
+    private String ean;
+
+    @Column(name = "PLU", length = 5)
+    private String plu;
 
     @NotNull(message = "La cantidad en almacén es obligatoria")
     @DecimalMin(value = "0.0", inclusive = true, message = "La cantidad en almacén no puede ser negativa")
@@ -52,11 +59,22 @@ public class Inventario {
         this.unidadMedida = unidadMedida;
     }
 
+    public Inventario(String sku, String ean, String plu, UnidadMedida unidadMedida) {
+        this.sku = sku;
+        this.ean = ean;
+        this.plu = plu;
+        this.cantidadAlmacen = BigDecimal.ZERO;
+        this.cantidadEstanteria = BigDecimal.ZERO;
+        this.unidadMedida = unidadMedida;
+    }
+
     @Override
     public String toString() {
         return "Inventario{" +
                 "idInventario='" + idInventario + '\'' +
                 ", sku='" + sku + '\'' +
+                ", ean='" + ean + '\'' +
+                ", plu='" + plu + '\'' +
                 ", cantidadAlmacen=" + cantidadAlmacen +
                 ", cantidadEstanteria=" + cantidadEstanteria +
                 ", unidadMedida=" + unidadMedida +

@@ -2,6 +2,8 @@ package com.isam.grpc.server.service;
 
 import com.isam.dto.inventario.CrearInventarioRequestDto;
 import com.isam.dto.inventario.InventarioDto;
+import com.isam.dto.inventario.ConsultarInventarioRequestDto;
+import com.isam.dto.inventario.ConsultarInventarioResponseDto;
 import com.isam.grpc.inventario.*;
 import com.isam.grpc.inventario.CrearInventarioRequest.Response;
 
@@ -95,13 +97,39 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
     }
 
     @Override
+    @Transactional
     public void consultarInventario(ConsultarInventarioRequest request, StreamObserver<ConsultarInventarioRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Method consultarInventario not yet implemented")
-                .asRuntimeException()
-        );
+        // Convertir la solicitud gRPC a DTO
+        ConsultarInventarioRequestDto dto = inventarioMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<ConsultarInventarioRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        ConsultarInventarioResponseDto responseDto = inventarioService.consultarInventario(dto);
+        
+        // Convertir DTO a proto
+        DetallesInventarioCompleto detallesProto = inventarioMapper.toProto(responseDto);
+        
+        // Construir respuesta
+        ConsultarInventarioRequest.Response response = ConsultarInventarioRequest.Response.newBuilder()
+            .setDetallesInventario(detallesProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override
