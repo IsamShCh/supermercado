@@ -77,13 +77,41 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
     }
 
     @Override
+    @Transactional
     public void moverStockEstanteria(MoverStockEstanteriaRequest request, StreamObserver<MoverStockEstanteriaRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Method moverStockEstanteria not yet implemented")
-                .asRuntimeException()
-        );
+        // Convertir la solicitud gRPC a DTO
+        com.isam.dto.stock.MoverStockEstanteriaRequestDto dto = inventarioMapper.toDto(request);
+        
+        // Validar
+        Set<ConstraintViolation<com.isam.dto.stock.MoverStockEstanteriaRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errores = violations.stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+            responseObserver.onError(
+                Status.INVALID_ARGUMENT
+                    .withDescription(errores)
+                    .asRuntimeException()
+            );
+            return;
+        }
+        
+        // Llamar al servicio
+        com.isam.dto.stock.MoverStockEstanteriaResponseDto responseDto = inventarioService.moverStockEstanteria(dto);
+        
+        // Convertir DTOs a proto
+        InventarioProto inventarioProto = inventarioMapper.toProto(responseDto.inventario());
+        MovimientoInventarioProto movimientoProto = inventarioMapper.toProto(responseDto.movimiento());
+        
+        // Construir respuesta
+        MoverStockEstanteriaRequest.Response response = MoverStockEstanteriaRequest.Response.newBuilder()
+            .setInventario(inventarioProto)
+            .setMovimiento(movimientoProto)
+            .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override

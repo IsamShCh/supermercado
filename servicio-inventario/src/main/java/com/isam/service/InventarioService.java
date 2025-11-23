@@ -299,5 +299,101 @@ public class InventarioService {
             return new ConsultarInventarioResponseDto(detallesCompletos);
         }
 
+    /**
+     * Mueve stock del almacén a las estanterías (AC18).
+     * Este método traslada una cantidad específica de un lote desde el almacén a la estantería.
+     */
+    @Transactional
+    public com.isam.dto.stock.MoverStockEstanteriaResponseDto moverStockEstanteria(
+            com.isam.dto.stock.MoverStockEstanteriaRequestDto peticionDto) {
+        
+        // Buscar el inventario para este SKU
+        Inventario inventario = inventarioRepository.findBySku(peticionDto.sku())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Inventario no encontrado para SKU '" + peticionDto.sku() + "'")
+                .asRuntimeException());
+
+        // Buscar el lote específico
+        Lote lote = loteRepository.findById(peticionDto.idLote())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Lote no encontrado con ID '" + peticionDto.idLote() + "'")
+                .asRuntimeException());
+
+        // Validar que el lote pertenece al SKU especificado
+        if (!lote.getSku().equals(peticionDto.sku())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El lote '" + peticionDto.idLote() + "' no pertenece al SKU '" + peticionDto.sku() + "'")
+                .asRuntimeException();
+        }
+
+        // Validar que el lote está disponible
+        if (lote.getEstado() != EstadoLote.DISPONIBLE) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El lote '" + peticionDto.idLote() + "' no está disponible. Estado actual: " + lote.getEstado())
+                .asRuntimeException();
+        }
+
+        // Validar que la unidad de medida coincida
+        if (!lote.getUnidadMedida().equals(peticionDto.unidadMedida())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("La unidad de medida no coincide con la del lote. Esperada: " + lote.getUnidadMedida() + ", Recibida: " + peticionDto.unidadMedida())
+                .asRuntimeException();
+        }
+
+        // Validar que hay suficiente cantidad en el almacén del lote
+        if (lote.getCantidadAlmacen().compareTo(peticionDto.cantidadTransladar()) < 0) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("Stock insuficiente en almacén para el lote '" + peticionDto.idLote() + "'. Disponible: " + lote.getCantidadAlmacen() + ", Solicitado: " + peticionDto.cantidadTransladar())
+                .asRuntimeException();
+        }
+
+        // Mover el stock del lote
+        lote.moverAEstanteria(peticionDto.cantidadTransladar());
+        Lote loteActualizado = loteRepository.save(lote);
+
+        // Actualizar el inventario general
+        inventario.setCantidadAlmacen(inventario.getCantidadAlmacen().subtract(peticionDto.cantidadTransladar()));
+        inventario.setCantidadEstanteria(inventario.getCantidadEstanteria().add(peticionDto.cantidadTransladar()));
+        Inventario inventarioActualizado = inventarioRepository.save(inventario);
+
+        // Crear movimiento de inventario
+        MovimientoInventario movimiento = new MovimientoInventario();
+        movimiento.setSku(peticionDto.sku());
+        movimiento.setIdLote(peticionDto.idLote());
+        movimiento.setTipoMovimiento(TipoMovimiento.TRASLADO_ESTANTERIA);
+        movimiento.setCantidad(peticionDto.cantidadTransladar());
+        movimiento.setUnidadMedida(peticionDto.unidadMedida());
+        movimiento.setFechaHora(LocalDateTime.now());
+        movimiento.setIdUsuario("SYSTEM"); // TODO: Obtener del contexto de seguridad
+        movimiento.setMotivo("Traslado de almacén a estantería");
+        movimiento.setObservaciones("Lote: " + loteActualizado.getNumeroLote() + " - Cantidad trasladada: " + peticionDto.cantidadTransladar());
+        MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+
+        // Convertir entidades a DTOs
+        com.isam.dto.inventario.InventarioDto inventarioDto = new com.isam.dto.inventario.InventarioDto(
+            inventarioActualizado.getIdInventario(),
+            inventarioActualizado.getSku(),
+            inventarioActualizado.getEan(),
+            inventarioActualizado.getPlu(),
+            inventarioActualizado.getCantidadAlmacen().doubleValue(),
+            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getUnidadMedida().name()
+        );
+
+        com.isam.dto.movimiento.MovimientoInventarioDto movimientoDto = new com.isam.dto.movimiento.MovimientoInventarioDto(
+            movimientoGuardado.getIdMovimiento(),
+            movimientoGuardado.getSku(),
+            movimientoGuardado.getIdLote(),
+            movimientoGuardado.getTipoMovimiento().name(),
+            movimientoGuardado.getCantidad().doubleValue(),
+            movimientoGuardado.getUnidadMedida().name(),
+            movimientoGuardado.getFechaHora().toString(),
+            movimientoGuardado.getIdUsuario(),
+            movimientoGuardado.getMotivo(),
+            movimientoGuardado.getObservaciones()
+        );
+
+        return new com.isam.dto.stock.MoverStockEstanteriaResponseDto(inventarioDto, movimientoDto);
+    }
 
 }

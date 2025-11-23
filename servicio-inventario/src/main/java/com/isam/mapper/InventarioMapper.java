@@ -15,6 +15,8 @@ import com.isam.dto.lote.DetalleLoteDto;
 import com.isam.grpc.inventario.AgregarProveedorRequest;
 import com.isam.grpc.inventario.CrearInventarioRequest;
 import com.isam.grpc.inventario.ConsultarInventarioRequest;
+import com.isam.grpc.inventario.MoverStockEstanteriaRequest;
+import com.isam.grpc.inventario.MovimientoInventarioProto;
 import com.isam.grpc.inventario.ProveedorProto;
 import com.isam.grpc.inventario.RegistrarNuevasExistenciasRequest;
 import com.isam.grpc.inventario.LoteProto;
@@ -207,6 +209,60 @@ public class InventarioMapper {
             plu,
             mapUnidadMedida(req.getUnidadMedida())
         );
+    }
+
+    // Mapeo para Mover Stock a Estantería
+    public com.isam.dto.stock.MoverStockEstanteriaRequestDto toDto(MoverStockEstanteriaRequest req) {
+        return new com.isam.dto.stock.MoverStockEstanteriaRequestDto(
+            req.getSku(),
+            req.getIdLote(),
+            java.math.BigDecimal.valueOf(req.getCantidadTransladar()),
+            mapUnidadMedida(req.getUnidadMedida())
+        );
+    }
+
+    public MovimientoInventarioProto toProto(com.isam.dto.movimiento.MovimientoInventarioDto dto) {
+        MovimientoInventarioProto.Builder builder = MovimientoInventarioProto.newBuilder()
+            .setIdMovimiento(dto.idMovimiento())
+            .setSku(dto.sku())
+            .setTipoMovimiento(mapTipoMovimientoToProto(dto.tipoMovimiento()))
+            .setCantidad(dto.cantidad())
+            .setUnidadMedida(mapUnidadMedidaToProto(com.isam.model.UnidadMedida.valueOf(dto.unidadMedida())))
+            .setFechaHora(dto.fechaHora())
+            .setIdUsuario(dto.idUsuario());
+        
+        if (dto.idLote() != null) {
+            builder.setIdLote(dto.idLote());
+        }
+        if (dto.motivo() != null) {
+            builder.setMotivo(dto.motivo());
+        }
+        if (dto.observaciones() != null) {
+            builder.setObservaciones(dto.observaciones());
+        }
+        
+        return builder.build();
+    }
+
+    private com.isam.grpc.inventario.TipoMovimiento mapTipoMovimientoToProto(String tipoMovimiento) {
+        switch (tipoMovimiento) {
+            case "ENTRADA":
+                return com.isam.grpc.inventario.TipoMovimiento.ENTRADA;
+            case "SALIDA":
+                return com.isam.grpc.inventario.TipoMovimiento.SALIDA;
+            case "AJUSTE":
+                return com.isam.grpc.inventario.TipoMovimiento.AJUSTE;
+            case "TRASLADO_ESTANTERIA":
+                return com.isam.grpc.inventario.TipoMovimiento.TRASLADO_ESTANTERIA;
+            case "VENTA":
+                return com.isam.grpc.inventario.TipoMovimiento.VENTA;
+            case "DEVOLUCION":
+                return com.isam.grpc.inventario.TipoMovimiento.DEVOLUCION;
+            case "MERMA":
+                return com.isam.grpc.inventario.TipoMovimiento.MERMA;
+            default:
+                return com.isam.grpc.inventario.TipoMovimiento.TIPO_MOVIMIENTO_UNSPECIFIED;
+        }
     }
 
     // Mapeo para Consultar Inventario
