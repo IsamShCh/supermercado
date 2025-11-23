@@ -382,21 +382,41 @@ Prioridad: Alta
 
 ID: REQ-20
 #NOTE - Nombre: Ajuste manual de inventario
-Descripción: El sistema permitirá ajustes manuales de inventario especificando tipo de ajuste, cantidad y motivo detallado.
+Descripción: El sistema permitirá ajustes manuales de inventario especificando tipo de ajuste, cantidad, motivo detallado y ubicación (almacén o estantería). El sistema permite ajustar lotes específicos o distribuir el ajuste automáticamente según política FIFO.
 Entradas:
 - ID SKU del producto
-- Cantidad de ajuste
+- Cantidad de ajuste (positiva o negativa)
 - Tipo de ajuste (merma, robo, caducado, error de conteo, producto encontrado)
 - Motivo detallado
+- Ubicación del ajuste (almacén o estantería)
+- ID de lote (opcional, para ajustes específicos a un lote)
 Proceso:
-- Aplicar ajuste
-- Registrar con justificación y publicar evento
+- Validar existencia del producto en inventario
+- Validar stock disponible en la ubicación especificada
+- Si se especifica lote:
+  - Aplicar ajuste directamente al lote indicado
+- Si no se especifica lote:
+  - Distribuir ajuste entre lotes disponibles usando política FIFO
+- Actualizar cantidades en inventario
+- Crear movimiento de inventario con tipo AJUSTE
+- Registrar motivo y observaciones detalladas
 Salidas:
-- Niveles de stock actualizados
+- Inventario actualizado con nuevas cantidades
+- Movimiento de inventario registrado
+- Confirmación del ajuste realizado
 Precondiciones:
-- Usuario con permisos de inventario
+- Usuario con permisos de administrador de inventario
+- El producto existe en el inventario
+- Stock suficiente para ajustes negativos
 Postcondiciones:
-- Ajuste auditado y registrado
+- Stock actualizado en la ubicación especificada (almacén o estantería)
+- Movimiento auditado y registrado en historial
+- Lotes afectados actualizados correctamente
+Restricciones:
+- La cantidad de ajuste debe especificarse con signo (negativo para decrementos)
+- No se puede ajustar más cantidad de la disponible en la ubicación
+- El lote especificado debe pertener al SKU indicado
+- El lote especificado debe tener stock suficiente si es ajuste negativo
 Prioridad: Alta
 
 

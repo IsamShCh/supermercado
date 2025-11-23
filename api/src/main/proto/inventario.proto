@@ -165,11 +165,25 @@ message AjustarInventarioManualRequest {
   double cantidad_ajuste = 2;
   TipoAjuste tipo_ajuste = 3;
   string motivo_detallado = 4;
+  
+  oneof ubicacion_ajuste {
+    AjustarAlmacen ajustar_almacen = 5;
+    AjustarEstanteria ajustar_estanteria = 6;
+  }
 
   message Response {
     InventarioProto inventario = 1;
     MovimientoInventarioProto movimiento = 2;
   }
+}
+
+// Mensajes específicos para cada tipo de ajuste
+message AjustarAlmacen {
+  optional string id_lote = 1;  // Opcional: especificar qué lote afectar si se conoce
+}
+
+message AjustarEstanteria {
+  optional string id_lote = 1;  // Opcional: especificar qué lote afectar si se conoce
 }
 
 // ========================================

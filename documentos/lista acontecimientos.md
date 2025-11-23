@@ -108,9 +108,10 @@ Almacenes: PRODUCTOS (lectura), INVENTARIO, LOTES, PROVEEDORES (lectura), MOVIMI
 Requisitos satisfechos: RF18
 #NOTE - AC16: Administrador de inventario ajusta manualmente el inventario
 Entidad Externa: Administrador de Inventario
-Flujo de entrada: INFO_AJUSTE_INVENTARIO = SKU + CantidadAjuste + TipoAjuste + MotivoDetallado
-Almacenes: PRODUCTOS (lectura), INVENTARIO, MOVIMIENTOS_INVENTARIO
+Flujo de entrada: INFO_AJUSTE_INVENTARIO = SKU + CantidadAjuste + TipoAjuste + MotivoDetallado + UbicacionAjuste + (IDLote)
+Almacenes: PRODUCTOS (lectura), INVENTARIO, LOTES, MOVIMIENTOS_INVENTARIO
 Requisitos satisfechos: RF20
+Nota: El ajuste puede aplicarse a almacén o estantería. Si se especifica IDLote, el ajuste se aplica a ese lote específico; si no, se distribuye entre lotes según política FIFO.
 #TODO - AC17: Administrador de inventario elimina un lote del inventario  ESTO AFECTA LA INTEGRIDAD
 Entidad Externa: Administrador de Inventario
 Flujo de entrada: SOLICITUD_ELIMINAR_LOTE = IDLote + MotivoEliminacion

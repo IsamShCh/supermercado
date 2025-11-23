@@ -425,11 +425,18 @@ INFO_NUEVAS_EXISTENCIAS = SKU + Cantidad + NumeroLote +
 #### INFO_AJUSTE_INVENTARIO
 
 ```
-INFO_AJUSTE_INVENTARIO = SKU + CantidadAjuste + TipoAjuste + MotivoDetallado
+INFO_AJUSTE_INVENTARIO = SKU + CantidadAjuste + TipoAjuste + MotivoDetallado +
+                         UbicacionAjuste
 
 TipoAjuste = [Merma | Robo | Caducado | ErrorConteo | ProductoEncontrado]
 CantidadAjuste = *Puede ser positiva o negativa*
 MotivoDetallado = *Descripción detallada del ajuste*
+UbicacionAjuste = [AjustarAlmacen | AjustarEstanteria]
+
+AjustarAlmacen = (IDLote)
+AjustarEstanteria = (IDLote)
+**Nota: Si se especifica IDLote, el ajuste se aplica solo a ese lote.
+        Si no se especifica, se distribuye entre lotes según política FIFO**
 
 **Usado en AC16**
 
