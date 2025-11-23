@@ -124,9 +124,14 @@ Almacenes: PRODUCTOS (lectura para política de rotación), LOTES (lectura), INV
 Requisitos satisfechos: RF22
 #NOTE - AC19: Administrador de inventario contabiliza stock manualmente
 Entidad Externa: Administrador de Inventario
-Flujo de entrada: INFO_CONTABILIZACION = SKU + StockFisicoEstanteria + StockFisicoAlmacen
+Flujo de entrada: INFO_CONTABILIZACION = SKU + StockFisicoEstanteria + [StockFisicoAlmacenTotal | {LoteID + StockFisicoLote}]
 Almacenes: PRODUCTOS (lectura), INVENTARIO, LOTES, MOVIMIENTOS_INVENTARIO
+Flujo de salida: RESULTADO_CONTABILIZACION = InventarioActualizado + ReporteDiscrepancias + {MovimientosInventario}
 Requisitos satisfechos: RF23
+Nota: Permite dos modalidades para almacén:
+  1. Contabilización rápida: Solo stock total en almacén (sistema distribuye con FIFO)
+  2. Contabilización detallada: Stock físico por cada lote (ajustes precisos)
+Para estantería solo se permite stock total (sin trazabilidad por lotes).
 #NOTE - AC20: Usuario consulta inventario de un producto
 Entidad Externa: Administrador de Inventario / Cajero
 Flujo de entrada: CONSULTA_INVENTARIO = SKU

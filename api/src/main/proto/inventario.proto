@@ -208,13 +208,52 @@ message MoverStockEstanteriaRequest {
 
 message ContabilizarStockManualRequest {
   string sku = 1;
-  double stock_fisico_estanteria = 2;
-  double stock_fisico_almacen = 3;
+  
+  // Contabilización de estantería (opcional)
+  optional double stock_fisico_estanteria = 2;
+  
+  // Contabilización de almacén (opcional): dos modalidades
+  oneof contabilizacion_almacen {
+    double stock_fisico_almacen_total = 3;  // Modo rápido: sistema distribuye con FIFO
+    ContabilizacionPorLotes contabilizacion_lotes = 4;  // Modo preciso: lote por lote
+  }
 
   message Response {
     InventarioProto inventario = 1;
     repeated MovimientoInventarioProto movimientos = 2;
+    ReporteDiscrepancias reporte_discrepancias = 3;
   }
+}
+
+// Mensaje para contabilización detallada por lotes en almacén
+message ContabilizacionPorLotes {
+  repeated StockFisicoLote lotes = 1;
+}
+
+message StockFisicoLote {
+  string id_lote = 1;
+  double stock_fisico_almacen = 2;
+}
+
+// Reporte de discrepancias generado tras la contabilización
+message ReporteDiscrepancias {
+  string sku = 1;
+  double stock_logico_estanteria = 2;
+  double stock_fisico_estanteria = 3;
+  double discrepancia_estanteria = 4;  // físico - lógico
+  double stock_logico_almacen = 5;
+  double stock_fisico_almacen = 6;
+  double discrepancia_almacen = 7;  // físico - lógico
+  repeated AjusteLote ajustes_realizados = 8;
+}
+
+message AjusteLote {
+  string id_lote = 1;
+  string numero_lote = 2;
+  string ubicacion = 3;  // "ALMACEN" o "ESTANTERIA"
+  double cantidad_ajustada = 4;  // Con signo: positivo = añadido, negativo = deducido
+  double stock_anterior = 5;
+  double stock_nuevo = 6;
 }
 
 // ========================================

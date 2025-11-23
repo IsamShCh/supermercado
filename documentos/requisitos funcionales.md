@@ -471,27 +471,60 @@ Prioridad: Alta
 
 ID: REQ-23
 #NOTE - Nombre: Contabilización manual de stock
-Descripción: El sistema debe permitir iniciar procesos de contabilización manual de stock en inventario y en almacen de un producto, de forma que se puedan ver las discrepancias entre el stock fisico y el lógico de un producto. 
-IMPORTANTE: una vez los productos pasan fisicamente a estantería perdemos su trazabilidad. Ya no podemos saber a que lote pertenece cada producto de la estantería
+Descripción: El sistema debe permitir iniciar procesos de contabilización manual de stock en almacén y estantería de un producto, de forma que se puedan ver las discrepancias entre el stock físico y el lógico. El sistema permite dos modalidades de contabilización según la ubicación:
+- ESTANTERÍA: Solo permite contabilizar el stock físico total, ya que una vez los productos pasan físicamente a estantería perdemos su trazabilidad por lotes (los productos se mezclan físicamente).
+- ALMACÉN: Permite contabilizar de dos formas:
+  a) Por stock físico total: El sistema distribuirá las discrepancias entre lotes usando política FIFO.
+  b) Por stock físico de cada lote: Permite especificar el stock físico de lotes individuales para ajustes precisos.
+
 Entradas:
-- SKU
-- Stock del producto en estanterias
-- Stock dek producto en almacén
+- SKU del producto
+- Stock físico total en estantería (obligatorio)
+- Para almacén, una de las siguientes opciones:
+  * Stock físico total en almacén (contabilización rápida)
+  * Lista de lotes con stock físico por lote (contabilización detallada):
+    - ID de lote
+    - Stock físico del lote en almacén
+
 Proceso:
-- Comparar físico total en estanteria vs lógico total en estanteria
-- Comparar físico total en almacen vs lógico total en almacen
-- Generar reportes de discrepancias
-- Ajustar stock lógico (aplicando politica correspondiente)
+- Comparar físico total en estantería vs lógico total en estantería
+- Para almacén:
+  * Si se proporcionó total: Comparar físico total vs lógico total y distribuir ajustes con FIFO
+  * Si se proporcionaron lotes individuales: Comparar físico vs lógico por cada lote
+- Calcular discrepancias por ubicación
+- Generar reporte detallado de discrepancias
+- Aplicar ajustes al inventario según la política de rotación del producto
+- Registrar movimientos de inventario por cada ajuste realizado
+
 Salidas:
-- Reportes de discrepancias
+- Inventario actualizado con nuevas cantidades
+- Reporte de discrepancias conteniendo:
+  * SKU del producto
+  * Stock lógico y físico en estantería, con discrepancia calculada
+  * Stock lógico y físico en almacén, con discrepancia calculada
+  * Detalle de ajustes realizados por lote (si aplica)
+- Movimientos de inventario registrados
+
 Precondiciones:
-- Usuario autenticado con permisos de administrador de inventario.
-- El producto a contabilizar debe existir en el catálogo y tener registro de stock en el sistema.
+- Usuario autenticado con permisos de administrador de inventario
+- El producto a contabilizar debe existir en el catálogo y tener registro de stock en el sistema
+- Si se especifican lotes, estos deben pertenecer al SKU indicado
+
 Postcondiciones:
-- Niveles de stock corregidos
-- Se registra en el sistema la fecha, el usuario y los ajustes realizados durante la contabilización.
+- Niveles de stock corregidos en almacén y estantería
+- Se registra en el sistema la fecha, el usuario y los ajustes realizados durante la contabilización
+- Discrepancias documentadas para auditoría
+
 Restricciones:
-- La contabilización no puede modificar productos que estén descatalogados.
+- La contabilización no puede modificar productos que estén descatalogados
+- En estantería no se puede especificar stock por lote (pérdida de trazabilidad)
+- Si se contabiliza por lotes en almacén, se deben incluir todos los lotes activos del producto
+- Los lotes especificados deben existir y pertenecer al SKU indicado
+
+Nota técnica:
+- El sistema mantiene cantidades por lote en estantería como aproximación lógica, pero la contabilización manual refleja la realidad física donde los productos se mezclan.
+- Al aplicar ajustes en estantería sin lote específico, el sistema usa FIFO para distribuir las discrepancias entre lotes, como mejor aproximación posible.
+
 Prioridad: Media
 
 

@@ -463,7 +463,17 @@ INFO_MOVER_STOCK = SKU + IDLote + CantidadTransladar + UnidadMedida
 #### INFO_CONTABILIZACION
 
 ```
-INFO_CONTABILIZACION = SKU + StockFisicoEstanteria + StockFisicoAlmacen
+INFO_CONTABILIZACION = SKU + (ContabilizacionEstanteria) + (ContabilizacionAlmacen)
+
+ContabilizacionEstanteria = StockFisicoEstanteria
+ContabilizacionAlmacen = [StockFisicoAlmacenTotal | ContabilizacionPorLotes]
+ContabilizacionPorLotes = {StockFisicoLote}
+StockFisicoLote = IDLote + StockFisicoAlmacen
+
+**Nota: Debe proporcionar al menos una contabilización (estantería o almacén o ambas)**
+**Para almacén hay dos modalidades:**
+  - **Modo rápido:** Proporcionar solo StockFisicoAlmacenTotal (sistema distribuye con FIFO)
+  - **Modo preciso:** Proporcionar ContabilizacionPorLotes (ajuste por lote)
 
 **Usado en AC19**
 
@@ -851,12 +861,19 @@ CONFIRMACION_STOCK_MOVIDO = SKU + IDLote + CantidadMovida +
 #### REPORTE_CONTABILIZACION
 
 ```
-REPORTE_CONTABILIZACION = SKU + StockLogicoEstanteria + 
-                          StockFisicoEstanteria + DiscrepanciaEstanteria + 
-                          StockLogicoAlmacen + StockFisicoAlmacen + 
-                          DiscrepanciaAlmacen + {AjusteRealizado}
+REPORTE_CONTABILIZACION = SKU + StockLogicoEstanteria +
+                          StockFisicoEstanteria + DiscrepanciaEstanteria +
+                          StockLogicoAlmacen + StockFisicoAlmacen +
+                          DiscrepanciaAlmacen + {AjusteDetallado}
 
-AjusteRealizado = IDLote + CantidadAjustada + Motivo
+AjusteDetallado = IDLote + NumeroLote + Ubicacion + CantidadAjustada +
+                  StockAnterior + StockNuevo
+
+Ubicacion = [ALMACEN | ESTANTERIA]
+CantidadAjustada = *Con signo: positivo = añadido, negativo = deducido*
+
+**Nota:** Los campos de estantería solo estarán presentes si se contabilizó estantería.
+         Los campos de almacén solo estarán presentes si se contabilizó almacén.
 
 **Salida de AC19**
 
