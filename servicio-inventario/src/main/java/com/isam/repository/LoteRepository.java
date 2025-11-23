@@ -35,4 +35,10 @@ public interface LoteRepository extends JpaRepository<Lote, String>, JpaSpecific
     List<Lote> findLotesDisponiblesPorSku(@Param("sku") String sku, @Param("estado") EstadoLote estado);
 
     List<Lote> findBySkuAndEstadoOrderByFechaIngresoAsc(String sku, EstadoLote estado);
+    
+    @Query("SELECT l FROM Lote l WHERE l.sku = :sku AND l.cantidadAlmacen > :cantidad ORDER BY l.fechaIngreso ASC")
+    List<Lote> findBySkuAndCantidadAlmacenGreaterThan(@Param("sku") String sku, @Param("cantidad") java.math.BigDecimal cantidad);
+    
+    @Query("SELECT l FROM Lote l WHERE l.sku = :sku AND l.cantidadEstanteria > :cantidad ORDER BY l.fechaIngreso ASC")
+    List<Lote> findBySkuAndCantidadEstanteriaGreaterThan(@Param("sku") String sku, @Param("cantidad") java.math.BigDecimal cantidad);
 }

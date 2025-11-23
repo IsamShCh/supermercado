@@ -4,15 +4,22 @@ import com.isam.model.Inventario;
 import com.isam.model.Lote;
 import com.isam.model.MovimientoInventario;
 import com.isam.model.Proveedor;
+import com.isam.model.TipoAjusteInventario;
 import com.isam.dto.proveedor.ProveedorDto;
 import com.isam.dto.proveedor.AgregarProveedorRequestDto;
 import com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto;
 import com.isam.dto.inventario.CrearInventarioRequestDto;
 import com.isam.dto.inventario.DetallesInventarioCompletoDto;
+import com.isam.dto.inventario.UbicacionAjusteDto;
+import com.isam.dto.inventario.AjustarAlmacenDto;
+import com.isam.dto.inventario.AjustarEstanteriaDto;
+import com.isam.dto.inventario.AjustarInventarioManualRequestDto;
+import com.isam.dto.inventario.AjustarInventarioManualResponseDto;
 import com.isam.dto.inventario.ConsultarInventarioRequestDto;
 import com.isam.dto.inventario.ConsultarInventarioResponseDto;
 import com.isam.dto.lote.DetalleLoteDto;
 import com.isam.grpc.inventario.AgregarProveedorRequest;
+import com.isam.grpc.inventario.AjustarInventarioManualRequest;
 import com.isam.grpc.inventario.CrearInventarioRequest;
 import com.isam.grpc.inventario.ConsultarInventarioRequest;
 import com.isam.grpc.inventario.MoverStockEstanteriaRequest;
@@ -244,6 +251,52 @@ public class InventarioMapper {
         return builder.build();
     }
 
+    public AjustarInventarioManualRequestDto toDto(AjustarInventarioManualRequest request) {
+        // Convertir el tipo de ajuste
+        TipoAjusteInventario tipoAjuste = switch (request.getTipoAjuste()) {
+            case AJUSTE_MERMA -> TipoAjusteInventario.MERMA;
+            case ROBO -> TipoAjusteInventario.ROBO;
+            case CADUCADO -> TipoAjusteInventario.CADUCADO;
+            case ERROR_CONTEO -> TipoAjusteInventario.ERROR_CONTEO;
+            case PRODUCTO_ENCONTRADO -> TipoAjusteInventario.PRODUCTO_ENCONTRADO;
+            default -> throw new IllegalArgumentException("Tipo de ajuste no soportado: " + request.getTipoAjuste());
+        };
+        
+        // Convertir la ubicación del ajuste
+        UbicacionAjusteDto ubicacionAjuste = null;
+        
+        if (request.hasAjustarAlmacen()) {
+            String idLote = request.getAjustarAlmacen().hasIdLote() ?
+                request.getAjustarAlmacen().getIdLote() : null;
+            ubicacionAjuste = new AjustarAlmacenDto(idLote);
+        } else if (request.hasAjustarEstanteria()) {
+            String idLote = request.getAjustarEstanteria().hasIdLote() ?
+                request.getAjustarEstanteria().getIdLote() : null;
+            ubicacionAjuste = new AjustarEstanteriaDto(idLote);
+        }
+        
+        return new AjustarInventarioManualRequestDto(
+            request.getSku(),
+            BigDecimal.valueOf(request.getCantidadAjuste()),
+            tipoAjuste,
+            request.getMotivoDetallado(),
+            ubicacionAjuste
+        );
+    }
+
+    public AjustarInventarioManualRequest.Response toProto(AjustarInventarioManualResponseDto responseDto) {
+        // Convertir inventario a proto
+        InventarioProto inventarioProto = toProto(responseDto.inventario());
+        
+        // Convertir movimiento a proto
+        MovimientoInventarioProto movimientoProto = toProto(responseDto.movimiento());
+        
+        return AjustarInventarioManualRequest.Response.newBuilder()
+            .setInventario(inventarioProto)
+            .setMovimiento(movimientoProto)
+            .build();
+    }
+
     private com.isam.grpc.inventario.TipoMovimiento mapTipoMovimientoToProto(String tipoMovimiento) {
         switch (tipoMovimiento) {
             case "ENTRADA":
@@ -271,7 +324,7 @@ public class InventarioMapper {
     }
 
     public DetallesInventarioCompleto toProto(ConsultarInventarioResponseDto dto) {
-        // DEBUG: Fixed method access - need to get the nested DTO first
+
         DetallesInventarioCompletoDto detallesDto = dto.detallesInventario();
         
         DetallesInventarioCompleto.Builder builder = DetallesInventarioCompleto.newBuilder()

@@ -4,10 +4,17 @@ import com.isam.dto.inventario.CrearInventarioRequestDto;
 import com.isam.dto.inventario.InventarioDto;
 import com.isam.dto.inventario.ConsultarInventarioRequestDto;
 import com.isam.dto.inventario.ConsultarInventarioResponseDto;
+import com.isam.dto.inventario.AjustarInventarioManualRequestDto;
+import com.isam.dto.inventario.AjustarInventarioManualResponseDto;
+import com.isam.dto.inventario.AjustarAlmacenDto;
+import com.isam.dto.inventario.AjustarEstanteriaDto;
+import com.isam.dto.inventario.UbicacionAjusteDto;
+import com.isam.model.TipoAjusteInventario;
 import com.isam.grpc.inventario.*;
 import com.isam.grpc.inventario.CrearInventarioRequest.Response;
 
 import io.grpc.Status;
+import java.math.BigDecimal;
 import io.grpc.stub.StreamObserver;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -67,13 +74,43 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
     }
 
     @Override
+    @Transactional
     public void ajustarInventarioManual(AjustarInventarioManualRequest request, StreamObserver<AjustarInventarioManualRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Method ajustarInventarioManual not yet implemented")
-                .asRuntimeException()
-        );
+        try {
+            // Convertir el proto a DTO
+            AjustarInventarioManualRequestDto dto = inventarioMapper.toDto(request);
+            
+            // Validar
+            Set<ConstraintViolation<AjustarInventarioManualRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+            
+            // Llamar al servicio
+            AjustarInventarioManualResponseDto responseDto = inventarioService.ajustarInventarioManual(dto);
+            
+            // Convertir la respuesta DTO a proto
+            AjustarInventarioManualRequest.Response response = inventarioMapper.toProto(responseDto);
+            
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            responseObserver.onError(
+                Status.INTERNAL
+                    .withDescription("Error al ajustar inventario manual: " + e.getMessage())
+                    .asRuntimeException()
+            );
+        }
     }
 
     @Override
