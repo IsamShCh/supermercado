@@ -405,6 +405,250 @@ public class InventarioService {
     public com.isam.dto.inventario.AjustarInventarioManualResponseDto ajustarInventarioManual(com.isam.dto.inventario.AjustarInventarioManualRequestDto dto) {
         return ajusteInventarioService.ajustarInventarioManual(dto);
     }
+    /**
+     * Contabiliza el stock manualmente (AC19).
+     * Permite contabilizar estantería, almacén, o ambos.
+     * Para almacén, admite dos modalidades: rápida (total) o precisa (por lotes).
+     */
+    @Transactional
+    public com.isam.dto.inventario.ContabilizarStockManualResponseDto contabilizarStockManual(
+            com.isam.dto.inventario.ContabilizarStockManualRequestDto dto) {
+        
+        // Buscar el inventario para este SKU
+        Inventario inventario = inventarioRepository.findBySku(dto.sku())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Inventario no encontrado para SKU '" + dto.sku() + "'")
+                .asRuntimeException());
+
+        // Variables para el reporte
+        double stockLogicoEstanteria = inventario.getCantidadEstanteria().doubleValue();
+        double stockFisicoEstanteria = dto.stockFisicoEstanteria() != null ? dto.stockFisicoEstanteria() : stockLogicoEstanteria;
+        double stockLogicoAlmacen = inventario.getCantidadAlmacen().doubleValue();
+        double stockFisicoAlmacen = stockLogicoAlmacen;
+        
+        List<com.isam.dto.inventario.AjusteLoteDto> ajustesRealizados = new java.util.ArrayList<>();
+        List<com.isam.dto.movimiento.MovimientoInventarioDto> movimientos = new java.util.ArrayList<>();
+
+        // Procesar contabilización de estantería si está presente
+        if (dto.stockFisicoEstanteria() != null) {
+            procesarContabilizacionEstanteria(
+                inventario, 
+                dto.stockFisicoEstanteria(), 
+                stockLogicoEstanteria,
+                ajustesRealizados,
+                movimientos
+            );
+        }
+
+        // Procesar contabilización de almacén si se ha proporcionado
+        if (dto.contabilizacionLotes() != null) {
+            // Modalidad precisa: por lotes
+            stockFisicoAlmacen = procesarContabilizacionAlmacenPorLotes(
+                inventario,
+                dto.contabilizacionLotes(),
+                stockLogicoAlmacen,
+                ajustesRealizados,
+                movimientos
+            );
+        }
+
+        // Guardar inventario actualizado
+        Inventario inventarioActualizado = inventarioRepository.save(inventario);
+
+        // Construir DTOs de respuesta
+        com.isam.dto.inventario.InventarioDto inventarioDto = new com.isam.dto.inventario.InventarioDto(
+            inventarioActualizado.getIdInventario(),
+            inventarioActualizado.getSku(),
+            inventarioActualizado.getEan(),
+            inventarioActualizado.getPlu(),
+            inventarioActualizado.getCantidadAlmacen().doubleValue(),
+            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getUnidadMedida().name()
+        );
+
+        // Construir reporte de discrepancias
+        com.isam.dto.inventario.ReporteDiscrepanciasDto reporte = new com.isam.dto.inventario.ReporteDiscrepanciasDto(
+            dto.sku(),
+            stockLogicoEstanteria,
+            stockFisicoEstanteria,
+            stockFisicoEstanteria - stockLogicoEstanteria,
+            stockLogicoAlmacen,
+            stockFisicoAlmacen,
+            stockFisicoAlmacen - stockLogicoAlmacen,
+            ajustesRealizados
+        );
+
+        return new com.isam.dto.inventario.ContabilizarStockManualResponseDto(
+            inventarioDto,
+            movimientos,
+            reporte
+        );
+    }
+
+    private void procesarContabilizacionEstanteria(
+            Inventario inventario,
+            double stockFisico,
+            double stockLogico,
+            List<com.isam.dto.inventario.AjusteLoteDto> ajustesRealizados,
+            List<com.isam.dto.movimiento.MovimientoInventarioDto> movimientos) {
+        
+        BigDecimal discrepancia = BigDecimal.valueOf(stockFisico).subtract(BigDecimal.valueOf(stockLogico));
+        
+        if (discrepancia.compareTo(BigDecimal.ZERO) == 0) {
+            return; // No hay discrepancia, no hacer nada
+        }
+
+        // Obtener lotes con stock en estantería
+        List<Lote> lotes = loteRepository.findBySkuAndCantidadEstanteriaGreaterThan(
+            inventario.getSku(), 
+            BigDecimal.ZERO
+        ); // findBySkuAndCantidadEstanteriaGreaterThan() ejecuta una query personalizada que tiene un "ORDER BY l.fechaIngreso ASC"
+
+        // Distribuir el ajuste entre los lotes usando FIFO
+        BigDecimal restante = discrepancia;
+        
+        for (Lote lote : lotes) {
+            if (restante.compareTo(BigDecimal.ZERO) == 0) break;
+            
+            BigDecimal stockAnterior = lote.getCantidadEstanteria();
+            BigDecimal ajuste;
+            
+            if (discrepancia.compareTo(BigDecimal.ZERO) > 0) {
+                // Incremento: distribuir proporcionalmente
+                ajuste = restante.divide(BigDecimal.valueOf(lotes.size()), 3, java.math.RoundingMode.HALF_UP);
+            } else {
+                // Decremento: aplicar FIFO
+                ajuste = stockAnterior.min(restante.abs()).negate();
+            }
+            
+            lote.setCantidadEstanteria(stockAnterior.add(ajuste));
+            loteRepository.save(lote);
+            
+            // Registrar ajuste
+            ajustesRealizados.add(new com.isam.dto.inventario.AjusteLoteDto(
+                lote.getIdLote(),
+                lote.getNumeroLote(),
+                "ESTANTERIA",
+                ajuste.doubleValue(),
+                stockAnterior.doubleValue(),
+                lote.getCantidadEstanteria().doubleValue()
+            ));
+            
+            restante = restante.subtract(ajuste);
+        }
+
+        // Actualizar inventario general
+        inventario.setCantidadEstanteria(BigDecimal.valueOf(stockFisico));
+
+        // Crear movimiento
+        MovimientoInventario movimiento = new MovimientoInventario();
+        movimiento.setSku(inventario.getSku());
+        movimiento.setIdLote(null);
+        movimiento.setTipoMovimiento(TipoMovimiento.AJUSTE);
+        movimiento.setCantidad(discrepancia);
+        movimiento.setUnidadMedida(inventario.getUnidadMedida());
+        movimiento.setFechaHora(LocalDateTime.now());
+        movimiento.setIdUsuario("SYSTEM");
+        movimiento.setMotivo("Contabilización manual - Estantería");
+        movimiento.setObservaciones("Discrepancia: " + discrepancia.doubleValue());
+        
+        MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+        
+        movimientos.add(new com.isam.dto.movimiento.MovimientoInventarioDto(
+            movimientoGuardado.getIdMovimiento(),
+            movimientoGuardado.getSku(),
+            movimientoGuardado.getIdLote(),
+            movimientoGuardado.getTipoMovimiento().name(),
+            movimientoGuardado.getCantidad().doubleValue(),
+            movimientoGuardado.getUnidadMedida().name(),
+            movimientoGuardado.getFechaHora().toString(),
+            movimientoGuardado.getIdUsuario(),
+            movimientoGuardado.getMotivo(),
+            movimientoGuardado.getObservaciones()
+        ));
+    }
+
+    private double procesarContabilizacionAlmacenPorLotes(
+            Inventario inventario,
+            com.isam.dto.inventario.ContabilizacionPorLotesDto contabilizacion,
+            double stockLogico,
+            List<com.isam.dto.inventario.AjusteLoteDto> ajustesRealizados,
+            List<com.isam.dto.movimiento.MovimientoInventarioDto> movimientos) {
+        
+        double stockFisicoTotal = 0.0;
+        BigDecimal ajusteTotalInventario = BigDecimal.ZERO;
+
+        // Procesar cada lote individualmente
+        for (com.isam.dto.inventario.StockFisicoLoteDto stockLote : contabilizacion.lotes()) {
+            Lote lote = loteRepository.findById(stockLote.idLote())
+                .orElseThrow(() -> Status.NOT_FOUND
+                    .withDescription("Lote no encontrado: " + stockLote.idLote())
+                    .asRuntimeException());
+
+            // Validar que el lote pertenece al SKU
+            if (!lote.getSku().equals(inventario.getSku())) {
+                throw Status.INVALID_ARGUMENT
+                    .withDescription("El lote '" + stockLote.idLote() + "' no pertenece al SKU '" + inventario.getSku() + "'")
+                    .asRuntimeException();
+            }
+
+            BigDecimal stockAnterior = lote.getCantidadAlmacen();
+            BigDecimal stockFisico = BigDecimal.valueOf(stockLote.stockFisicoAlmacen());
+            BigDecimal discrepancia = stockFisico.subtract(stockAnterior);
+
+            // Actualizar el lote
+            lote.setCantidadAlmacen(stockFisico);
+            loteRepository.save(lote);
+
+            // Registrar ajuste
+            if (discrepancia.compareTo(BigDecimal.ZERO) != 0) {
+                ajustesRealizados.add(new com.isam.dto.inventario.AjusteLoteDto(
+                    lote.getIdLote(),
+                    lote.getNumeroLote(),
+                    "ALMACEN",
+                    discrepancia.doubleValue(),
+                    stockAnterior.doubleValue(),
+                    stockFisico.doubleValue()
+                ));
+
+                // Crear movimiento para este lote
+                MovimientoInventario movimiento = new MovimientoInventario();
+                movimiento.setSku(inventario.getSku());
+                movimiento.setIdLote(lote.getIdLote());
+                movimiento.setTipoMovimiento(TipoMovimiento.AJUSTE);
+                movimiento.setCantidad(discrepancia);
+                movimiento.setUnidadMedida(inventario.getUnidadMedida());
+                movimiento.setFechaHora(LocalDateTime.now());
+                movimiento.setIdUsuario("SYSTEM");
+                movimiento.setMotivo("Contabilización manual - Almacén (modo preciso)");
+                movimiento.setObservaciones("Lote: " + lote.getNumeroLote() + ", Discrepancia: " + discrepancia.doubleValue());
+                
+                MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+                
+                movimientos.add(new com.isam.dto.movimiento.MovimientoInventarioDto(
+                    movimientoGuardado.getIdMovimiento(),
+                    movimientoGuardado.getSku(),
+                    movimientoGuardado.getIdLote(),
+                    movimientoGuardado.getTipoMovimiento().name(),
+                    movimientoGuardado.getCantidad().doubleValue(),
+                    movimientoGuardado.getUnidadMedida().name(),
+                    movimientoGuardado.getFechaHora().toString(),
+                    movimientoGuardado.getIdUsuario(),
+                    movimientoGuardado.getMotivo(),
+                    movimientoGuardado.getObservaciones()
+                ));
+            }
+
+            stockFisicoTotal += stockFisico.doubleValue();
+            ajusteTotalInventario = ajusteTotalInventario.add(discrepancia);
+        }
+
+        // Actualizar inventario general
+        inventario.setCantidadAlmacen(BigDecimal.valueOf(stockFisicoTotal));
+
+        return stockFisicoTotal;
+    }
+
 
 
 }

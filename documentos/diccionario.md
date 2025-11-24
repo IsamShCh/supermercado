@@ -466,14 +466,12 @@ INFO_MOVER_STOCK = SKU + IDLote + CantidadTransladar + UnidadMedida
 INFO_CONTABILIZACION = SKU + (ContabilizacionEstanteria) + (ContabilizacionAlmacen)
 
 ContabilizacionEstanteria = StockFisicoEstanteria
-ContabilizacionAlmacen = [StockFisicoAlmacenTotal | ContabilizacionPorLotes]
+ContabilizacionAlmacen = ContabilizacionPorLotes
 ContabilizacionPorLotes = {StockFisicoLote}
 StockFisicoLote = IDLote + StockFisicoAlmacen
 
 **Nota: Debe proporcionar al menos una contabilización (estantería o almacén o ambas)**
-**Para almacén hay dos modalidades:**
-  - **Modo rápido:** Proporcionar solo StockFisicoAlmacenTotal (sistema distribuye con FIFO)
-  - **Modo preciso:** Proporcionar ContabilizacionPorLotes (ajuste por lote)
+**Para almacén, la contabilización se realiza de forma detallada, especificando el stock físico para cada lote.**
 
 **Usado en AC19**
 

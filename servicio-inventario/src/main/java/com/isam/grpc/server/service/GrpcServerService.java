@@ -152,13 +152,44 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
     }
 
     @Override
+    @Transactional
     public void contabilizarStockManual(ContabilizarStockManualRequest request, StreamObserver<ContabilizarStockManualRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Method contabilizarStockManual not yet implemented")
-                .asRuntimeException()
-        );
+        try {
+            // Convertir el proto a DTO
+            com.isam.dto.inventario.ContabilizarStockManualRequestDto dto = inventarioMapper.toDto(request);
+            
+            // Validar
+            Set<ConstraintViolation<com.isam.dto.inventario.ContabilizarStockManualRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+            
+            // Llamar al servicio
+            com.isam.dto.inventario.ContabilizarStockManualResponseDto responseDto =
+                inventarioService.contabilizarStockManual(dto);
+            
+            // Convertir la respuesta DTO a proto
+            ContabilizarStockManualRequest.Response response = inventarioMapper.toProto(responseDto);
+            
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            responseObserver.onError(
+                Status.INTERNAL
+                    .withDescription("Error al contabilizar stock manual: " + e.getMessage())
+                    .asRuntimeException()
+            );
+        }
     }
 
     @Override

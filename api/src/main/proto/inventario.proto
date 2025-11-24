@@ -212,11 +212,8 @@ message ContabilizarStockManualRequest {
   // Contabilización de estantería (opcional)
   optional double stock_fisico_estanteria = 2;
   
-  // Contabilización de almacén (opcional): dos modalidades
-  oneof contabilizacion_almacen {
-    double stock_fisico_almacen_total = 3;  // Modo rápido: sistema distribuye con FIFO
-    ContabilizacionPorLotes contabilizacion_lotes = 4;  // Modo preciso: lote por lote
-  }
+  // Contabilización de almacén (opcional): solo modo preciso por lotes
+  optional ContabilizacionPorLotes contabilizacion_lotes = 3;
 
   message Response {
     InventarioProto inventario = 1;

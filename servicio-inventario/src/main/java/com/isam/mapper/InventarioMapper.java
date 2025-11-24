@@ -451,4 +451,98 @@ public class InventarioMapper {
         // TODO: Implement when DTOs are defined
         return null;
     }
+
+    // Mapeo para Contabilizar Stock Manual
+    public com.isam.dto.inventario.ContabilizarStockManualRequestDto toDto(
+            com.isam.grpc.inventario.ContabilizarStockManualRequest request) {
+        
+        Double stockFisicoEstanteria = request.hasStockFisicoEstanteria() ?
+            request.getStockFisicoEstanteria() : null;
+        
+        com.isam.dto.inventario.ContabilizacionPorLotesDto contabilizacionLotes = null;
+
+        // Determinar modalidad de contabilización de almacén
+        if (request.hasContabilizacionLotes()) {
+            contabilizacionLotes = toDtoContabilizacionPorLotes(request.getContabilizacionLotes());
+        }
+
+        return new com.isam.dto.inventario.ContabilizarStockManualRequestDto(
+            request.getSku(),
+            stockFisicoEstanteria,
+            contabilizacionLotes
+        );
+    }
+    
+    private com.isam.dto.inventario.ContabilizacionPorLotesDto toDtoContabilizacionPorLotes(
+            com.isam.grpc.inventario.ContabilizacionPorLotes proto) {
+        
+        java.util.List<com.isam.dto.inventario.StockFisicoLoteDto> lotes = proto.getLotesList().stream()
+            .map(this::toDtoStockFisicoLote)
+            .collect(java.util.stream.Collectors.toList());
+        
+        return new com.isam.dto.inventario.ContabilizacionPorLotesDto(lotes);
+    }
+    
+    private com.isam.dto.inventario.StockFisicoLoteDto toDtoStockFisicoLote(
+            com.isam.grpc.inventario.StockFisicoLote proto) {
+        
+        return new com.isam.dto.inventario.StockFisicoLoteDto(
+            proto.getIdLote(),
+            proto.getStockFisicoAlmacen()
+        );
+    }
+    
+    public com.isam.grpc.inventario.ContabilizarStockManualRequest.Response toProto(
+            com.isam.dto.inventario.ContabilizarStockManualResponseDto dto) {
+        
+        // Convertir inventario
+        InventarioProto inventarioProto = toProto(dto.inventario());
+        
+        // Convertir movimientos
+        java.util.List<MovimientoInventarioProto> movimientosProto = dto.movimientos().stream()
+            .map(this::toProto)
+            .collect(java.util.stream.Collectors.toList());
+        
+        // Convertir reporte de discrepancias
+        com.isam.grpc.inventario.ReporteDiscrepancias reporteProto = toProtoReporteDiscrepancias(dto.reporteDiscrepancias());
+        
+        return com.isam.grpc.inventario.ContabilizarStockManualRequest.Response.newBuilder()
+            .setInventario(inventarioProto)
+            .addAllMovimientos(movimientosProto)
+            .setReporteDiscrepancias(reporteProto)
+            .build();
+    }
+    
+    private com.isam.grpc.inventario.ReporteDiscrepancias toProtoReporteDiscrepancias(
+            com.isam.dto.inventario.ReporteDiscrepanciasDto dto) {
+        
+        // Convertir ajustes de lotes
+        java.util.List<com.isam.grpc.inventario.AjusteLote> ajustesProto = dto.ajustesRealizados().stream()
+            .map(this::toProtoAjusteLote)
+            .collect(java.util.stream.Collectors.toList());
+        
+        return com.isam.grpc.inventario.ReporteDiscrepancias.newBuilder()
+            .setSku(dto.sku())
+            .setStockLogicoEstanteria(dto.stockLogicoEstanteria())
+            .setStockFisicoEstanteria(dto.stockFisicoEstanteria())
+            .setDiscrepanciaEstanteria(dto.discrepanciaEstanteria())
+            .setStockLogicoAlmacen(dto.stockLogicoAlmacen())
+            .setStockFisicoAlmacen(dto.stockFisicoAlmacen())
+            .setDiscrepanciaAlmacen(dto.discrepanciaAlmacen())
+            .addAllAjustesRealizados(ajustesProto)
+            .build();
+    }
+    
+    private com.isam.grpc.inventario.AjusteLote toProtoAjusteLote(
+            com.isam.dto.inventario.AjusteLoteDto dto) {
+        
+        return com.isam.grpc.inventario.AjusteLote.newBuilder()
+            .setIdLote(dto.idLote())
+            .setNumeroLote(dto.numeroLote())
+            .setUbicacion(dto.ubicacion())
+            .setCantidadAjustada(dto.cantidadAjustada())
+            .setStockAnterior(dto.stockAnterior())
+            .setStockNuevo(dto.stockNuevo())
+            .build();
+    }
 }
