@@ -978,7 +978,7 @@ Estado = [Temporal | Cerrado | Cancelado]
 
 ```
 CONFIRMACION_PAGO_PROCESADO = IDPago + IDTicketTemporal + MetodoPago + 
-                              MontoRecibido + MontoCambio + Mensaje
+                              MontoRecibido + MontoCambio
 
 **Salida de AC28**
 

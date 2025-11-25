@@ -109,8 +109,6 @@ message CrearNuevoTicketRequest {
     string id_ticket_temporal = 1;        // @IDTicketTemporal
     string fecha_hora_creacion = 2;       // Timestamp de creación (Formato ISO 8601 con zona horaria)
     string nombre_cajero = 3;             // Nombre completo del usuario autenticado
-    string mensaje = 4;                   // Mensaje descriptivo
-
   }
 }
 // ========================================
@@ -130,7 +128,6 @@ message AnadirProductoTicketRequest {
     string precio_unitario = 5;           // PrecioUnitario (decimal 10,2)
     string subtotal = 6;                  // Subtotal del producto (decimal 10,2)
     string subtotal_ticket_actual = 7;    // SubtotalTicketActual (decimal 10,2)
-    string mensaje = 8;                   // Mensaje descriptivo
   }
 }
 
@@ -152,7 +149,6 @@ message ProcesarPagoRequest {
     MetodoPago metodo_pago = 3;           // MetodoPago utilizado
     string monto_recibido = 4;            // MontoRecibido del cliente
     string monto_cambio = 5;              // MontoCambio devuelto (decimal 10,2)
-    string mensaje = 6;                   // Mensaje descriptivo
   }
 }
 
@@ -176,7 +172,6 @@ message CerrarTicketRequest {
     MetodoPago metodo_pago = 8;                     // MetodoPago utilizado
     string monto_recibido = 9;                      // MontoRecibido del cliente
     string monto_cambio = 10;                       // MontoCambio devuelto
-    string mensaje = 11;                            // Mensaje descriptivo
   }
 }
 
