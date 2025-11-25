@@ -5,23 +5,20 @@ import com.isam.model.EstadoTicket;
 import com.isam.model.Ticket;
 import com.isam.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.grpc.Status;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class VentasService {
 
-    @Autowired
-    private TicketRepository ticketRepository;
+    private final TicketRepository ticketRepository;
 
     @Transactional
     public CrearNuevoTicketResponseDto crearNuevoTicket(String idUsuario, String nombreCajero) {

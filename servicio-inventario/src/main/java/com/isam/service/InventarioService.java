@@ -21,14 +21,12 @@ import com.isam.dto.inventario.ConsultarInventarioRequestDto;
 import com.isam.dto.inventario.ConsultarInventarioResponseDto;
 import com.isam.model.EstadoLote;
 import com.isam.model.TipoMovimiento;
-import com.isam.model.UnidadMedida;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,16 +40,11 @@ import java.util.Optional;
 @Transactional
 public class InventarioService {
 
-    @Autowired
-    private InventarioRepository inventarioRepository;
-    @Autowired
-    private LoteRepository loteRepository;
-    @Autowired
-    private MovimientoInventarioRepository movimientoRepository;
-    @Autowired
-    private ProveedorRepository proveedorRepository;
-    @Autowired
-    private AjusteInventarioService ajusteInventarioService;
+    private final InventarioRepository inventarioRepository;
+    private final LoteRepository loteRepository;
+    private final MovimientoInventarioRepository movimientoRepository;
+    private final ProveedorRepository proveedorRepository;
+    private final AjusteInventarioService ajusteInventarioService;
 
     
     /**

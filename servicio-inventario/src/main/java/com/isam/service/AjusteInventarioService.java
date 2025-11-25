@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +34,9 @@ import java.util.List;
 @Transactional
 public class AjusteInventarioService {
 
-    @Autowired
-    private InventarioRepository inventarioRepository;
-    @Autowired
-    private LoteRepository loteRepository;
-    @Autowired
-    private MovimientoInventarioRepository movimientoRepository;
+    private final InventarioRepository inventarioRepository;
+    private final LoteRepository loteRepository;
+    private final MovimientoInventarioRepository movimientoRepository;
 
     /**
      * Aplica un ajuste manual al inventario (AC16).

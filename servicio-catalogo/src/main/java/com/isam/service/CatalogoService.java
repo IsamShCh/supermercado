@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,23 +42,18 @@ import io.grpc.Status;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.jpa.domain.Specification;
 
 @Service
+@RequiredArgsConstructor
 public class CatalogoService {
 
-    @Autowired
-    private ProductoRepository productoRepository;
-    @Autowired
-    private OfertaRepository ofertaRepository;
-    @Autowired
-    private CategoriaRepository categoriaRepository;
-    @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
-    public CatalogoService() {
-    }
+    private final ProductoRepository productoRepository;
+    private final OfertaRepository ofertaRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final EntityManager entityManager; // NOTE - Ya ni recuerdo para que servia esto. Recuerdo usarlo para hacer consultas personalizadas.
 
     /**
      * Crea un producto a partir de DTO, gestionando la búsqueda de categorías y la creación de entidades.

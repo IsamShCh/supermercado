@@ -6,19 +6,15 @@ import com.isam.dto.inventario.ConsultarInventarioRequestDto;
 import com.isam.dto.inventario.ConsultarInventarioResponseDto;
 import com.isam.dto.inventario.AjustarInventarioManualRequestDto;
 import com.isam.dto.inventario.AjustarInventarioManualResponseDto;
-import com.isam.dto.inventario.AjustarAlmacenDto;
-import com.isam.dto.inventario.AjustarEstanteriaDto;
-import com.isam.dto.inventario.UbicacionAjusteDto;
-import com.isam.model.TipoAjusteInventario;
 import com.isam.grpc.inventario.*;
 import com.isam.grpc.inventario.CrearInventarioRequest.Response;
 
 import io.grpc.Status;
-import java.math.BigDecimal;
 import io.grpc.stub.StreamObserver;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,14 +22,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceImplBase {
 
-    @Autowired
-    private com.isam.service.InventarioService inventarioService;
-    @Autowired
-    private com.isam.mapper.InventarioMapper inventarioMapper;
-    @Autowired
-    private Validator validator;
+    private final com.isam.service.InventarioService inventarioService;
+    private final com.isam.mapper.InventarioMapper inventarioMapper;
+    private final Validator validator;
 
     @Override
     @Transactional

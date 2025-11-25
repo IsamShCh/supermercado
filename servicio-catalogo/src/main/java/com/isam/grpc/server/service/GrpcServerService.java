@@ -22,26 +22,24 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
+@RequiredArgsConstructor
 public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
 
     //private static Log log = LogFactory.getLog(GrpcServerService.class);
-    @Autowired
-    private CatalogoService catalogoService;
-    @Autowired
-    private CatalogoMapper productoMapper;
-    @Autowired
-    private Validator validator;
+    private final CatalogoService catalogoService;
+    private final CatalogoMapper productoMapper;
+    private final Validator validator;
 
     @Override
     public void crearProducto(CrearProductoRequest request, StreamObserver<CrearProductoRequest.Response> responseObserver) {

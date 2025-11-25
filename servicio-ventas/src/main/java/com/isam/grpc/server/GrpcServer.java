@@ -5,17 +5,19 @@ import com.isam.grpc.server.service.GrpcServerService;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class GrpcServer {
 
     private final Logger LOG = LoggerFactory.getLogger(getClass());
@@ -25,14 +27,9 @@ public class GrpcServer {
     int port;
     private Server server;
 
-    @Autowired
-    private GrpcServerService grpcServerService;
-    @Autowired
-    private ExceptionInterceptor exceptionInterceptor;
+    private final GrpcServerService grpcServerService;
+    private final ExceptionInterceptor exceptionInterceptor;
 
-    public GrpcServer(){
-
-    }
 
     public void start() throws IOException, InterruptedException {
         LOG.info("El servidor se está iniciado en el siguiente puerto {}", port);
