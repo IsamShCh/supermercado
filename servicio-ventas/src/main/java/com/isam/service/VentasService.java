@@ -51,8 +51,7 @@ public class VentasService {
         
         // Formatear fecha y hora en formato ISO 8601
         String fechaHoraFormateada = ticketGuardado.getFechaHora()
-            .atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            .toString();
         
         // Construir y retornar respuesta
         return new CrearNuevoTicketResponseDto(
