@@ -23,7 +23,20 @@ services:
     volumes:
       - pgdata_inventario:/var/lib/postgresql/data
 
+  ventas-db:
+    image: postgres:15-alpine
+    container_name: ventas-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: contrasena_secreta
+      POSTGRES_DB: ventas-db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_ventas:/var/lib/postgresql/data
+
 
 volumes:
   pgdata_catalogo:
   pgdata_inventario:
+  pgdata_ventas:
