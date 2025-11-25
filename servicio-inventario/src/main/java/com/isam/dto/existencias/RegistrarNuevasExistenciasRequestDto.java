@@ -25,6 +25,7 @@ public record RegistrarNuevasExistenciasRequestDto(
     String fechaCaducidad,  // Formato YYYY-MM-DD
     
     @NotBlank(message = "El ID del proveedor es obligatorio")
+    @Size(min=36, max=36, message = "El ID del proveedor debe ser de 36 caracteres exactamente")
     String idProveedor,
     
     @NotNull(message = "La unidad de medida es obligatoria")

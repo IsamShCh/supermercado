@@ -9,7 +9,8 @@ import java.time.LocalDate;
 public class Oferta {
 
     @Id
-    @Column(name = "IDOferta", length = 50)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "IDOferta", length = 36)
     private String idOferta;
 
     @ManyToOne(fetch = FetchType.LAZY)

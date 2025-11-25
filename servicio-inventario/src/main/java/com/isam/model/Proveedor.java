@@ -11,7 +11,8 @@ import lombok.Setter;
 public class Proveedor {
 
     @Id
-    @Column(name = "IDProveedor", length = 50)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "IDProveedor", length = 36)
     private String idProveedor;
 
     @Column(name = "NombreProveedor", length = 200, nullable = false)

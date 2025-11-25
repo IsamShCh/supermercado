@@ -70,12 +70,9 @@ public class InventarioService {
             }
         }
 
-        // Generar ID único para el proveedor
-        String idProveedor = "PROV-" + System.currentTimeMillis();
 
         // Crear el proveedor
         Proveedor proveedor = new Proveedor();
-        proveedor.setIdProveedor(idProveedor);
         proveedor.setNombreProveedor(dto.nombreProveedor());
         proveedor.setContacto(dto.contacto());
         proveedor.setDireccion(dto.direccion());

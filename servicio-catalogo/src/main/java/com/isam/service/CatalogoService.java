@@ -508,12 +508,9 @@ public class CatalogoService {
                 .asRuntimeException();
         }
         
-        // Generar ID único para la oferta
-        String idOferta = "OF-" + dto.sku() + "-" + System.currentTimeMillis(); //NOTE - De momento lo dejamos asi para no tener que cambiar el contrato, pero habria que reflexionar si es mejor cambiar la entidads para que la autogenere.
         
         // Crear la oferta
         Oferta oferta = new Oferta();
-        oferta.setIdOferta(idOferta);
         oferta.setProducto(producto);
         oferta.setPrecioPromocional(dto.precioPromocional());
         oferta.setTipoPromocion(dto.tipoPromocion());
