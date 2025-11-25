@@ -120,7 +120,7 @@ erDiagram
     
     PAGOS {
         string IDPago PK
-        string NumeroTicket FK
+        string IDTicket FK
         enum MetodoPago "Efectivo, TarjetaDebito, TarjetaCredito, Transferencia"
         decimal MontoRecibido
         decimal MontoCambio
@@ -129,7 +129,7 @@ erDiagram
     
     DEVOLUCIONES {
         string IDDevolucion PK
-        string NumeroTicket FK
+        string IDTicket FK
         date FechaDevolucion
         decimal MontoReembolsado
         string IDUsuario FK

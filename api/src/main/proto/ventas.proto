@@ -1,0 +1,242 @@
+syntax = "proto3";
+
+package isam.ventas;
+
+import "comun.proto";
+
+option java_multiple_files = true;
+option java_package = "com.isam.grpc.ventas";
+option java_outer_classname = "VentasProto";
+
+// ========================================
+//SECTION - INFO Ventas
+// ========================================
+
+// ========================================
+// ENUMERACIONES ESPECÍFICAS DE VENTAS
+// ========================================
+
+enum EstadoTicket {
+  ESTADO_TICKET_NO_ESPECIFICADO = 0;
+  TEMPORAL = 1;
+  CERRADO = 2;
+  CANCELADO = 3;
+}
+
+enum MetodoPago {
+  METODO_PAGO_NO_ESPECIFICADO = 0;
+  EFECTIVO = 1;
+  TARJETA_DEBITO = 2;
+  TARJETA_CREDITO = 3;
+  TRANSFERENCIA = 4;
+}
+
+// ========================================
+// ALMACENES/ENTIDADES PROTO
+// ========================================
+message TicketProto {
+  string id_ticket = 1;
+  string numero_ticket = 2;
+  string id_usuario = 3;
+  string fecha_hora = 4;
+  string subtotal = 5;
+  string total_impuestos = 6;
+  string total = 7;
+  string id_pago = 8;
+  EstadoTicket estado_ticket = 9;
+}
+
+message ItemTicketProto {
+  string id_item_ticket = 1;
+  string id_ticket = 2;
+  int32 numero_linea = 3;
+  string sku = 4;
+  string descripcion = 5;
+  string cantidad = 6;
+  string precio_unitario = 7;
+  string descuento = 8;
+  string subtotal = 9;
+  string impuesto = 10;
+}
+
+message PagoProto {
+  string id_pago = 1;
+  string id_ticket = 2;
+  MetodoPago metodo_pago = 3;
+  string monto_recibido = 4;
+  string monto_cambio = 5;
+  string fecha_hora = 6;
+}
+
+message DevolucionProto {
+  string id_devolucion = 1;
+  string id_ticket = 2;
+  string fecha_devolucion = 3;
+  string monto_reembolsado = 4;
+  string id_usuario = 5;
+}
+
+message ProductoDevolucionProto {
+  string id_devolucion = 1;
+  string sku = 2;
+  string cantidad = 3;
+  string precio_original = 4;
+  string subtotal = 5;
+}
+
+// ========================================
+// Complejos/Compuestos
+// ========================================
+
+// ========================================
+//!SECTION - INFO Ventas
+// ========================================
+
+// ========================================
+//SECTION - Messages Peticion/Respuesta
+// ========================================
+
+// ========================================
+// AC23: Crear nuevo ticket temporal
+// ========================================
+message CrearNuevoTicketRequest {
+  // SOLICITUD_NUEVO_TICKET
+  // No requiere parametros de entrada. Usa el contexto del usuario autenticado
+
+  // AC23R: Confirmación de ticket creado
+  message Response{
+    // CONFIRMACION_TICKET_CREADO
+    string id_ticket_temporal = 1;        // @IDTicketTemporal
+    string fecha_hora_creacion = 2;       // Timestamp de creación (Formato ISO 8601 con zona horaria)
+    string nombre_cajero = 3;             // Nombre completo del usuario autenticado
+    string mensaje = 4;                   // Mensaje descriptivo
+
+  }
+}
+// ========================================
+//  AC24: Añadir producto al ticket
+// ========================================
+message AnadirProductoTicketRequest {
+  // INFO_AÑADIR_PRODUCTO
+  string id_ticket_temporal = 1;          // IDTicketTemporal
+  string codigo_barras = 2;               // CodigoBarras = [EAN | PLU | CodigoBarrasGranel]
+
+  message Response{
+    // CONFIRMACION_PRODUCTO_AÑADIDO
+    string id_ticket_temporal = 1;        // IDTicketTemporal
+    string sku = 2;                       // SKU del producto añadido
+    string nombre_producto = 3;           // Nombre del producto
+    string cantidad = 4;                  // Cantidad (decimal 10,3)
+    string precio_unitario = 5;           // PrecioUnitario (decimal 10,2)
+    string subtotal = 6;                  // Subtotal del producto (decimal 10,2)
+    string subtotal_ticket_actual = 7;    // SubtotalTicketActual (decimal 10,2)
+    string mensaje = 8;                   // Mensaje descriptivo
+  }
+}
+
+
+// ========================================
+//  AC28: Procesar pago de un ticket
+// ========================================
+message ProcesarPagoRequest {
+  // INFO_PAGO
+  string id_ticket_temporal = 1;          // IDTicketTemporal
+  MetodoPago metodo_pago = 2;             // MetodoPago = [Efectivo | TarjetaDebito | TarjetaCredito | Transferencia]
+  string monto_recibido = 3;              // MontoRecibido (decimal 10,2)
+
+  // AC28R: Confirmación de pago procesado
+  message Response{
+    // CONFIRMACION_PAGO_PROCESADO
+    string id_pago = 1;                   // IDPago generado
+    string id_ticket_temporal = 2;        // IDTicketTemporal
+    MetodoPago metodo_pago = 3;           // MetodoPago utilizado
+    string monto_recibido = 4;            // MontoRecibido del cliente
+    string monto_cambio = 5;              // MontoCambio devuelto (decimal 10,2)
+    string mensaje = 6;                   // Mensaje descriptivo
+  }
+}
+
+// ========================================
+// AC29: Cerrar ticket de venta
+// ========================================
+message CerrarTicketRequest {
+  // SOLICITUD_CERRAR_TICKET
+  string id_ticket_temporal = 1;        // IDTicketTemporal
+
+  // AC29R: Ticket cerrado
+  message Response{
+    // TICKET_CERRADO
+    string numero_ticket = 1;                       // NumeroTicket único generado
+    string fecha_hora = 2;                          // Timestamp de cierre (Formato ISO 8601)
+    string nombre_cajero = 3;                       // Nombre del cajero que procesó
+    repeated LineaVentaProto lineas_venta = 4;      // Lista de productos vendidos
+    string subtotal = 5;                            // Subtotal sin impuestos (decimal 10,2)
+    string total_impuestos = 6;                     // TotalImpuestos (decimal 10,2)
+    string total = 7;                               // Total de la venta (decimal 10,2)
+    MetodoPago metodo_pago = 8;                     // MetodoPago utilizado
+    string monto_recibido = 9;                      // MontoRecibido del cliente
+    string monto_cambio = 10;                       // MontoCambio devuelto
+    string mensaje = 11;                            // Mensaje descriptivo
+  }
+}
+
+// Auxiliares
+
+// Mensaje auxiliar para las líneas de venta
+message LineaVentaProto {
+  // LineaVenta
+  int32 numero_linea = 1;
+  string sku = 2;
+  string descripcion = 3;
+  string cantidad = 4;                              // decimal 10,3
+  string precio_unitario = 5;                       // decimal 10,2
+  optional string descuento = 6;                    // opcional, decimal 10,2
+  optional string promocion_aplicada = 7;           // opcional
+  string subtotal = 8;                              // decimal 10,2
+  string impuesto = 9;                              // decimal 5,2 (porcentaje)
+}
+
+// ========================================
+// AC
+// ========================================
+
+
+// ========================================
+// AC
+// ========================================
+
+
+// ========================================
+// AC
+// ========================================
+
+
+// ========================================
+// AC
+// ========================================
+
+
+// ========================================
+//!SECTION - Messages
+// ========================================
+
+// ========================================
+//SECTION - Servicios
+// ========================================
+
+service VentasService {
+  // Gestión de Ventas
+  
+  // AC23: Crear nuevo ticket temporal
+  rpc CrearNuevoTicket(CrearNuevoTicketRequest) returns (CrearNuevoTicketRequest.Response);
+  // AC24: Añadir producto al ticket
+  rpc AnadirProductoTicket(AnadirProductoTicketRequest) returns (AnadirProductoTicketRequest.Response);
+  // AC28: Procesar pago de un ticket
+  rpc ProcesarPago(ProcesarPagoRequest) returns (ProcesarPagoRequest.Response);
+  // AC29: Cerrar ticket de venta
+  rpc CerrarTicket(CerrarTicketRequest) returns (CerrarTicketRequest.Response);
+}
+
+// ========================================
+// !SECTION - Servicios
+// ========================================

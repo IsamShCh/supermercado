@@ -21,6 +21,7 @@
         <module>api</module>
         <module>servicio-catalogo</module>
         <module>servicio-inventario</module>
+        <module>servicio-ventas</module>
     </modules>
 
 
