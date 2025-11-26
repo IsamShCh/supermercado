@@ -931,7 +931,7 @@ CONFIRMACION_TICKET_CREADO = IDTicketTemporal +  NumeroTicket + FechaHoraCreacio
 #### CONFIRMACION_PRODUCTO_AÑADIDO
 
 ```
-CONFIRMACION_PRODUCTO_AÑADIDO = IDTicketTemporal + SKU + NombreProducto + 
+CONFIRMACION_PRODUCTO_AÑADIDO = IDTicketTemporal + SKU + IDItemTicket + NumeroLinea + NombreProducto + 
                                 Cantidad + PrecioUnitario + Subtotal + 
                                 SubtotalTicketActual
 

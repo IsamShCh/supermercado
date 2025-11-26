@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: contrasena_secreta
-      POSTGRES_DB: catalogo_db
+      POSTGRES_DB: catalogo-db
     ports:
       - "5432:5432"
     volumes:

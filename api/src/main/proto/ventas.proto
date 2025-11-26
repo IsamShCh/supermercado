@@ -124,6 +124,8 @@ message AnadirProductoTicketRequest {
     // CONFIRMACION_PRODUCTO_AÑADIDO
     string id_ticket_temporal = 1;        // IDTicketTemporal
     string sku = 2;                       // SKU del producto añadido
+    string id_item_ticket = 8;            // IDItemTicket generado
+    int32 numero_linea = 9;               // Número de línea del producto en el ticket
     string nombre_producto = 3;           // Nombre del producto
     string cantidad = 4;                  // Cantidad (decimal 10,3)
     string precio_unitario = 5;           // PrecioUnitario (decimal 10,2)

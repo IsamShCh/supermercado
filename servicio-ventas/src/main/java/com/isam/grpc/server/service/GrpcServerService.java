@@ -46,12 +46,30 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
     @Override
     public void anadirProductoTicket(AnadirProductoTicketRequest request,
             StreamObserver<com.isam.grpc.ventas.AnadirProductoTicketRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Metodo anadirProductoTicket no esta implementado todavía")
-                .asRuntimeException()
-        );
+        log.info("Recibida solicitud para añadir producto al ticket: idTicket='{}', codigoBarras='{}'",
+            request.getIdTicketTemporal(), request.getCodigoBarras());
+        
+        try {
+            // Convertir proto a DTO
+            com.isam.dto.AnadirProductoTicketRequestDto dto = ventasMapper.toDto(request);
+            
+            // Llamar al servicio
+            com.isam.dto.AnadirProductoTicketResponseDto responseDto = ventasService.anadirProductoTicket(dto);
+            
+            // Convertir DTO a proto
+            com.isam.grpc.ventas.AnadirProductoTicketRequest.Response responseProto = ventasMapper.toProto(responseDto);
+            
+            log.info("Producto añadido exitosamente al ticket: SKU='{}', Subtotal={}",
+                responseDto.sku(), responseDto.subtotal());
+            
+            // Construir respuesta
+            responseObserver.onNext(responseProto);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            log.error("Error al añadir producto al ticket: {}", e.getMessage());
+            responseObserver.onError(e);
+        }
     }
 
     @Override

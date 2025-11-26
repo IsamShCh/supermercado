@@ -110,7 +110,7 @@ erDiagram
         string IDTicket FK
         int NumeroLinea
         string SKU FK
-        string Descripcion
+        string NombreProducto
         decimal Cantidad
         decimal PrecioUnitario
         decimal Descuento

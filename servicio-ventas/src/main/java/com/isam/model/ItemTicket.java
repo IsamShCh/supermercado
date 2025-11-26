@@ -3,6 +3,7 @@ package com.isam.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
@@ -12,6 +13,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+
+import org.hibernate.annotations.Check;
 
 @Entity
 @Getter
@@ -40,8 +43,12 @@ public class ItemTicket {
     @Column(name = "sku", nullable = false, length = 50)
     private String sku;
     
-    @Column(name = "descripcion", length = 200)
-    private String descripcion;
+
+    @NotBlank(message = "El nombre del producto no puede estar vacío")
+    @Size(max = 200, message ="El nombre del producto no puede exceder 200 caracteres")
+    @Check(constraints = "trim(nombre_producto) <> ''") // Esta restriccion generará una precondicion dentro del la base de datos. Por ende, el error que genere será a nivel de BBDD.
+    @Column(name = "nombre_producto", length = 200, nullable = false)
+    private String nombreProducto;
     
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.001", inclusive = true, message = "La cantidad debe ser mayor que 0")
