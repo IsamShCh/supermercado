@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import io.grpc.Status;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
@@ -36,10 +37,18 @@ public class VentasService {
                 .withDescription("Problema con credenciales login. El nombre del cajero es obligatorio")
                 .asRuntimeException();
         }
+
+        Long siguienteNumero = ticketRepository.getNextTicketNumber();
         
+        // Creamos un id de ticket de maximo 50 caracteres
+        String anio = String.valueOf(LocalDate.now().getYear());
+        String numeroFiscal = String.format("T-%s-%07d", anio, siguienteNumero);
+        
+
         // Crear nueva entidad Ticket
         Ticket ticket = new Ticket();
         ticket.setIdUsuario(idUsuario.trim());
+        ticket.setNumeroTicket(numeroFiscal);
         ticket.setFechaHora(LocalDateTime.now());
         ticket.setEstadoTicket(EstadoTicket.TEMPORAL);
         

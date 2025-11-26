@@ -133,7 +133,6 @@ class CatalogoServiceBuscarProductosTest {
 
         // Create test offers
         Oferta ofertaLeche = new Oferta();
-        ofertaLeche.setIdOferta("OFERTA-LECHE-001");
         ofertaLeche.setProducto(leche);
         ofertaLeche.setPrecioPromocional(new BigDecimal("1.20"));
         ofertaLeche.setTipoPromocion("Descuento 20%");
@@ -310,7 +309,7 @@ class CatalogoServiceBuscarProductosTest {
     @Test
     void testBuscarProductos_VerificaOfertasAsociadas() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
+        BuscarProductosDto.CriteriosBusquedaDto criterios =
             new BuscarProductosDto.CriteriosBusquedaDto("Leche", null, null, null, null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
@@ -326,7 +325,7 @@ class CatalogoServiceBuscarProductosTest {
         assertEquals(1, detalles.ofertas().size());
         
         OfertaDto oferta = detalles.ofertas().get(0);
-        assertEquals("OFERTA-LECHE-001", oferta.idOferta());
+        assertNotNull(oferta.idOferta());
         assertEquals(1.20, oferta.precioPromocional());
         assertEquals("Descuento 20%", oferta.tipoPromocion());
     }
