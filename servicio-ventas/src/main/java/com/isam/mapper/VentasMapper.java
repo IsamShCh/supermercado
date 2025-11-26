@@ -16,6 +16,7 @@ public class VentasMapper {
             .setIdTicketTemporal(dto.idTicketTemporal())
             .setFechaHoraCreacion(dto.fechaHoraCreacion())
             .setNombreCajero(dto.nombreCajero())
+            .setNumeroTicket(dto.numeroTicket())
             .build();
     }
 }

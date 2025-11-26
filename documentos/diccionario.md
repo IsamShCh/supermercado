@@ -921,7 +921,7 @@ ResumenGeneral = TotalProductosDevueltos + MontoTotalReembolsadoPeriodo +
 #### CONFIRMACION_TICKET_CREADO
 
 ```
-CONFIRMACION_TICKET_CREADO = IDTicketTemporal + FechaHoraCreacion + 
+CONFIRMACION_TICKET_CREADO = IDTicketTemporal +  NumeroTicket + FechaHoraCreacion + 
                              NombreCajero
 
 **Salida de AC23**

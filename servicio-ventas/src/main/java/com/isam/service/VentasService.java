@@ -42,13 +42,13 @@ public class VentasService {
         
         // Creamos un id de ticket de maximo 50 caracteres
         String anio = String.valueOf(LocalDate.now().getYear());
-        String numeroFiscal = String.format("T-%s-%07d", anio, siguienteNumero);
+        String numeroTicket = String.format("T-%s-%07d", anio, siguienteNumero);
         
 
         // Crear nueva entidad Ticket
         Ticket ticket = new Ticket();
         ticket.setIdUsuario(idUsuario.trim());
-        ticket.setNumeroTicket(numeroFiscal);
+        ticket.setNumeroTicket(numeroTicket);
         ticket.setFechaHora(LocalDateTime.now());
         ticket.setEstadoTicket(EstadoTicket.TEMPORAL);
         
@@ -62,6 +62,7 @@ public class VentasService {
         // Construir y retornar respuesta
         return new CrearNuevoTicketResponseDto(
             ticketGuardado.getIdTicket(),
+            numeroTicket,
             fechaHoraFormateada,
             nombreCajero.trim()
         );

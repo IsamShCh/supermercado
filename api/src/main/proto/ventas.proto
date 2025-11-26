@@ -107,8 +107,9 @@ message CrearNuevoTicketRequest {
   message Response{
     // CONFIRMACION_TICKET_CREADO
     string id_ticket_temporal = 1;        // @IDTicketTemporal
-    string fecha_hora_creacion = 2;       // Timestamp de creación (Formato ISO 8601 con zona horaria)
-    string nombre_cajero = 3;             // Nombre completo del usuario autenticado
+    string numero_ticket = 2;
+    string fecha_hora_creacion = 3;       // Timestamp de creación (Formato ISO 8601 con zona horaria)
+    string nombre_cajero = 4;             // Nombre completo del usuario autenticado
   }
 }
 // ========================================
