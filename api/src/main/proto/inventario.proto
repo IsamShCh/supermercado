@@ -67,8 +67,8 @@ message InventarioProto {
     string ean = 3;
     string plu = 4;
   }
-  double cantidad_almacen = 5;
-  double cantidad_estanteria = 6;
+  string cantidad_almacen = 5;
+  string cantidad_estanteria = 6;
   isam.comun.UnidadMedida unidad_medida = 7;
 }
 
@@ -81,9 +81,9 @@ message LoteProto {
   string sku = 2;
   string id_inventario = 3;
   string numero_lote = 4;
-  double cantidad_entrada = 5;      // Cantidad original al ingresar
-  double cantidad_almacen = 6;      // Cantidad actual en almacén
-  double cantidad_estanteria = 7;    // Cantidad actual en estantería
+  string cantidad_entrada = 5;      // Cantidad original al ingresar
+  string cantidad_almacen = 6;      // Cantidad actual en almacén
+  string cantidad_estanteria = 7;    // Cantidad actual en estantería
   optional string fecha_caducidad = 8;  // YYYY-MM-DD
   string id_proveedor = 9;
   string fecha_ingreso = 10;   // YYYY-MM-DD
@@ -100,7 +100,7 @@ message MovimientoInventarioProto {
   string sku = 2;
   string id_lote = 3;
   TipoMovimiento tipo_movimiento = 4;
-  double cantidad = 5;
+  string cantidad = 5;
   isam.comun.UnidadMedida unidad_medida = 6;
   string fecha_hora = 7;  // YYYY-MM-DD HH:MM:SS
   string id_usuario = 8;
@@ -115,8 +115,8 @@ message MovimientoInventarioProto {
 message DetallesInventarioCompleto {
   string sku = 1;
   string nombre_producto = 2;
-  double stock_total_almacen = 3;
-  double stock_total_estanteria = 4;
+  string stock_total_almacen = 3;
+  string stock_total_estanteria = 4;
   isam.comun.UnidadMedida unidad_medida = 5;
   repeated DetalleLote lote = 6;
 }
@@ -124,8 +124,8 @@ message DetallesInventarioCompleto {
 message DetalleLote {
   string id_lote = 1;
   string numero_lote = 2;
-  double cantidad_almacen = 3;
-  double cantidad_estanteria = 4;
+  string cantidad_almacen = 3;
+  string cantidad_estanteria = 4;
   optional string fecha_caducidad = 5;  // YYYY-MM-DD
   string fecha_ingreso = 6;    // YYYY-MM-DD
 }
@@ -144,7 +144,7 @@ message DetalleLote {
 
 message RegistrarNuevasExistenciasRequest {
   string sku = 1;
-  double cantidad = 2;
+  string cantidad = 2;
   string numero_lote = 3;
   optional string fecha_caducidad = 4;  // YYYY-MM-DD
   string id_proveedor = 5;
@@ -162,7 +162,7 @@ message RegistrarNuevasExistenciasRequest {
 
 message AjustarInventarioManualRequest {
   string sku = 1;
-  double cantidad_ajuste = 2;
+  string cantidad_ajuste = 2;
   TipoAjuste tipo_ajuste = 3;
   string motivo_detallado = 4;
   
@@ -193,7 +193,7 @@ message AjustarEstanteria {
 message MoverStockEstanteriaRequest {
   string sku = 1;
   string id_lote = 2;
-  double cantidad_transladar = 3;
+  string cantidad_transladar = 3;
   isam.comun.UnidadMedida unidad_medida = 4;
 
   message Response {
@@ -210,7 +210,7 @@ message ContabilizarStockManualRequest {
   string sku = 1;
   
   // Contabilización de estantería (opcional)
-  optional double stock_fisico_estanteria = 2;
+  optional string stock_fisico_estanteria = 2;
   
   // Contabilización de almacén (opcional): solo modo preciso por lotes
   optional ContabilizacionPorLotes contabilizacion_lotes = 3;
@@ -229,18 +229,18 @@ message ContabilizacionPorLotes {
 
 message StockFisicoLote {
   string id_lote = 1;
-  double stock_fisico_almacen = 2;
+  string stock_fisico_almacen = 2;
 }
 
 // Reporte de discrepancias generado tras la contabilización
 message ReporteDiscrepancias {
   string sku = 1;
-  double stock_logico_estanteria = 2;
-  double stock_fisico_estanteria = 3;
-  double discrepancia_estanteria = 4;  // físico - lógico
-  double stock_logico_almacen = 5;
-  double stock_fisico_almacen = 6;
-  double discrepancia_almacen = 7;  // físico - lógico
+  string stock_logico_estanteria = 2;
+  string stock_fisico_estanteria = 3;
+  string discrepancia_estanteria = 4;  // físico - lógico
+  string stock_logico_almacen = 5;
+  string stock_fisico_almacen = 6;
+  string discrepancia_almacen = 7;  // físico - lógico
   repeated AjusteLote ajustes_realizados = 8;
 }
 
@@ -248,9 +248,9 @@ message AjusteLote {
   string id_lote = 1;
   string numero_lote = 2;
   string ubicacion = 3;  // "ALMACEN" o "ESTANTERIA"
-  double cantidad_ajustada = 4;  // Con signo: positivo = añadido, negativo = deducido
-  double stock_anterior = 5;
-  double stock_nuevo = 6;
+  string cantidad_ajustada = 4;  // Con signo: positivo = añadido, negativo = deducido
+  string stock_anterior = 5;
+  string stock_nuevo = 6;
 }
 
 // ========================================

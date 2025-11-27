@@ -171,9 +171,9 @@ public class InventarioService {
             loteGuardado.getSku(),
             loteGuardado.getIdInventario(),
             loteGuardado.getNumeroLote(),
-            loteGuardado.getCantidadEntrada().doubleValue(),
-            loteGuardado.getCantidadAlmacen().doubleValue(),
-            loteGuardado.getCantidadEstanteria().doubleValue(),
+            loteGuardado.getCantidadEntrada(),
+            loteGuardado.getCantidadAlmacen(),
+            loteGuardado.getCantidadEstanteria(),
             loteGuardado.getFechaCaducidad() != null ? loteGuardado.getFechaCaducidad().toString() : null,
             loteGuardado.getIdProveedor(),
             loteGuardado.getFechaIngreso().toString(),
@@ -186,8 +186,8 @@ public class InventarioService {
             inventarioActualizado.getSku(),
             inventarioActualizado.getEan(),
             inventarioActualizado.getPlu(),
-            inventarioActualizado.getCantidadAlmacen().doubleValue(),
-            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getCantidadAlmacen(),
+            inventarioActualizado.getCantidadEstanteria(),
             inventarioActualizado.getUnidadMedida().name()
         );
 
@@ -225,8 +225,8 @@ public class InventarioService {
                 inventarioExistente.getSku(),
                 inventarioExistente.getEan(),
                 inventarioExistente.getPlu(),
-                inventarioExistente.getCantidadAlmacen().doubleValue(),
-                inventarioExistente.getCantidadEstanteria().doubleValue(),
+                inventarioExistente.getCantidadAlmacen(),
+                inventarioExistente.getCantidadEstanteria(),
                 inventarioExistente.getUnidadMedida().name()
             );
         } else {
@@ -238,8 +238,8 @@ public class InventarioService {
                 inventarioGuardado.getSku(),
                 inventarioGuardado.getEan(),
                 inventarioGuardado.getPlu(),
-                inventarioGuardado.getCantidadAlmacen().doubleValue(),
-                inventarioGuardado.getCantidadEstanteria().doubleValue(),
+                inventarioGuardado.getCantidadAlmacen(),
+                inventarioGuardado.getCantidadEstanteria(),
                 inventarioGuardado.getUnidadMedida().name()
             );
         }
@@ -266,8 +266,8 @@ public class InventarioService {
                 .map(lote -> new DetalleLoteDto(
                     lote.getIdLote(),
                     lote.getNumeroLote(),
-                    lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen().doubleValue() : 0.0,  // Cantidad en almacén
-                    lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria().doubleValue() : 0.0,  // Cantidad en estantería
+                    lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen() : BigDecimal.ZERO,  // Cantidad en almacén
+                    lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria() : BigDecimal.ZERO,  // Cantidad en estantería
                     lote.getFechaCaducidad() != null ? lote.getFechaCaducidad().toString() : null,
                     lote.getFechaIngreso() != null ? lote.getFechaIngreso().toString() : null
                 ))
@@ -281,8 +281,8 @@ public class InventarioService {
             DetallesInventarioCompletoDto detallesCompletos = new DetallesInventarioCompletoDto(
                 inventario.getSku(),
                 nombreProducto,
-                inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen().doubleValue() : 0.0,
-                inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria().doubleValue() : 0.0,
+                inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen() : BigDecimal.ZERO,
+                inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria() : BigDecimal.ZERO,
                 inventario.getUnidadMedida(),
                 detallesLotes
             );
@@ -367,8 +367,8 @@ public class InventarioService {
             inventarioActualizado.getSku(),
             inventarioActualizado.getEan(),
             inventarioActualizado.getPlu(),
-            inventarioActualizado.getCantidadAlmacen().doubleValue(),
-            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getCantidadAlmacen(),
+            inventarioActualizado.getCantidadEstanteria(),
             inventarioActualizado.getUnidadMedida().name()
         );
 
@@ -377,7 +377,7 @@ public class InventarioService {
             movimientoGuardado.getSku(),
             movimientoGuardado.getIdLote(),
             movimientoGuardado.getTipoMovimiento().name(),
-            movimientoGuardado.getCantidad().doubleValue(),
+            movimientoGuardado.getCantidad(),
             movimientoGuardado.getUnidadMedida().name(),
             movimientoGuardado.getFechaHora().toString(),
             movimientoGuardado.getIdUsuario(),
@@ -411,10 +411,10 @@ public class InventarioService {
                 .asRuntimeException());
 
         // Variables para el reporte
-        double stockLogicoEstanteria = inventario.getCantidadEstanteria().doubleValue();
-        double stockFisicoEstanteria = dto.stockFisicoEstanteria() != null ? dto.stockFisicoEstanteria() : stockLogicoEstanteria;
-        double stockLogicoAlmacen = inventario.getCantidadAlmacen().doubleValue();
-        double stockFisicoAlmacen = stockLogicoAlmacen;
+        BigDecimal stockLogicoEstanteria = inventario.getCantidadEstanteria();
+        BigDecimal stockFisicoEstanteria = dto.stockFisicoEstanteria() != null ? dto.stockFisicoEstanteria() : stockLogicoEstanteria;
+        BigDecimal stockLogicoAlmacen = inventario.getCantidadAlmacen();
+        BigDecimal stockFisicoAlmacen = stockLogicoAlmacen;
         
         List<com.isam.dto.inventario.AjusteLoteDto> ajustesRealizados = new java.util.ArrayList<>();
         List<com.isam.dto.movimiento.MovimientoInventarioDto> movimientos = new java.util.ArrayList<>();
@@ -451,8 +451,8 @@ public class InventarioService {
             inventarioActualizado.getSku(),
             inventarioActualizado.getEan(),
             inventarioActualizado.getPlu(),
-            inventarioActualizado.getCantidadAlmacen().doubleValue(),
-            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getCantidadAlmacen(),
+            inventarioActualizado.getCantidadEstanteria(),
             inventarioActualizado.getUnidadMedida().name()
         );
 
@@ -461,10 +461,10 @@ public class InventarioService {
             dto.sku(),
             stockLogicoEstanteria,
             stockFisicoEstanteria,
-            stockFisicoEstanteria - stockLogicoEstanteria,
+            stockFisicoEstanteria.subtract(stockLogicoEstanteria),
             stockLogicoAlmacen,
             stockFisicoAlmacen,
-            stockFisicoAlmacen - stockLogicoAlmacen,
+            stockFisicoAlmacen.subtract(stockLogicoAlmacen),
             ajustesRealizados
         );
 
@@ -477,12 +477,12 @@ public class InventarioService {
 
     private void procesarContabilizacionEstanteria(
             Inventario inventario,
-            double stockFisico,
-            double stockLogico,
+            BigDecimal stockFisico,
+            BigDecimal stockLogico,
             List<com.isam.dto.inventario.AjusteLoteDto> ajustesRealizados,
             List<com.isam.dto.movimiento.MovimientoInventarioDto> movimientos) {
-        
-        BigDecimal discrepancia = BigDecimal.valueOf(stockFisico).subtract(BigDecimal.valueOf(stockLogico));
+
+        BigDecimal discrepancia = stockFisico.subtract(stockLogico);
         
         if (discrepancia.compareTo(BigDecimal.ZERO) == 0) {
             return; // No hay discrepancia, no hacer nada
@@ -519,16 +519,16 @@ public class InventarioService {
                 lote.getIdLote(),
                 lote.getNumeroLote(),
                 "ESTANTERIA",
-                ajuste.doubleValue(),
-                stockAnterior.doubleValue(),
-                lote.getCantidadEstanteria().doubleValue()
+                ajuste,
+                stockAnterior,
+                lote.getCantidadEstanteria()
             ));
             
             restante = restante.subtract(ajuste);
         }
 
         // Actualizar inventario general
-        inventario.setCantidadEstanteria(BigDecimal.valueOf(stockFisico));
+        inventario.setCantidadEstanteria(stockFisico);
 
         // Crear movimiento
         MovimientoInventario movimiento = new MovimientoInventario();
@@ -549,7 +549,7 @@ public class InventarioService {
             movimientoGuardado.getSku(),
             movimientoGuardado.getIdLote(),
             movimientoGuardado.getTipoMovimiento().name(),
-            movimientoGuardado.getCantidad().doubleValue(),
+            movimientoGuardado.getCantidad(),
             movimientoGuardado.getUnidadMedida().name(),
             movimientoGuardado.getFechaHora().toString(),
             movimientoGuardado.getIdUsuario(),
@@ -558,14 +558,14 @@ public class InventarioService {
         ));
     }
 
-    private double procesarContabilizacionAlmacenPorLotes(
+    private BigDecimal procesarContabilizacionAlmacenPorLotes(
             Inventario inventario,
             com.isam.dto.inventario.ContabilizacionPorLotesDto contabilizacion,
-            double stockLogico,
+            BigDecimal stockLogico,
             List<com.isam.dto.inventario.AjusteLoteDto> ajustesRealizados,
             List<com.isam.dto.movimiento.MovimientoInventarioDto> movimientos) {
-        
-        double stockFisicoTotal = 0.0;
+
+        BigDecimal stockFisicoTotal = BigDecimal.ZERO;
         BigDecimal ajusteTotalInventario = BigDecimal.ZERO;
 
         // Procesar cada lote individualmente
@@ -583,7 +583,7 @@ public class InventarioService {
             }
 
             BigDecimal stockAnterior = lote.getCantidadAlmacen();
-            BigDecimal stockFisico = BigDecimal.valueOf(stockLote.stockFisicoAlmacen());
+            BigDecimal stockFisico = stockLote.stockFisicoAlmacen();
             BigDecimal discrepancia = stockFisico.subtract(stockAnterior);
 
             // Actualizar el lote
@@ -596,9 +596,9 @@ public class InventarioService {
                     lote.getIdLote(),
                     lote.getNumeroLote(),
                     "ALMACEN",
-                    discrepancia.doubleValue(),
-                    stockAnterior.doubleValue(),
-                    stockFisico.doubleValue()
+                    discrepancia,
+                    stockAnterior,
+                    stockFisico
                 ));
 
                 // Crear movimiento para este lote
@@ -620,7 +620,7 @@ public class InventarioService {
                     movimientoGuardado.getSku(),
                     movimientoGuardado.getIdLote(),
                     movimientoGuardado.getTipoMovimiento().name(),
-                    movimientoGuardado.getCantidad().doubleValue(),
+                    movimientoGuardado.getCantidad(),
                     movimientoGuardado.getUnidadMedida().name(),
                     movimientoGuardado.getFechaHora().toString(),
                     movimientoGuardado.getIdUsuario(),
@@ -629,12 +629,12 @@ public class InventarioService {
                 ));
             }
 
-            stockFisicoTotal += stockFisico.doubleValue();
+            stockFisicoTotal = stockFisicoTotal.add(stockFisico);
             ajusteTotalInventario = ajusteTotalInventario.add(discrepancia);
         }
 
         // Actualizar inventario general
-        inventario.setCantidadAlmacen(BigDecimal.valueOf(stockFisicoTotal));
+        inventario.setCantidadAlmacen(stockFisicoTotal);
 
         return stockFisicoTotal;
     }

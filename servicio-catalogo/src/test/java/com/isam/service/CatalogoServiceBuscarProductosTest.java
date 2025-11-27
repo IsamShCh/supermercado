@@ -143,7 +143,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_SinCriterios_RetornaTodosLosProductos() {
+    void buscarProductos_SinCriterios_RetornaTodosLosProductos() {
         // Given
         BuscarProductosDto dto = new BuscarProductosDto(null, null);
 
@@ -162,7 +162,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_PorNombre_RetornaProductosCoincidentes() {
+    void buscarProductos_PorNombre_RetornaProductosCoincidentes() {
         // Given
         BuscarProductosDto.CriteriosBusquedaDto criterios = 
             new BuscarProductosDto.CriteriosBusquedaDto("Leche", null, null, null, null, null);
@@ -179,7 +179,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_PorCategoria_RetornaProductosDeCategoria() {
+    void buscarProductos_PorCategoria_RetornaProductosDeCategoria() {
         // Given
         BuscarProductosDto.CriteriosBusquedaDto criterios = 
             new BuscarProductosDto.CriteriosBusquedaDto(null, categoriaLacteos.getIdCategoria(), null, null, null, null);
@@ -196,10 +196,10 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_PorRangoPrecio_RetornaProductosEnRango() {
+    void buscarProductos_PorRangoPrecio_RetornaProductosEnRango() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
-            new BuscarProductosDto.CriteriosBusquedaDto(null, null, 1.0, 2.0, null, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios =
+            new BuscarProductosDto.CriteriosBusquedaDto(null, null, new BigDecimal("1.0"), new BigDecimal("2.0"), null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -209,11 +209,11 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().precioVenta() >= 1.0 && p.producto().precioVenta() <= 2.0));
+            .allMatch(p -> p.producto().precioVenta().doubleValue() >= 1.0 && p.producto().precioVenta().doubleValue() <= 2.0));
     }
 
     @Test
-    void testBuscarProductos_PorEsGranel_RetornaSoloProductosGranel() {
+    void buscarProductos_PorEsGranel_RetornaSoloProductosGranel() {
         // Given
         BuscarProductosDto.CriteriosBusquedaDto criterios = 
             new BuscarProductosDto.CriteriosBusquedaDto(null, null, null, null, true, null);
@@ -230,9 +230,9 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_PorEtiqueta_RetornaProductosConEtiqueta() {
+    void buscarProductos_PorEtiqueta_RetornaProductosConEtiqueta() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
+        BuscarProductosDto.CriteriosBusquedaDto criterios =
             new BuscarProductosDto.CriteriosBusquedaDto(null, null, null, null, null, List.of("fresca"));
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
@@ -243,11 +243,11 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().etiquetas().contains("fresca")));
+            .allMatch(p -> p.producto().etiquetas() != null && p.producto().etiquetas().contains("fresca")));
     }
 
     @Test
-    void testBuscarProductos_ConPaginacion_RetornaPaginaCorrecta() {
+    void buscarProductos_ConPaginacion_RetornaPaginaCorrecta() {
         // Given
         PaginacionDto paginacion = new PaginacionDto(1, 2);
         BuscarProductosDto dto = new BuscarProductosDto(null, paginacion);
@@ -265,7 +265,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_SegundaPagina_RetornaProductosRestantes() {
+    void buscarProductos_SegundaPagina_RetornaProductosRestantes() {
         // Given
         PaginacionDto paginacion = new PaginacionDto(2, 2);
         BuscarProductosDto dto = new BuscarProductosDto(null, paginacion);
@@ -281,7 +281,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_CriteriosMultiples_RetornaProductosQueCoinciden() {
+    void buscarProductos_CriteriosMultiples_RetornaProductosQueCoinciden() {
         // Given
         BuscarProductosDto.CriteriosBusquedaDto criterios = 
             new BuscarProductosDto.CriteriosBusquedaDto(
@@ -307,7 +307,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_VerificaOfertasAsociadas() {
+    void buscarProductos_VerificaOfertasAsociadas() {
         // Given
         BuscarProductosDto.CriteriosBusquedaDto criterios =
             new BuscarProductosDto.CriteriosBusquedaDto("Leche", null, null, null, null, null);
@@ -326,12 +326,12 @@ class CatalogoServiceBuscarProductosTest {
         
         OfertaDto oferta = detalles.ofertas().get(0);
         assertNotNull(oferta.idOferta());
-        assertEquals(1.20, oferta.precioPromocional());
+        assertEquals(0, new BigDecimal("1.20").compareTo(oferta.precioPromocional()));
         assertEquals("Descuento 20%", oferta.tipoPromocion());
     }
 
     @Test
-    void testBuscarProductos_VerificaCategoriaCompleta() {
+    void buscarProductos_VerificaCategoriaCompleta() {
         // Given
         BuscarProductosDto dto = new BuscarProductosDto(null, null);
 
@@ -348,7 +348,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_SinResultados_RetornaListaVacia() {
+    void buscarProductos_SinResultados_RetornaListaVacia() {
         // Given
         BuscarProductosDto.CriteriosBusquedaDto criterios = 
             new BuscarProductosDto.CriteriosBusquedaDto("ProductoInexistente", null, null, null, null, null);
@@ -366,7 +366,7 @@ class CatalogoServiceBuscarProductosTest {
     }
 
     @Test
-    void testBuscarProductos_PaginaFueraDeRango_RetornaListaVacia() {
+    void buscarProductos_PaginaFueraDeRango_RetornaListaVacia() {
         // Given
         PaginacionDto paginacion = new PaginacionDto(10, 10);
         BuscarProductosDto dto = new BuscarProductosDto(null, paginacion);
@@ -377,10 +377,15 @@ class CatalogoServiceBuscarProductosTest {
         // Then
         assertNotNull(resultado);
         assertEquals(0, resultado.productos().size());
+        assertNotNull(resultado.paginacion());
+        assertEquals(10, resultado.paginacion().page());
+        assertEquals(10, resultado.paginacion().pageSize());
+        assertEquals(1, resultado.paginacion().totalPages());
+        assertEquals(4L, resultado.paginacion().totalElements());
     }
 
     @Test
-    void testBuscarProductos_VerificaEstructuraCompleta() {
+    void buscarProductos_VerificaEstructuraCompleta() {
         // Given
         BuscarProductosDto dto = new BuscarProductosDto(null, null);
 

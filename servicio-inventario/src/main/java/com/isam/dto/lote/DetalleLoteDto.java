@@ -1,10 +1,12 @@
 package com.isam.dto.lote;
 
+import java.math.BigDecimal;
+
 public record DetalleLoteDto(
     String idLote,
     String numeroLote,
-    Double cantidadAlmacen,
-    Double cantidadEstanteria,
+    BigDecimal cantidadAlmacen,
+    BigDecimal cantidadEstanteria,
     String fechaCaducidad,  // YYYY-MM-DD
     String fechaIngreso     // YYYY-MM-DD
 ) {}

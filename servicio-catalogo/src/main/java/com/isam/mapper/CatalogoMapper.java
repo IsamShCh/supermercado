@@ -34,10 +34,14 @@ import com.isam.model.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Component
@@ -77,7 +81,7 @@ public class CatalogoMapper {
             plu,
             req.getNombre(),
             req.getDescripcion(),
-            BigDecimal.valueOf(req.getPrecioVenta()),
+            new BigDecimal(req.getPrecioVenta()),
             req.getCaduca(),
             req.getEsGranel(),
             idCategoria,
@@ -102,8 +106,8 @@ public class CatalogoMapper {
             criterios = new BuscarProductosDto.CriteriosBusquedaDto(
                 req.getCriterios().hasNombre() ? req.getCriterios().getNombre() : null,
                 req.getCriterios().getIdCategoria() > 0 ? req.getCriterios().getIdCategoria() : null,
-                req.getCriterios().hasPrecioMin() ? req.getCriterios().getPrecioMin() : null,
-                req.getCriterios().hasPrecioMax() ? req.getCriterios().getPrecioMax() : null,
+                req.getCriterios().hasPrecioMin() ? new BigDecimal(req.getCriterios().getPrecioMin()) : null,
+                req.getCriterios().hasPrecioMax() ? new BigDecimal(req.getCriterios().getPrecioMax()) : null,
                 req.getCriterios().hasEsGranel() ? req.getCriterios().getEsGranel() : null,
                 !req.getCriterios().getEtiquetasList().isEmpty() ? req.getCriterios().getEtiquetasList() : null
             );
@@ -248,7 +252,7 @@ public class CatalogoMapper {
         com.isam.grpc.catalogo.ProductoProto.Builder builder = com.isam.grpc.catalogo.ProductoProto.newBuilder()
                 .setSku(entity.getSku())
                 .setNombre(entity.getNombre())
-                .setPrecioVenta(entity.getPrecioVenta().doubleValue())
+                .setPrecioVenta(formatPrecio(entity.getPrecioVenta()))
                 .setCaduca(entity.getCaduca())
                 .setEsGranel(entity.getEsGranel())
                 .setPoliticaRotacion(protoRotacion)
@@ -421,7 +425,7 @@ public class CatalogoMapper {
         com.isam.grpc.catalogo.ProductoProto.Builder builder = com.isam.grpc.catalogo.ProductoProto.newBuilder()
             .setSku(dto.sku())
             .setNombre(dto.nombre())
-            .setPrecioVenta(dto.precioVenta())
+            .setPrecioVenta(formatPrecio(dto.precioVenta()))
             .setCaduca(dto.caduca())
             .setEsGranel(dto.esGranel());
         
@@ -467,7 +471,7 @@ public class CatalogoMapper {
         OfertaProto.Builder builder = OfertaProto.newBuilder()
             .setIdOferta(dto.idOferta())
             .setSku(dto.sku())
-            .setPrecioPromocional(dto.precioPromocional())
+            .setPrecioPromocional(formatPrecio(dto.precioPromocional()))
             .setTipoPromocion(dto.tipoPromocion())
             .setFechaInicio(dto.fechaInicio())
             .setFechaFin(dto.fechaFin());
@@ -545,7 +549,7 @@ public class CatalogoMapper {
     public CrearOfertaDto toDto(CrearOfertaRequest req) {
         return new CrearOfertaDto(
             req.getSku(),
-            BigDecimal.valueOf(req.getPrecioPromocional()),
+            new BigDecimal(req.getPrecioPromocional()),
             req.getTipoPromocion(),
             req.getFechaInicio(),
             req.getFechaFin()
@@ -559,7 +563,7 @@ public class CatalogoMapper {
         OfertaProto.Builder builder = OfertaProto.newBuilder()
             .setIdOferta(oferta.getIdOferta())
             .setSku(oferta.getProducto().getSku())
-            .setPrecioPromocional(oferta.getPrecioPromocional().doubleValue())
+            .setPrecioPromocional(formatPrecio(oferta.getPrecioPromocional()))
             .setTipoPromocion(oferta.getTipoPromocion())
             .setFechaInicio(oferta.getFechaInicio().toString())
             .setFechaFin(oferta.getFechaFin().toString())
@@ -606,7 +610,7 @@ public class CatalogoMapper {
             req.getSku(),
             datos.hasNombre() ? datos.getNombre() : null,
             datos.hasDescripcion() ? datos.getDescripcion() : null,
-            datos.hasPrecioVenta() ? BigDecimal.valueOf(datos.getPrecioVenta()) : null,
+            datos.hasPrecioVenta() ? new BigDecimal(datos.getPrecioVenta()) : null,
             datos.hasIdCategoria() ? datos.getIdCategoria() : null,
             datos.hasPoliticaRotacion() ? mapPoliticaRotacion(datos.getPoliticaRotacion()) : null,
             etiquetas
@@ -685,6 +689,23 @@ public class CatalogoMapper {
         }
         
         return builder.build();
+    }
+
+    /**
+     * Formatea un BigDecimal a String asegurando que el separador decimal sea punto (.).
+     * Esto garantiza consistencia independientemente de la configuración regional del sistema.
+     * @param precio BigDecimal a formatear
+     * @return String con formato "0.00" usando punto como separador decimal
+     */
+    private String formatPrecio(BigDecimal precio) {
+        if (precio == null) {
+            return "0.00";
+        }
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+        symbols.setDecimalSeparator('.');
+        DecimalFormat df = new DecimalFormat("#0.00", symbols);
+        df.setRoundingMode(RoundingMode.HALF_UP);
+        return df.format(precio);
     }
 
 }

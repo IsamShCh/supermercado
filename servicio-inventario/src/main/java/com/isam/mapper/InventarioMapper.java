@@ -107,10 +107,10 @@ public class InventarioMapper {
     // Mapeo para Registrar Nuevas Existencias
     public RegistrarNuevasExistenciasRequestDto toDto(RegistrarNuevasExistenciasRequest req) {
         String fechaCaducidad = req.hasFechaCaducidad() ? req.getFechaCaducidad() : null;
-        
+
         return new RegistrarNuevasExistenciasRequestDto(
             req.getSku(),
-            BigDecimal.valueOf(req.getCantidad()),
+            new BigDecimal(req.getCantidad()),
             req.getNumeroLote(),
             fechaCaducidad,
             req.getIdProveedor(),
@@ -124,19 +124,19 @@ public class InventarioMapper {
             .setSku(lote.getSku())
             .setIdInventario(lote.getIdInventario())
             .setNumeroLote(lote.getNumeroLote())
-            .setCantidadEntrada(lote.getCantidadEntrada() != null ? lote.getCantidadEntrada().doubleValue() : 0.0)
-            .setCantidadAlmacen(lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen().doubleValue() : 0.0)
-            .setCantidadEstanteria(lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria().doubleValue() : 0.0)
+            .setCantidadEntrada(lote.getCantidadEntrada() != null ? lote.getCantidadEntrada().toPlainString() : "0.0")
+            .setCantidadAlmacen(lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen().toPlainString() : "0.0")
+            .setCantidadEstanteria(lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria().toPlainString() : "0.0")
             .setIdProveedor(lote.getIdProveedor())
             .setFechaIngreso(lote.getFechaIngreso() != null ? lote.getFechaIngreso().toString() : "")
             .setUnidadMedida(mapUnidadMedidaToProto(lote.getUnidadMedida()))
             .setEstado(mapEstadoLoteToProto(lote.getEstado()));
-        
+
         // Campos opcionales
         if (lote.getFechaCaducidad() != null) {
             builder.setFechaCaducidad(lote.getFechaCaducidad().toString());
         }
-        
+
         return builder.build();
     }
 
@@ -144,17 +144,17 @@ public class InventarioMapper {
         InventarioProto.Builder builder = InventarioProto.newBuilder()
             .setIdInventario(inventario.getIdInventario())
             .setSku(inventario.getSku())
-            .setCantidadAlmacen(inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen().doubleValue() : 0.0)
-            .setCantidadEstanteria(inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria().doubleValue() : 0.0)
+            .setCantidadAlmacen(inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen().toPlainString() : "0.0")
+            .setCantidadEstanteria(inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria().toPlainString() : "0.0")
             .setUnidadMedida(mapUnidadMedidaToProto(inventario.getUnidadMedida()));
-        
+
         // Campos opcionales EAN/PLU - usar oneof
         if (inventario.getEan() != null) {
             builder.setEan(inventario.getEan());
         } else if (inventario.getPlu() != null) {
             builder.setPlu(inventario.getPlu());
         }
-        
+
         return builder.build();
     }
     public LoteProto toProto(com.isam.dto.lote.LoteDto dto) {
@@ -163,19 +163,19 @@ public class InventarioMapper {
             .setSku(dto.sku())
             .setIdInventario(dto.idInventario())
             .setNumeroLote(dto.numeroLote())
-            .setCantidadEntrada(dto.cantidadEntrada())
-            .setCantidadAlmacen(dto.cantidadAlmacen())
-            .setCantidadEstanteria(dto.cantidadEstanteria())
+            .setCantidadEntrada(dto.cantidadEntrada().toPlainString())
+            .setCantidadAlmacen(dto.cantidadAlmacen().toPlainString())
+            .setCantidadEstanteria(dto.cantidadEstanteria().toPlainString())
             .setIdProveedor(dto.idProveedor())
             .setFechaIngreso(dto.fechaIngreso())
             .setUnidadMedida(mapUnidadMedidaToProto(UnidadMedida.valueOf(dto.unidadMedida())))
             .setEstado(mapEstadoLoteToProto(EstadoLote.valueOf(dto.estado())));
-        
+
         // Campos opcionales
         if (dto.fechaCaducidad() != null) {
             builder.setFechaCaducidad(dto.fechaCaducidad());
         }
-        
+
         return builder.build();
     }
 
@@ -183,17 +183,17 @@ public class InventarioMapper {
         InventarioProto.Builder builder = InventarioProto.newBuilder()
             .setIdInventario(dto.idInventario())
             .setSku(dto.sku())
-            .setCantidadAlmacen(dto.cantidadAlmacen())
-            .setCantidadEstanteria(dto.cantidadEstanteria())
+            .setCantidadAlmacen(dto.cantidadAlmacen().toPlainString())
+            .setCantidadEstanteria(dto.cantidadEstanteria().toPlainString())
             .setUnidadMedida(mapUnidadMedidaToProto(UnidadMedida.valueOf(dto.unidadMedida())));
-        
+
         // Campos opcionales EAN/PLU - usar oneof
         if (dto.ean() != null) {
             builder.setEan(dto.ean());
         } else if (dto.plu() != null) {
             builder.setPlu(dto.plu());
         }
-        
+
         return builder.build();
     }
 
@@ -223,7 +223,7 @@ public class InventarioMapper {
         return new com.isam.dto.stock.MoverStockEstanteriaRequestDto(
             req.getSku(),
             req.getIdLote(),
-            java.math.BigDecimal.valueOf(req.getCantidadTransladar()),
+            new BigDecimal(req.getCantidadTransladar()),
             mapUnidadMedida(req.getUnidadMedida())
         );
     }
@@ -233,11 +233,11 @@ public class InventarioMapper {
             .setIdMovimiento(dto.idMovimiento())
             .setSku(dto.sku())
             .setTipoMovimiento(mapTipoMovimientoToProto(dto.tipoMovimiento()))
-            .setCantidad(dto.cantidad())
+            .setCantidad(dto.cantidad().toPlainString())
             .setUnidadMedida(mapUnidadMedidaToProto(com.isam.model.UnidadMedida.valueOf(dto.unidadMedida())))
             .setFechaHora(dto.fechaHora())
             .setIdUsuario(dto.idUsuario());
-        
+
         if (dto.idLote() != null) {
             builder.setIdLote(dto.idLote());
         }
@@ -247,7 +247,7 @@ public class InventarioMapper {
         if (dto.observaciones() != null) {
             builder.setObservaciones(dto.observaciones());
         }
-        
+
         return builder.build();
     }
 
@@ -277,7 +277,7 @@ public class InventarioMapper {
         
         return new AjustarInventarioManualRequestDto(
             request.getSku(),
-            BigDecimal.valueOf(request.getCantidadAjuste()),
+            new BigDecimal(request.getCantidadAjuste()),
             tipoAjuste,
             request.getMotivoDetallado(),
             ubicacionAjuste
@@ -330,8 +330,8 @@ public class InventarioMapper {
         DetallesInventarioCompleto.Builder builder = DetallesInventarioCompleto.newBuilder()
             .setSku(detallesDto.sku())
             .setNombreProducto(detallesDto.nombreProducto())
-            .setStockTotalAlmacen(detallesDto.stockTotalAlmacen())
-            .setStockTotalEstanteria(detallesDto.stockTotalEstanteria())
+            .setStockTotalAlmacen(detallesDto.stockTotalAlmacen().toPlainString())
+            .setStockTotalEstanteria(detallesDto.stockTotalEstanteria().toPlainString())
             .setUnidadMedida(mapUnidadMedidaToProto(detallesDto.unidadMedida()));
         
         // Añadir detalles de lotes
@@ -347,14 +347,14 @@ public class InventarioMapper {
         DetalleLote.Builder builder = DetalleLote.newBuilder()
             .setIdLote(dto.idLote())
             .setNumeroLote(dto.numeroLote())
-            .setCantidadAlmacen(dto.cantidadAlmacen())
-            .setCantidadEstanteria(dto.cantidadEstanteria())
+            .setCantidadAlmacen(dto.cantidadAlmacen().toPlainString())
+            .setCantidadEstanteria(dto.cantidadEstanteria().toPlainString())
             .setFechaIngreso(dto.fechaIngreso());
-        
+
         if (dto.fechaCaducidad() != null) {
             builder.setFechaCaducidad(dto.fechaCaducidad());
         }
-        
+
         return builder.build();
     }
 
@@ -455,10 +455,10 @@ public class InventarioMapper {
     // Mapeo para Contabilizar Stock Manual
     public com.isam.dto.inventario.ContabilizarStockManualRequestDto toDto(
             com.isam.grpc.inventario.ContabilizarStockManualRequest request) {
-        
-        Double stockFisicoEstanteria = request.hasStockFisicoEstanteria() ?
-            request.getStockFisicoEstanteria() : null;
-        
+
+        BigDecimal stockFisicoEstanteria = request.hasStockFisicoEstanteria() ?
+            new BigDecimal(request.getStockFisicoEstanteria()) : null;
+
         com.isam.dto.inventario.ContabilizacionPorLotesDto contabilizacionLotes = null;
 
         // Determinar modalidad de contabilización de almacén
@@ -485,10 +485,10 @@ public class InventarioMapper {
     
     private com.isam.dto.inventario.StockFisicoLoteDto toDtoStockFisicoLote(
             com.isam.grpc.inventario.StockFisicoLote proto) {
-        
+
         return new com.isam.dto.inventario.StockFisicoLoteDto(
             proto.getIdLote(),
-            proto.getStockFisicoAlmacen()
+            new BigDecimal(proto.getStockFisicoAlmacen())
         );
     }
     
@@ -515,34 +515,34 @@ public class InventarioMapper {
     
     private com.isam.grpc.inventario.ReporteDiscrepancias toProtoReporteDiscrepancias(
             com.isam.dto.inventario.ReporteDiscrepanciasDto dto) {
-        
+
         // Convertir ajustes de lotes
         java.util.List<com.isam.grpc.inventario.AjusteLote> ajustesProto = dto.ajustesRealizados().stream()
             .map(this::toProtoAjusteLote)
             .collect(java.util.stream.Collectors.toList());
-        
+
         return com.isam.grpc.inventario.ReporteDiscrepancias.newBuilder()
             .setSku(dto.sku())
-            .setStockLogicoEstanteria(dto.stockLogicoEstanteria())
-            .setStockFisicoEstanteria(dto.stockFisicoEstanteria())
-            .setDiscrepanciaEstanteria(dto.discrepanciaEstanteria())
-            .setStockLogicoAlmacen(dto.stockLogicoAlmacen())
-            .setStockFisicoAlmacen(dto.stockFisicoAlmacen())
-            .setDiscrepanciaAlmacen(dto.discrepanciaAlmacen())
+            .setStockLogicoEstanteria(dto.stockLogicoEstanteria().toPlainString())
+            .setStockFisicoEstanteria(dto.stockFisicoEstanteria().toPlainString())
+            .setDiscrepanciaEstanteria(dto.discrepanciaEstanteria().toPlainString())
+            .setStockLogicoAlmacen(dto.stockLogicoAlmacen().toPlainString())
+            .setStockFisicoAlmacen(dto.stockFisicoAlmacen().toPlainString())
+            .setDiscrepanciaAlmacen(dto.discrepanciaAlmacen().toPlainString())
             .addAllAjustesRealizados(ajustesProto)
             .build();
     }
     
     private com.isam.grpc.inventario.AjusteLote toProtoAjusteLote(
             com.isam.dto.inventario.AjusteLoteDto dto) {
-        
+
         return com.isam.grpc.inventario.AjusteLote.newBuilder()
             .setIdLote(dto.idLote())
             .setNumeroLote(dto.numeroLote())
             .setUbicacion(dto.ubicacion())
-            .setCantidadAjustada(dto.cantidadAjustada())
-            .setStockAnterior(dto.stockAnterior())
-            .setStockNuevo(dto.stockNuevo())
+            .setCantidadAjustada(dto.cantidadAjustada().toPlainString())
+            .setStockAnterior(dto.stockAnterior().toPlainString())
+            .setStockNuevo(dto.stockNuevo().toPlainString())
             .build();
     }
 }

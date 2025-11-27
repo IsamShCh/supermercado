@@ -21,7 +21,7 @@ option java_outer_classname = "CatalogoProto";
 message OfertaProto {
   string id_oferta = 1;
   string sku = 2;
-  double precio_promocional = 3;
+  string precio_promocional = 3;
   string tipo_promocion = 4;
   string fecha_inicio = 5;  // YYYY-MM-DD
   string fecha_fin = 6;     // YYYY-MM-DD
@@ -40,7 +40,7 @@ message ProductoProto {
   }
   string nombre = 4;
   string descripcion = 5;
-  double precio_venta = 6;
+  string precio_venta = 6;
   bool caduca = 7;
   bool es_granel = 8;
   CategoriaProto categoria  = 9;
@@ -94,7 +94,7 @@ message CrearProductoRequest {
   }
   string nombre = 4;
   string descripcion = 5;
-  double precio_venta = 6;
+  string precio_venta = 6;
   bool caduca = 7;
   bool es_granel = 8;
   int64 id_categoria = 9;
@@ -128,7 +128,7 @@ message ModificarProductoRequest {
 message DatosActualizar {
   optional string nombre = 1;
   optional string descripcion = 2;
-  optional double precio_venta = 3;
+  optional string precio_venta = 3;
   optional int64 id_categoria = 4;
   // optional OfertaProductoProto oferta = 5;
   optional isam.comun.PoliticaRotacion politica_rotacion = 6;
@@ -183,8 +183,8 @@ message BuscarProductosRequest {
 message CriteriosBusqueda {
   optional string nombre = 1;
   optional int64 id_categoria = 2;
-  optional double precio_min = 3;
-  optional double precio_max = 4;
+  optional string precio_min = 3;
+  optional string precio_max = 4;
   optional bool es_granel = 5;
   repeated string etiquetas = 6;
 }
@@ -267,7 +267,7 @@ message ModificarCategoriaRequest {
 
 message CrearOfertaRequest {
   string sku = 1;
-  double precio_promocional = 2;
+  string precio_promocional = 2;
   string tipo_promocion = 3;
   string fecha_inicio = 4;  // YYYY-MM-DD
   string fecha_fin = 5;     // YYYY-MM-DD

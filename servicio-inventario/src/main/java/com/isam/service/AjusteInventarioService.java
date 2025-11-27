@@ -369,18 +369,18 @@ public class AjusteInventarioService {
             inventarioActualizado.getSku(),
             inventarioActualizado.getEan(),
             inventarioActualizado.getPlu(),
-            inventarioActualizado.getCantidadAlmacen().doubleValue(),
-            inventarioActualizado.getCantidadEstanteria().doubleValue(),
+            inventarioActualizado.getCantidadAlmacen(),
+            inventarioActualizado.getCantidadEstanteria(),
             inventarioActualizado.getUnidadMedida().name()
         );
-        
+
         // Convertir movimiento a DTO
         com.isam.dto.movimiento.MovimientoInventarioDto movimientoDto = new com.isam.dto.movimiento.MovimientoInventarioDto(
             movimientoGuardado.getIdMovimiento(),
             movimientoGuardado.getSku(),
             movimientoGuardado.getIdLote(),
             movimientoGuardado.getTipoMovimiento().name(),
-            movimientoGuardado.getCantidad().doubleValue(),
+            movimientoGuardado.getCantidad(),
             movimientoGuardado.getUnidadMedida().name(),
             movimientoGuardado.getFechaHora().toString(),
             movimientoGuardado.getIdUsuario(),

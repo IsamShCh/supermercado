@@ -18,8 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import io.grpc.Status;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 
 @Service
@@ -161,7 +165,7 @@ public class VentasService {
             nuevoItem.setSku(sku);
             nuevoItem.setNombreProducto(producto.getNombre());
             nuevoItem.setCantidad(BigDecimal.ONE);
-            nuevoItem.setPrecioUnitario(BigDecimal.valueOf(producto.getPrecioVenta()));
+            nuevoItem.setPrecioUnitario(new BigDecimal(producto.getPrecioVenta()));
             nuevoItem.setDescuento(BigDecimal.ZERO);
             nuevoItem.calcularSubtotal();
             
@@ -191,17 +195,31 @@ public class VentasService {
             itemFinal.getIdItemTicket(),
             itemFinal.getNumeroLinea(),
             itemFinal.getNombreProducto(),
-            itemFinal.getCantidad().toString(),
-            String.format("%.2f", itemFinal.getPrecioUnitario()),
-            String.format("%.2f", itemFinal.getSubtotal()),
-            ticket.getSubtotal() != null ? String.format("%.2f", ticket.getSubtotal()) : "0.00"
-            // itemFinal.getPrecioUnitario().toString(),
-            // itemFinal.getSubtotal().toString(),
-            // ticket.getSubtotal() != null ? ticket.getSubtotal().toString() : "0.00"
+            itemFinal.getCantidad(),
+            itemFinal.getPrecioUnitario(),
+            itemFinal.getSubtotal(),
+            ticket.getSubtotal() != null ? ticket.getSubtotal() : BigDecimal.ZERO
         );
     }
     
     private boolean isNotNullOrEmpty(String str) {
         return str != null && !str.trim().isEmpty();
+    }
+    
+    /**
+     * Formatea un BigDecimal a String asegurando que el separador decimal sea punto (.).
+     * Esto garantiza consistencia independientemente de la configuración regional del sistema.
+     * @param precio BigDecimal a formatear
+     * @return String con formato "0.00" usando punto como separador decimal
+     */
+    private String formatPrecio(BigDecimal precio) {
+        if (precio == null) {
+            return "0.00";
+        }
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+        symbols.setDecimalSeparator('.');
+        DecimalFormat df = new DecimalFormat("#0.00", symbols);
+        df.setRoundingMode(RoundingMode.HALF_UP);
+        return df.format(precio);
     }
 }

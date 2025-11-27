@@ -184,7 +184,7 @@ public class CatalogoService {
                     .map(o -> new OfertaDto(
                         o.getIdOferta(),
                         o.getProducto().getSku(),
-                        o.getPrecioPromocional().doubleValue(),
+                        o.getPrecioPromocional(),
                         o.getTipoPromocion(),
                         o.getFechaInicio().toString(),
                         o.getFechaFin().toString(),
@@ -199,7 +199,7 @@ public class CatalogoService {
                     p.getPlu(),
                     p.getNombre(),
                     p.getDescripcion(),
-                    p.getPrecioVenta().doubleValue(),
+                    p.getPrecioVenta(),
                     p.getCaduca(),
                     p.getEsGranel(),
                     p.getCategoria() != null ? new CategoriaDto(
@@ -294,7 +294,7 @@ public class CatalogoService {
                     .map(o -> new OfertaDto(
                         o.getIdOferta(),
                         o.getProducto().getSku(),
-                        o.getPrecioPromocional().doubleValue(),
+                        o.getPrecioPromocional(),
                         o.getTipoPromocion(),
                         o.getFechaInicio().toString(),
                         o.getFechaFin().toString(),
@@ -309,7 +309,7 @@ public class CatalogoService {
                     p.getPlu(),
                     p.getNombre(),
                     p.getDescripcion(),
-                    p.getPrecioVenta().doubleValue(),
+                    p.getPrecioVenta(),
                     p.getCaduca(),
                     p.getEsGranel(),
                     p.getCategoria() != null ? new CategoriaDto(

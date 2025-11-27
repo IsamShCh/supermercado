@@ -122,7 +122,7 @@ class VentasServiceTest {
         ProductoProto producto = ProductoProto.newBuilder()
             .setSku(sku)
             .setNombre("Producto Test")
-            .setPrecioVenta(10.50)
+            .setPrecioVenta("10.50")
             .build();
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
@@ -142,8 +142,8 @@ class VentasServiceTest {
         assertEquals(ticketTemporal.getIdTicket(), resultado.idTicketTemporal());
         assertEquals(sku, resultado.sku());
         assertEquals("Producto Test", resultado.nombreProducto());
-        assertEquals("1", resultado.cantidad());
-        assertEquals("10,50", resultado.precioUnitario());
+        assertEquals(BigDecimal.ONE, resultado.cantidad());
+        assertEquals(new BigDecimal("10.50"), resultado.precioUnitario());
         
         verify(catalogoGrpcClient, times(1)).traducirCodigoBarrasASku(codigoBarras);
         verify(catalogoGrpcClient, times(1)).consultarProducto(sku);

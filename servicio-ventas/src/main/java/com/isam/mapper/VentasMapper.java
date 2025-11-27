@@ -55,10 +55,10 @@ public class VentasMapper {
             .setIdItemTicket(dto.idItemTicket())
             .setNumeroLinea(dto.numeroLinea())
             .setNombreProducto(dto.nombreProducto())
-            .setCantidad(dto.cantidad())
-            .setPrecioUnitario(dto.precioUnitario())
-            .setSubtotal(dto.subtotal())
-            .setSubtotalTicketActual(dto.subtotalTicketActual())
+            .setCantidad(dto.cantidad().toPlainString())
+            .setPrecioUnitario(dto.precioUnitario().toPlainString())
+            .setSubtotal(dto.subtotal().toPlainString())
+            .setSubtotalTicketActual(dto.subtotalTicketActual().toPlainString())
             .build();
     }
 }
