@@ -18,9 +18,11 @@ import com.isam.dto.inventario.AjustarInventarioManualResponseDto;
 import com.isam.dto.inventario.ConsultarInventarioRequestDto;
 import com.isam.dto.inventario.ConsultarInventarioResponseDto;
 import com.isam.dto.lote.DetalleLoteDto;
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.venta.ItemVentaDto;
 import com.isam.dto.venta.RegistrarVentaRequestDto;
 import com.isam.dto.venta.RegistrarVentaResponseDto;
+import com.isam.grpc.catalogo.ProductoProto;
 import com.isam.grpc.inventario.AgregarProveedorRequest;
 import com.isam.grpc.inventario.AjustarInventarioManualRequest;
 import com.isam.grpc.inventario.CrearInventarioRequest;
@@ -200,6 +202,15 @@ public class InventarioMapper {
         }
 
         return builder.build();
+    }
+
+    public ConsultarProductoDto toDto (ProductoProto proto){
+        return new ConsultarProductoDto(
+            proto.getSku(),
+            proto.hasEan() ? proto.getEan() : null,
+            proto.hasPlu() ? proto.getPlu() : null,
+            mapUnidadMedida(proto.getUnidadMedida())
+        );
     }
 
 

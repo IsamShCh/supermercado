@@ -13,6 +13,7 @@ import com.isam.dto.proveedor.ProveedorDto;
 import com.isam.dto.existencias.RegistrarNuevasExistenciasRequestDto;
 import com.isam.dto.existencias.RegistrarNuevasExistenciasResponseDto;
 import com.isam.dto.lote.LoteDto;
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.lote.DetalleLoteDto;
 import com.isam.dto.inventario.CrearInventarioRequestDto;
 import com.isam.dto.inventario.DetallesInventarioCompletoDto;
@@ -29,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import io.grpc.Status;
 
@@ -46,6 +48,7 @@ public class InventarioService {
     private final ProveedorRepository proveedorRepository;
     private final AjusteInventarioService ajusteInventarioService;
     private final com.isam.grpc.client.CatalogoGrpcClient catalogoGrpcClient;
+    private final TransactionTemplate transactionTemplate; 
 
     
     /**
@@ -201,7 +204,7 @@ public class InventarioService {
 
 
 
-    @Transactional
+    
     public InventarioDto crearInventario(CrearInventarioRequestDto dto) {
         // Validar que solo tenga EAN o PLU, no ambos --> Estos ya deberia comprobarlo el validator
         if (isNotNullOrEmpty(dto.ean()) && isNotNullOrEmpty(dto.plu())) {
@@ -210,13 +213,39 @@ public class InventarioService {
                 .asRuntimeException();
         }
         
-        // Verificar que el producto existe en el catálogo antes de crear inventario
-        if (!catalogoGrpcClient.existeProducto(dto.sku())) {
-            throw Status.NOT_FOUND
-                .withDescription("No se puede crear inventario para el SKU '" + dto.sku() + "' porque no existe en el catálogo")
+        // Verificamos si el producto exite en el catalogo y nos aseguramos de que los datos del dto conciden con los de el producto en el catalogo
+        ConsultarProductoDto productoEnCatalogo = catalogoGrpcClient.consultarProducto(dto.sku()); // Si no exite tendremos un error.
+
+        if(isNotNullOrEmpty(productoEnCatalogo.ean()) && isNotNullOrEmpty(dto.ean()) 
+            && !productoEnCatalogo.ean().equals(dto.ean()))
+        {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El ean del producto no coincide con el del catalogo")
                 .asRuntimeException();
         }
-        
+    
+        if(isNotNullOrEmpty(productoEnCatalogo.plu()) && isNotNullOrEmpty(dto.plu()) 
+            && !productoEnCatalogo.plu().equals(dto.plu()))
+        {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El plu del producto no coincide con el del catalogo")
+                .asRuntimeException();
+        }
+
+        if(!productoEnCatalogo.unidadMedida().equals(dto.unidadMedida())){
+            throw Status.INVALID_ARGUMENT
+                .withDescription("La unidad de medida del producto no coincide con la del catalogo")
+                .asRuntimeException();
+        }
+
+        // Creamos un metodo auxiliar que si es transactional para evitar secuestrar la bbdd mientras esperamos la respuesta grpc.
+        return transactionTemplate.<InventarioDto>execute(status -> {
+            return crearInventarioAux(dto);
+        });
+    }
+
+    private InventarioDto crearInventarioAux(CrearInventarioRequestDto dto){
+
         // Comprobamos que no exista un inventario ya existente. Si existe y es igual a los datos del dto, lo dejamos pasar, si no, tiramos error
         Optional<Inventario> inventarioExistenteOpt = inventarioRepository.findBySku(dto.sku());
         
@@ -251,53 +280,54 @@ public class InventarioService {
                 inventarioGuardado.getUnidadMedida().name()
             );
         }
+    }    
+
+    /**
+     * Consulta el inventario de un producto (AC20).
+     * Este método obtiene la información completa del inventario de un producto,
+     * incluyendo detalles por lote.
+     */
+    @Transactional(readOnly = true)
+    public ConsultarInventarioResponseDto consultarInventario(ConsultarInventarioRequestDto dto) {
+        
+        // Buscar el inventario para este SKU
+        Inventario inventario = inventarioRepository.findBySku(dto.sku())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Inventario no encontrado para SKU '" + dto.sku() + "'")
+                .asRuntimeException());
+
+        // Buscar todos los lotes asociados a este inventario
+        List<Lote> lotes = loteRepository.findBySku(dto.sku());
+        
+        // Convertir lotes a DetalleLoteDto
+        List<DetalleLoteDto> detallesLotes = lotes.stream()
+            .map(lote -> new DetalleLoteDto(
+                lote.getIdLote(),
+                lote.getNumeroLote(),
+                lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen() : BigDecimal.ZERO,  // Cantidad en almacén
+                lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria() : BigDecimal.ZERO,  // Cantidad en estantería
+                lote.getFechaCaducidad() != null ? lote.getFechaCaducidad().toString() : null,
+                lote.getFechaIngreso() != null ? lote.getFechaIngreso().toString() : null
+            ))
+            .toList();
+
+        // TODO: Obtener nombre del producto del servicio de catálogo
+        // Por ahora, usamos el SKU como nombre
+        String nombreProducto = dto.sku();
+
+        // Construir el DTO de detalles completos con null safety
+        DetallesInventarioCompletoDto detallesCompletos = new DetallesInventarioCompletoDto(
+            inventario.getSku(),
+            nombreProducto,
+            inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen() : BigDecimal.ZERO,
+            inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria() : BigDecimal.ZERO,
+            inventario.getUnidadMedida(),
+            detallesLotes
+        );
+        
+        // Construir y devolver la respuesta con el DTO correcto
+        return new ConsultarInventarioResponseDto(detallesCompletos);
     }
-        /**
-         * Consulta el inventario de un producto (AC20).
-         * Este método obtiene la información completa del inventario de un producto,
-         * incluyendo detalles por lote.
-         */
-        @Transactional(readOnly = true)
-        public ConsultarInventarioResponseDto consultarInventario(ConsultarInventarioRequestDto dto) {
-            
-            // Buscar el inventario para este SKU
-            Inventario inventario = inventarioRepository.findBySku(dto.sku())
-                .orElseThrow(() -> Status.NOT_FOUND
-                    .withDescription("Inventario no encontrado para SKU '" + dto.sku() + "'")
-                    .asRuntimeException());
-    
-            // Buscar todos los lotes asociados a este inventario
-            List<Lote> lotes = loteRepository.findBySku(dto.sku());
-            
-            // Convertir lotes a DetalleLoteDto
-            List<DetalleLoteDto> detallesLotes = lotes.stream()
-                .map(lote -> new DetalleLoteDto(
-                    lote.getIdLote(),
-                    lote.getNumeroLote(),
-                    lote.getCantidadAlmacen() != null ? lote.getCantidadAlmacen() : BigDecimal.ZERO,  // Cantidad en almacén
-                    lote.getCantidadEstanteria() != null ? lote.getCantidadEstanteria() : BigDecimal.ZERO,  // Cantidad en estantería
-                    lote.getFechaCaducidad() != null ? lote.getFechaCaducidad().toString() : null,
-                    lote.getFechaIngreso() != null ? lote.getFechaIngreso().toString() : null
-                ))
-                .toList();
-    
-            // TODO: Obtener nombre del producto del servicio de catálogo
-            // Por ahora, usamos el SKU como nombre
-            String nombreProducto = dto.sku();
-    
-            // Construir el DTO de detalles completos con null safety
-            DetallesInventarioCompletoDto detallesCompletos = new DetallesInventarioCompletoDto(
-                inventario.getSku(),
-                nombreProducto,
-                inventario.getCantidadAlmacen() != null ? inventario.getCantidadAlmacen() : BigDecimal.ZERO,
-                inventario.getCantidadEstanteria() != null ? inventario.getCantidadEstanteria() : BigDecimal.ZERO,
-                inventario.getUnidadMedida(),
-                detallesLotes
-            );
-            
-            // Construir y devolver la respuesta con el DTO correcto
-            return new ConsultarInventarioResponseDto(detallesCompletos);
-        }
 
     /**
      * Mueve stock del almacén a las estanterías (AC18).

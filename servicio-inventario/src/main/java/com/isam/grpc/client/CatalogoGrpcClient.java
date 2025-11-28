@@ -1,20 +1,26 @@
 package com.isam.grpc.client;
 
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.grpc.catalogo.CatalogoServiceGrpc;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.ProductoProto;
+import com.isam.mapper.InventarioMapper;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class CatalogoGrpcClient {
     
     @Value("${grpc.client.catalogo.host:localhost}")
@@ -25,6 +31,7 @@ public class CatalogoGrpcClient {
     
     private ManagedChannel channel;
     private CatalogoServiceGrpc.CatalogoServiceBlockingStub catalogoStub;
+    private final InventarioMapper inventarioMapper;
     
     @PostConstruct
     public void init() {
@@ -51,7 +58,7 @@ public class CatalogoGrpcClient {
      * @return Los datos del producto
      * @throws StatusRuntimeException Si hay error en la comunicación
      */
-    public ProductoProto consultarProducto(String sku) throws StatusRuntimeException {
+    public ConsultarProductoDto consultarProducto(String sku) throws StatusRuntimeException {
         log.debug("Consultando producto con SKU '{}'", sku);
         
         ConsultarProductoRequest request = ConsultarProductoRequest.newBuilder()
@@ -63,7 +70,8 @@ public class CatalogoGrpcClient {
         ProductoProto producto = response.getProducto();
         log.debug("Producto consultado: SKU='{}', Nombre='{}'", producto.getSku(), producto.getNombre());
         
-        return producto;
+        
+        return inventarioMapper.toDto(producto);
     }
     
     /**
