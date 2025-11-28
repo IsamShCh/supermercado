@@ -75,22 +75,57 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
     @Override
     public void procesarPago(ProcesarPagoRequest request,
             StreamObserver<com.isam.grpc.ventas.ProcesarPagoRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Metodo procesarPago no esta implementado todavía")
-                .asRuntimeException()
-        );
+        log.info("Recibida solicitud para procesar pago: idTicket='{}', metodoPago='{}', montoRecibido='{}'",
+            request.getIdTicketTemporal(), request.getMetodoPago(), request.getMontoRecibido());
+        
+        try {
+            // Convertir proto a DTO
+            com.isam.dto.ProcesarPagoRequestDto dto = ventasMapper.toDto(request);
+            
+            // Llamar al servicio
+            com.isam.dto.ProcesarPagoResponseDto responseDto = ventasService.procesarPago(dto);
+            
+            // Convertir DTO a proto
+            com.isam.grpc.ventas.ProcesarPagoRequest.Response responseProto = ventasMapper.toProto(responseDto);
+            
+            log.info("Pago procesado exitosamente: idPago='{}', montoCambio={}",
+                responseDto.idPago(), responseDto.montoCambio());
+            
+            // Construir respuesta
+            responseObserver.onNext(responseProto);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            log.error("Error al procesar pago: {}", e.getMessage());
+            responseObserver.onError(e);
+        }
     }
     
     @Override
     public void cerrarTicket(CerrarTicketRequest request,
             StreamObserver<com.isam.grpc.ventas.CerrarTicketRequest.Response> responseObserver) {
-        // TODO: Implementar
-        responseObserver.onError(
-            Status.UNIMPLEMENTED
-                .withDescription("Metodo cerrarTicket no esta implementado todavía")
-                .asRuntimeException()
-        );
+        log.info("Recibida solicitud para cerrar ticket: idTicket='{}'", request.getIdTicketTemporal());
+        
+        try {
+            // Convertir proto a DTO
+            com.isam.dto.CerrarTicketRequestDto dto = ventasMapper.toDto(request);
+            
+            // Llamar al servicio
+            com.isam.dto.CerrarTicketResponseDto responseDto = ventasService.cerrarTicket(dto);
+            
+            // Convertir DTO a proto
+            com.isam.grpc.ventas.CerrarTicketRequest.Response responseProto = ventasMapper.toProto(responseDto);
+            
+            log.info("Ticket cerrado exitosamente: numeroTicket='{}', total={}",
+                responseDto.numeroTicket(), responseDto.total());
+            
+            // Construir respuesta
+            responseObserver.onNext(responseProto);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            log.error("Error al cerrar ticket: {}", e.getMessage());
+            responseObserver.onError(e);
+        }
     }
 }

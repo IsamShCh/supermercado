@@ -2,12 +2,21 @@ package com.isam.service;
 
 import com.isam.dto.AnadirProductoTicketRequestDto;
 import com.isam.dto.AnadirProductoTicketResponseDto;
+import com.isam.dto.CerrarTicketRequestDto;
+import com.isam.dto.CerrarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
+import com.isam.dto.LineaVentaDto;
+import com.isam.dto.ProcesarPagoRequestDto;
+import com.isam.dto.ProcesarPagoResponseDto;
 import com.isam.grpc.catalogo.ProductoProto;
 import com.isam.grpc.client.CatalogoGrpcClient;
+import com.isam.grpc.client.InventarioGrpcClient;
+import com.isam.grpc.inventario.ItemVenta;
 import com.isam.model.EstadoTicket;
 import com.isam.model.ItemTicket;
+import com.isam.model.Pago;
 import com.isam.model.Ticket;
+import com.isam.repository.PagoRepository;
 import com.isam.repository.TicketRepository;
 import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +32,8 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 
@@ -33,7 +44,9 @@ import java.util.Locale;
 public class VentasService {
 
     private final TicketRepository ticketRepository;
+    private final PagoRepository pagoRepository;
     private final CatalogoGrpcClient catalogoGrpcClient;
+    private final InventarioGrpcClient inventarioGrpcClient;
 
     @Transactional
     public CrearNuevoTicketResponseDto crearNuevoTicket(String idUsuario, String nombreCajero) {
@@ -200,6 +213,248 @@ public class VentasService {
             itemFinal.getSubtotal(),
             ticket.getSubtotal() != null ? ticket.getSubtotal() : BigDecimal.ZERO
         );
+    }
+    
+    /**
+     * Procesa el pago de un ticket temporal
+     * @param dto DTO con el ID del ticket temporal, método de pago y monto recibido
+     * @return Respuesta con los detalles del pago procesado
+     */
+    @Transactional
+    public ProcesarPagoResponseDto procesarPago(ProcesarPagoRequestDto dto) {
+        log.info("Procesando pago para ticket: idTicket='{}', metodoPago='{}', montoRecibido={}",
+            dto.idTicketTemporal(), dto.metodoPago(), dto.montoRecibido());
+        
+        // Validar que el ID del ticket no sea nulo o vacío
+        if (!isNotNullOrEmpty(dto.idTicketTemporal())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El ID del ticket temporal es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Validar que el método de pago no sea nulo
+        if (dto.metodoPago() == null) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El método de pago es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Validar que el monto recibido no sea nulo
+        if (dto.montoRecibido() == null) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El monto recibido es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Validar que el monto recibido sea mayor que 0
+        if (dto.montoRecibido().compareTo(BigDecimal.ZERO) <= 0) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El monto recibido debe ser mayor que 0")
+                .asRuntimeException();
+        }
+        
+        // Buscar el ticket en la base de datos
+        Ticket ticket = ticketRepository.findById(dto.idTicketTemporal())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Ticket temporal no encontrado con ID '" + dto.idTicketTemporal() + "'")
+                .asRuntimeException());
+        
+        // Validar que el ticket esté en estado TEMPORAL
+        if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
+                .asRuntimeException();
+        }
+        
+        // Validar que el ticket tenga items
+        if (ticket.getItems() == null || ticket.getItems().isEmpty()) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no tiene productos. Debe añadir al menos un producto antes de procesar el pago")
+                .asRuntimeException();
+        }
+        
+        // Validar que el ticket ya tenga un pago asociado
+        if (ticket.getPago() != null) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket ya tiene un pago procesado")
+                .asRuntimeException();
+        }
+        
+        // Calcular el total del ticket (por ahora sin impuestos)
+        // TODO: Implementar cálculo de impuestos cuando esté disponible
+        ticket.calcularSubtotal();
+        BigDecimal totalTicket = ticket.getSubtotal();
+        
+        // Validar que el monto recibido sea suficiente
+        if (dto.montoRecibido().compareTo(totalTicket) < 0) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription(String.format(
+                    "El monto recibido (%.2f) es insuficiente. Total del ticket: %.2f",
+                    dto.montoRecibido(), totalTicket))
+                .asRuntimeException();
+        }
+        
+        // Crear el pago
+        Pago pago = new Pago();
+        pago.setTicket(ticket);
+        pago.setMetodoPago(dto.metodoPago());
+        pago.setMontoRecibido(dto.montoRecibido());
+        pago.setFechaHora(LocalDateTime.now());
+        
+        // Calcular el cambio
+        pago.calcularCambio(totalTicket);
+        
+        // Guardar el pago
+        pago = pagoRepository.save(pago);
+        
+        // Asociar el pago al ticket
+        ticket.setPago(pago);
+        ticket.setIdPago(pago.getIdPago());
+        ticketRepository.save(ticket);
+        
+        log.info("Pago procesado exitosamente: idPago='{}', montoCambio={}",
+            pago.getIdPago(), pago.getMontoCambio());
+        
+        // Construir y retornar la respuesta
+        return new ProcesarPagoResponseDto(
+            pago.getIdPago(),
+            ticket.getIdTicket(),
+            pago.getMetodoPago(),
+            pago.getMontoRecibido(),
+            pago.getMontoCambio()
+        );
+    }
+    
+    /**
+     * Cierra un ticket de venta y notifica al servicio de inventario
+     * @param dto DTO con el ID del ticket temporal a cerrar
+     * @return Respuesta con los detalles del ticket cerrado
+     */
+    @Transactional
+    public CerrarTicketResponseDto cerrarTicket(CerrarTicketRequestDto dto) {
+        log.info("Cerrando ticket: idTicket='{}'", dto.idTicketTemporal());
+        
+        // Validar que el ID del ticket no sea nulo o vacío
+        if (!isNotNullOrEmpty(dto.idTicketTemporal())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El ID del ticket temporal es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Buscar el ticket en la base de datos
+        Ticket ticket = ticketRepository.findById(dto.idTicketTemporal())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Ticket temporal no encontrado con ID '" + dto.idTicketTemporal() + "'")
+                .asRuntimeException());
+        
+        // Validar que el ticket esté en estado TEMPORAL
+        if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
+                .asRuntimeException();
+        }
+        
+        // Validar que el ticket tenga items
+        if (ticket.getItems() == null || ticket.getItems().isEmpty()) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no tiene productos. Debe añadir al menos un producto antes de cerrar el ticket")
+                .asRuntimeException();
+        }
+        
+        // Validar que el ticket tenga un pago procesado
+        if (ticket.getPago() == null) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no tiene un pago procesado. Debe procesar el pago antes de cerrar el ticket")
+                .asRuntimeException();
+        }
+        
+        // Calcular totales
+        ticket.calcularSubtotal();
+        // TODO: Implementar cálculo de impuestos cuando esté disponible
+        ticket.setTotalImpuestos(BigDecimal.ZERO);
+        ticket.setTotal(ticket.getSubtotal());
+        
+        // Cambiar estado del ticket a CERRADO
+        ticket.setEstadoTicket(EstadoTicket.CERRADO);
+        
+        // Guardar el ticket actualizado
+        ticket = ticketRepository.save(ticket);
+        
+        // Registrar movimientos de venta en inventario
+        registrarMovimientosVentaEnInventario(ticket);
+        
+        // Construir lista de líneas de venta
+        List<LineaVentaDto> lineasVenta = new ArrayList<>();
+        for (ItemTicket item : ticket.getItems()) {
+            LineaVentaDto lineaVenta = new LineaVentaDto(
+                item.getNumeroLinea(),
+                item.getSku(),
+                item.getNombreProducto(),
+                item.getCantidad(),
+                item.getPrecioUnitario(),
+                item.getDescuento() != null ? item.getDescuento() : BigDecimal.ZERO,
+                null, // promocionAplicada - TODO: implementar cuando esté disponible
+                item.getSubtotal(),
+                item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO
+            );
+            lineasVenta.add(lineaVenta);
+        }
+        
+        // TODO: Obtener nombre del cajero del contexto de autenticación
+        String nombreCajero = "Cajero Temporal";
+        
+        log.info("Ticket cerrado exitosamente: numeroTicket='{}', total={}",
+            ticket.getNumeroTicket(), ticket.getTotal());
+        
+        // Construir y retornar la respuesta
+        return new CerrarTicketResponseDto(
+            ticket.getNumeroTicket(),
+            ticket.getFechaHora().toString(),
+            nombreCajero,
+            lineasVenta,
+            ticket.getSubtotal(),
+            ticket.getTotalImpuestos(),
+            ticket.getTotal(),
+            ticket.getPago().getMetodoPago(),
+            ticket.getPago().getMontoRecibido(),
+            ticket.getPago().getMontoCambio()
+        );
+    }
+    
+    /**
+     * Registra los movimientos de venta en el servicio de inventario
+     * Este método notifica al servicio de inventario sobre las salidas de productos por venta
+     * @param ticket Ticket con los items vendidos
+     */
+    private void registrarMovimientosVentaEnInventario(Ticket ticket) {
+        log.info("Registrando movimientos de venta en inventario para ticket: {}", ticket.getNumeroTicket());
+        
+        try {
+            // Construir lista de items para el servicio de inventario
+            List<ItemVenta> itemsVenta = new ArrayList<>();
+            
+            for (ItemTicket item : ticket.getItems()) {
+                ItemVenta itemVenta = ItemVenta.newBuilder()
+                    .setSku(item.getSku())
+                    .setCantidad(item.getCantidad().toPlainString())
+                    .build();
+                itemsVenta.add(itemVenta);
+            }
+            
+            // Registrar la venta completa en inventario
+            inventarioGrpcClient.registrarVenta(ticket.getNumeroTicket(), itemsVenta);
+            
+            log.info("Venta registrada exitosamente en inventario: Ticket='{}'", ticket.getNumeroTicket());
+            
+        } catch (StatusRuntimeException e) {
+            // Log del error pero no interrumpir el proceso de cierre del ticket
+            // El ticket ya está cerrado, solo estamos notificando a inventario
+            log.error("Error al registrar venta en inventario: Ticket='{}', Error: {}",
+                ticket.getNumeroTicket(), e.getMessage());
+            
+            // TODO: Implementar mecanismo de reintento o cola de mensajes para casos de fallo
+            // Por ahora solo logueamos el error
+        }
     }
     
     private boolean isNotNullOrEmpty(String str) {
