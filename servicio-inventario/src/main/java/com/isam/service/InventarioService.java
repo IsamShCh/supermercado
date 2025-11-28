@@ -45,6 +45,7 @@ public class InventarioService {
     private final MovimientoInventarioRepository movimientoRepository;
     private final ProveedorRepository proveedorRepository;
     private final AjusteInventarioService ajusteInventarioService;
+    private final com.isam.grpc.client.CatalogoGrpcClient catalogoGrpcClient;
 
     
     /**
@@ -206,6 +207,13 @@ public class InventarioService {
         if (isNotNullOrEmpty(dto.ean()) && isNotNullOrEmpty(dto.plu())) {
             throw Status.INVALID_ARGUMENT
                 .withDescription("Un producto solo puede tener o EAN o PLU, pero no ambos")
+                .asRuntimeException();
+        }
+        
+        // Verificar que el producto existe en el catálogo antes de crear inventario
+        if (!catalogoGrpcClient.existeProducto(dto.sku())) {
+            throw Status.NOT_FOUND
+                .withDescription("No se puede crear inventario para el SKU '" + dto.sku() + "' porque no existe en el catálogo")
                 .asRuntimeException();
         }
         
