@@ -35,6 +35,7 @@ public class MovimientoInventario {
     private TipoMovimiento tipoMovimiento;
 
     @NotNull(message = "La cantidad es obligatoria")
+    @DecimalMin(value = "0.0", inclusive = false, message = "La cantidad debe ser mayor que 0")
     @Digits(integer = 10, fraction = 3, message = "La cantidad debe tener máximo 10 dígitos enteros y 3 decimales")
     @Column(name = "Cantidad", precision = 10, scale = 3, nullable = false)
     private BigDecimal cantidad;

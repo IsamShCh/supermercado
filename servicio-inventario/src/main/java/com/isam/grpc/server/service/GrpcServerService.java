@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceImplBase {
 
     private final com.isam.service.InventarioService inventarioService;
+    private final com.isam.service.RegistrarVentaService registrarVentaService;
     private final com.isam.mapper.InventarioMapper inventarioMapper;
     private final Validator validator;
 
@@ -294,6 +295,46 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
         responseObserver.onCompleted();
 
 
+    }
+    
+    @Override
+    @Transactional
+    public void registrarVenta(RegistrarVentaRequest request, StreamObserver<RegistrarVentaRequest.Response> responseObserver) {
+        try {
+            // Convertir el proto a DTO
+            com.isam.dto.venta.RegistrarVentaRequestDto dto = inventarioMapper.toDto(request);
+            
+            // Validar
+            Set<ConstraintViolation<com.isam.dto.venta.RegistrarVentaRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+            
+            // Llamar al servicio
+            com.isam.dto.venta.RegistrarVentaResponseDto responseDto = registrarVentaService.registrarVenta(dto);
+            
+            // Convertir la respuesta DTO a proto
+            RegistrarVentaRequest.Response response = inventarioMapper.toProto(responseDto);
+            
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            responseObserver.onError(
+                Status.INTERNAL
+                    .withDescription("Error al registrar venta: " + e.getMessage())
+                    .asRuntimeException()
+            );
+        }
     }
 
 }

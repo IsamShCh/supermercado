@@ -18,6 +18,9 @@ import com.isam.dto.inventario.AjustarInventarioManualResponseDto;
 import com.isam.dto.inventario.ConsultarInventarioRequestDto;
 import com.isam.dto.inventario.ConsultarInventarioResponseDto;
 import com.isam.dto.lote.DetalleLoteDto;
+import com.isam.dto.venta.ItemVentaDto;
+import com.isam.dto.venta.RegistrarVentaRequestDto;
+import com.isam.dto.venta.RegistrarVentaResponseDto;
 import com.isam.grpc.inventario.AgregarProveedorRequest;
 import com.isam.grpc.inventario.AjustarInventarioManualRequest;
 import com.isam.grpc.inventario.CrearInventarioRequest;
@@ -26,6 +29,7 @@ import com.isam.grpc.inventario.MoverStockEstanteriaRequest;
 import com.isam.grpc.inventario.MovimientoInventarioProto;
 import com.isam.grpc.inventario.ProveedorProto;
 import com.isam.grpc.inventario.RegistrarNuevasExistenciasRequest;
+import com.isam.grpc.inventario.RegistrarVentaRequest;
 import com.isam.grpc.inventario.LoteProto;
 import com.isam.grpc.inventario.InventarioProto;
 import com.isam.grpc.inventario.DetallesInventarioCompleto;
@@ -34,6 +38,7 @@ import com.isam.model.UnidadMedida;
 import com.isam.model.EstadoLote;
 
 import java.math.BigDecimal;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -543,6 +548,32 @@ public class InventarioMapper {
             .setCantidadAjustada(dto.cantidadAjustada().toPlainString())
             .setStockAnterior(dto.stockAnterior().toPlainString())
             .setStockNuevo(dto.stockNuevo().toPlainString())
+            .build();
+    }
+    
+    // Mapeo para Registrar Venta
+    public RegistrarVentaRequestDto toDto(RegistrarVentaRequest request) {
+        java.util.List<ItemVentaDto> items = request.getItemsList().stream()
+            .map(itemProto -> new ItemVentaDto(
+                itemProto.getSku(),
+                new BigDecimal(itemProto.getCantidad())
+            ))
+            .collect(Collectors.toList());
+        
+        return new RegistrarVentaRequestDto(
+            request.getNumeroTicket(),
+            items
+        );
+    }
+    
+    public RegistrarVentaRequest.Response toProto(RegistrarVentaResponseDto dto) {
+        // Convertir movimientos
+        java.util.List<MovimientoInventarioProto> movimientosProto = dto.movimientos().stream()
+            .map(this::toProto)
+            .collect(Collectors.toList());
+        
+        return RegistrarVentaRequest.Response.newBuilder()
+            .addAllMovimientos(movimientosProto)
             .build();
     }
 }

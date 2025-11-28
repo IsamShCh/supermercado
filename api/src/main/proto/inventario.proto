@@ -301,6 +301,23 @@ message CrearInventarioRequest{
 }
 
 // ========================================
+// Registrar Venta (Integración con Ventas)
+// ========================================
+message RegistrarVentaRequest {
+  string numero_ticket = 1;
+  repeated ItemVenta items = 2;
+  
+  message Response {
+    repeated MovimientoInventarioProto movimientos = 1;
+  }
+}
+
+message ItemVenta {
+  string sku = 1;
+  string cantidad = 2;  // decimal 10,3
+}
+
+// ========================================
 //!SECTION - Messages
 // ========================================
 
@@ -323,6 +340,9 @@ service InventarioService {
 
   // Creacion de inventario
   rpc CrearInventario(CrearInventarioRequest) returns (CrearInventarioRequest.Response);
+  
+  // Integración con Ventas
+  rpc RegistrarVenta(RegistrarVentaRequest) returns (RegistrarVentaRequest.Response);
 }
 
 // ========================================

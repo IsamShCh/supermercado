@@ -333,15 +333,17 @@ public class AjusteInventarioService {
     }
 
     private MovimientoInventario crearMovimientoAjuste(
-            AjustarInventarioManualRequestDto dto, 
-            String idLote, 
+            AjustarInventarioManualRequestDto dto,
+            String idLote,
             BigDecimal cantidad) {
         
         MovimientoInventario movimiento = new MovimientoInventario();
         movimiento.setSku(dto.sku());
         movimiento.setIdLote(idLote);
-        movimiento.setTipoMovimiento(TipoMovimiento.AJUSTE);  // Siempre AJUSTE
-        movimiento.setCantidad(cantidad);
+        // Usar el nuevo método para determinar el tipo de ajuste según el signo
+        movimiento.setTipoMovimiento(TipoMovimiento.ajustePorCantidad(cantidad));
+        // Convertir cantidad a valor absoluto (siempre positiva)
+        movimiento.setCantidad(cantidad.abs());
         movimiento.setUnidadMedida(obtenerUnidadMedidaDelInventario(dto.sku()));
         movimiento.setFechaHora(LocalDateTime.now());
         movimiento.setIdUsuario("SYSTEM"); // TODO: Obtener del contexto de seguridad

@@ -534,8 +534,10 @@ public class InventarioService {
         MovimientoInventario movimiento = new MovimientoInventario();
         movimiento.setSku(inventario.getSku());
         movimiento.setIdLote(null);
-        movimiento.setTipoMovimiento(TipoMovimiento.AJUSTE);
-        movimiento.setCantidad(discrepancia);
+        // Usar el nuevo método para determinar el tipo de ajuste según el signo
+        movimiento.setTipoMovimiento(TipoMovimiento.ajustePorCantidad(discrepancia)); // Devuelve o AJUSTE_POSITIVO o AJUSTE_NEGATIVO
+        // Convertir discrepancia a valor absoluto (siempre positiva)
+        movimiento.setCantidad(discrepancia.abs());
         movimiento.setUnidadMedida(inventario.getUnidadMedida());
         movimiento.setFechaHora(LocalDateTime.now());
         movimiento.setIdUsuario("SYSTEM");
@@ -605,8 +607,10 @@ public class InventarioService {
                 MovimientoInventario movimiento = new MovimientoInventario();
                 movimiento.setSku(inventario.getSku());
                 movimiento.setIdLote(lote.getIdLote());
-                movimiento.setTipoMovimiento(TipoMovimiento.AJUSTE);
-                movimiento.setCantidad(discrepancia);
+                // Usar el nuevo método para determinar el tipo de ajuste según el signo
+                movimiento.setTipoMovimiento(TipoMovimiento.ajustePorCantidad(discrepancia));
+                // Convertir discrepancia a valor absoluto (siempre positiva)
+                movimiento.setCantidad(discrepancia.abs());
                 movimiento.setUnidadMedida(inventario.getUnidadMedida());
                 movimiento.setFechaHora(LocalDateTime.now());
                 movimiento.setIdUsuario("SYSTEM");
