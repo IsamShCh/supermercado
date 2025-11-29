@@ -29,7 +29,6 @@ public class Ticket {
     @Column(name = "id_ticket", nullable = false, length = 36)
     private String idTicket;
     
-    @NotBlank(message = "El número de ticket es obligatorio")
     @Size(max = 50, message = "El número de ticket debe tener máximo 50 caracteres")
     @Column(name = "numero_ticket", unique = true, length = 50)
     private String numeroTicket;

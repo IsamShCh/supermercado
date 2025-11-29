@@ -187,12 +187,12 @@ Almacenes: TICKETS_TEMPORALES
 Requisitos satisfechos: RF31
 #NOTE - AC27: Usuario consulta contenido de un ticket
 Entidad Externa: Cajero / Gerente de Tienda
-Flujo de entrada: CONSULTA_TICKET = IDTicket
+Flujo de entrada: CONSULTA_TICKET = IdentificadorTicket
 Almacenes: TICKETS_TEMPORALES (lectura), TICKETS (lectura), PRODUCTOS (lectura)
 Requisitos satisfechos: RF32
 #NOTE - AC27R: Usuario obtiene contenido de un ticket
 Entidad Externa: Cajero / Gerente de Tienda
-Flujo de entrada: DETALLES_TICKET++ = IDTicket + [IDTicketTemporal | NumeroTicket] + FechaHora + NombreCajero + {LineaTicket} + Subtotal + TotalImpuestos + Total + (MetodoPago) + Estado
+Flujo de entrada: DETALLES_TICKET++ = IDTicket + NumeroTicket + FechaHora + NombreCajero + {LineaTicket} + Subtotal + TotalImpuestos + Total + (MetodoPago) + Estado
 Almacenes: TICKETS_TEMPORALES (lectura), TICKETS (lectura), PRODUCTOS (lectura)
 Requisitos satisfechos: RF32
 

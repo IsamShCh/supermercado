@@ -2,6 +2,8 @@ package com.isam.service;
 
 import com.isam.dto.AnadirProductoTicketRequestDto;
 import com.isam.dto.AnadirProductoTicketResponseDto;
+import com.isam.dto.ConsultarTicketRequestDto;
+import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
 import com.isam.grpc.catalogo.ProductoProto;
 import com.isam.grpc.client.CatalogoGrpcClient;
@@ -64,7 +66,6 @@ class VentasServiceTest {
     @Test
     void crearNuevoTicket_DatosValidos_CreaTicketExitosamente() {
         // Given
-        when(ticketRepository.getNextTicketNumber()).thenReturn(1L);
         when(ticketRepository.save(any(Ticket.class))).thenReturn(ticketTemporal);
 
         // When
@@ -82,7 +83,6 @@ class VentasServiceTest {
     @Test
     void crearNuevoTicket_DebeAsignarEstadoTemporal() {
         // Given
-        when(ticketRepository.getNextTicketNumber()).thenReturn(1L);
         when(ticketRepository.save(any(Ticket.class))).thenReturn(ticketTemporal);
 
         // When
@@ -97,7 +97,6 @@ class VentasServiceTest {
     @Test
     void crearNuevoTicket_DebeAsignarIdUsuarioCorrecto() {
         // Given
-        when(ticketRepository.getNextTicketNumber()).thenReturn(1L);
         when(ticketRepository.save(any(Ticket.class))).thenReturn(ticketTemporal);
 
         // When
@@ -252,5 +251,96 @@ class VentasServiceTest {
         
         assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
         assertTrue(exception.getMessage().contains("código de barras es obligatorio"));
+    }
+    
+    @Test
+    void consultarTicket_PorIdTicket_RetornaTicketCorrectamente() {
+        // Given
+        when(ticketRepository.findById(ticketTemporal.getIdTicket()))
+            .thenReturn(Optional.of(ticketTemporal));
+        
+        ConsultarTicketRequestDto dto = new ConsultarTicketRequestDto(
+            ticketTemporal.getIdTicket(),
+            null
+        );
+        
+        // When
+        ConsultarTicketResponseDto resultado = ventasService.consultarTicket(dto);
+        
+        // Then
+        assertNotNull(resultado);
+        assertEquals(ticketTemporal.getIdTicket(), resultado.idTicket());
+        assertEquals(ticketTemporal.getEstadoTicket(), resultado.estado());
+        assertEquals("Cajero " + idUsuario, resultado.nombreCajero());
+        
+        verify(ticketRepository, times(1)).findById(ticketTemporal.getIdTicket());
+    }
+    
+    @Test
+    void consultarTicket_PorNumeroTicket_RetornaTicketCorrectamente() {
+        // Given
+        ticketTemporal.setNumeroTicket("T-2025-0000001");
+        when(ticketRepository.findByNumeroTicket(ticketTemporal.getNumeroTicket()))
+            .thenReturn(Optional.of(ticketTemporal));
+        
+        ConsultarTicketRequestDto dto = new ConsultarTicketRequestDto(
+            null,
+            ticketTemporal.getNumeroTicket()
+        );
+        
+        // When
+        ConsultarTicketResponseDto resultado = ventasService.consultarTicket(dto);
+        
+        // Then
+        assertNotNull(resultado);
+        assertEquals(ticketTemporal.getIdTicket(), resultado.idTicket());
+        assertEquals(ticketTemporal.getNumeroTicket(), resultado.numeroTicket());
+        assertEquals(ticketTemporal.getEstadoTicket(), resultado.estado());
+        
+        verify(ticketRepository, times(1)).findByNumeroTicket(ticketTemporal.getNumeroTicket());
+    }
+    
+    @Test
+    void consultarTicket_IdTicketNoExiste_LanzaExcepcion() {
+        // Given
+        String idTicketInexistente = "ticket-inexistente";
+        ConsultarTicketRequestDto dto = new ConsultarTicketRequestDto(
+            idTicketInexistente,
+            null
+        );
+        
+        when(ticketRepository.findById(idTicketInexistente))
+            .thenReturn(Optional.empty());
+        
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> ventasService.consultarTicket(dto)
+        );
+        
+        assertEquals(Status.NOT_FOUND.getCode(), exception.getStatus().getCode());
+        assertTrue(exception.getMessage().contains("Ticket no encontrado con ID"));
+    }
+    
+    @Test
+    void consultarTicket_NumeroTicketNoExiste_LanzaExcepcion() {
+        // Given
+        String numeroTicketInexistente = "T-2025-9999999";
+        ConsultarTicketRequestDto dto = new ConsultarTicketRequestDto(
+            null,
+            numeroTicketInexistente
+        );
+        
+        when(ticketRepository.findByNumeroTicket(numeroTicketInexistente))
+            .thenReturn(Optional.empty());
+        
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> ventasService.consultarTicket(dto)
+        );
+        
+        assertEquals(Status.NOT_FOUND.getCode(), exception.getStatus().getCode());
+        assertTrue(exception.getMessage().contains("Ticket no encontrado con número"));
     }
 }

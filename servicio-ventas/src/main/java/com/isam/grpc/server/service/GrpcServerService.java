@@ -1,14 +1,25 @@
 package com.isam.grpc.server.service;
 
+import com.isam.dto.AnadirProductoTicketRequestDto;
+import com.isam.dto.CerrarTicketRequestDto;
+import com.isam.dto.ConsultarTicketRequestDto;
+import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
+import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.grpc.ventas.*;
 import com.isam.grpc.ventas.CrearNuevoTicketRequest.Response;
 import com.isam.mapper.VentasMapper;
 import com.isam.service.VentasService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +29,7 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
     
     private final VentasService ventasService;
     private final VentasMapper ventasMapper;
+    private final Validator validator;
     
     @Override
     public void crearNuevoTicket(CrearNuevoTicketRequest request, StreamObserver<Response> responseObserver) {
@@ -51,7 +63,21 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
         
         try {
             // Convertir proto a DTO
-            com.isam.dto.AnadirProductoTicketRequestDto dto = ventasMapper.toDto(request);
+            AnadirProductoTicketRequestDto dto = ventasMapper.toDto(request);
+            // Validar
+            Set<ConstraintViolation<AnadirProductoTicketRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
             
             // Llamar al servicio
             com.isam.dto.AnadirProductoTicketResponseDto responseDto = ventasService.anadirProductoTicket(dto);
@@ -68,7 +94,8 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
             
         } catch (Exception e) {
             log.error("Error al añadir producto al ticket: {}", e.getMessage());
-            responseObserver.onError(e);
+            // responseObserver.onError(e);
+            throw e;
         }
     }
 
@@ -80,8 +107,22 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
         
         try {
             // Convertir proto a DTO
-            com.isam.dto.ProcesarPagoRequestDto dto = ventasMapper.toDto(request);
-            
+            ProcesarPagoRequestDto dto = ventasMapper.toDto(request);
+            // Validar
+            Set<ConstraintViolation<ProcesarPagoRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+
             // Llamar al servicio
             com.isam.dto.ProcesarPagoResponseDto responseDto = ventasService.procesarPago(dto);
             
@@ -97,7 +138,8 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
             
         } catch (Exception e) {
             log.error("Error al procesar pago: {}", e.getMessage());
-            responseObserver.onError(e);
+            // responseObserver.onError(e);
+            throw e;
         }
     }
     
@@ -108,8 +150,22 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
         
         try {
             // Convertir proto a DTO
-            com.isam.dto.CerrarTicketRequestDto dto = ventasMapper.toDto(request);
-            
+            CerrarTicketRequestDto dto = ventasMapper.toDto(request);
+            // Validar
+            Set<ConstraintViolation<CerrarTicketRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+
             // Llamar al servicio
             com.isam.dto.CerrarTicketResponseDto responseDto = ventasService.cerrarTicket(dto);
             
@@ -125,7 +181,55 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
             
         } catch (Exception e) {
             log.error("Error al cerrar ticket: {}", e.getMessage());
-            responseObserver.onError(e);
+            // responseObserver.onError(e);
+            throw e;
+        }
+    }
+    
+    @Override
+    public void consultarTicket(ConsultarTicketRequest request,
+            StreamObserver<com.isam.grpc.ventas.ConsultarTicketRequest.Response> responseObserver) {
+        log.info("Recibida solicitud para consultar ticket: idTicket='{}', numeroTicket='{}'",
+            request.hasIdTicket() ? request.getIdTicket() : "null",
+            request.hasNumeroTicket() ? request.getNumeroTicket() : "null");
+        
+        try {
+            // Convertir proto a DTO
+            ConsultarTicketRequestDto dto = ventasMapper.toDto(request);
+            // Validar con el validator
+            Set<ConstraintViolation<ConsultarTicketRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+            // Validar el DTO
+            dto.validate();
+            
+            // Llamar al servicio
+            ConsultarTicketResponseDto responseDto = ventasService.consultarTicket(dto);
+            
+            // Convertir DTO a proto
+            com.isam.grpc.ventas.ConsultarTicketRequest.Response responseProto = ventasMapper.toProto(responseDto);
+            
+            log.info("Ticket consultado exitosamente: idTicket='{}', estado={}",
+                responseDto.idTicket(), responseDto.estado());
+            
+            // Construir respuesta
+            responseObserver.onNext(responseProto);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            log.error("Error al consultar ticket: {}", e.getMessage());
+            // responseObserver.onError(e);
+            throw e;
         }
     }
 }

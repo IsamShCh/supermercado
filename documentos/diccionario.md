@@ -142,10 +142,11 @@ Estado = [Activo | Cancelado]
 ### TICKETS
 
 ```
-TICKETS = {@NumeroTicket + IDUsuario + FechaHora + {LineaVenta} + 
+TICKETS = {@IDTicket + NumeroTicket + IDUsuario + FechaHora + {LineaVenta} + 
            Subtotal + TotalImpuestos + Total + IDPago}
 
-@NumeroTicket = *Número único del ticket cerrado*
+@IDTicket = *Identificador único interno del ticket (UUID)*
+NumeroTicket = *Número único de negocio del ticket (Formato T-YYYY-XXXX)*
 IDUsuario = *Cajero que procesó la venta*
 FechaHora = *Timestamp de cierre del ticket*
 LineaVenta = NumeroLinea + SKU + Descripcion + Cantidad + PrecioUnitario + 
@@ -549,9 +550,10 @@ INFO_ELIMINAR_PRODUCTO_TICKET = IDTicketTemporal + SKU
 #### CONSULTA_TICKET
 
 ```
-CONSULTA_TICKET = IDTicket
+CONSULTA_TICKET = IdentificadorTicket
 
-IDTicket = [IDTicketTemporal | NumeroTicket]
+IdentificadorTicket = [IDTicket | NumeroTicket]
+**Nota: Permite búsqueda por UUID (sistema) o por Número de Ticket (operativa humana)**
 
 **Usado en AC27**
 
@@ -921,7 +923,7 @@ ResumenGeneral = TotalProductosDevueltos + MontoTotalReembolsadoPeriodo +
 #### CONFIRMACION_TICKET_CREADO
 
 ```
-CONFIRMACION_TICKET_CREADO = IDTicketTemporal +  NumeroTicket + FechaHoraCreacion + 
+CONFIRMACION_TICKET_CREADO = IDTicketTemporal + FechaHoraCreacion + 
                              NombreCajero
 
 **Salida de AC23**
@@ -961,9 +963,9 @@ CONFIRMACION_PRODUCTO_ELIMINADO_TICKET = IDTicketTemporal + SKU +
 #### DETALLES_TICKET
 
 ```
-DETALLES_TICKET = IDTicket + [IDTicketTemporal | NumeroTicket] + 
-                  FechaHora + NombreCajero + {LineaTicket} + Subtotal + 
-                  TotalImpuestos + Total + (MetodoPago) + Estado
+DETALLES_TICKET = IDTicket + NumeroTicket + FechaHora + NombreCajero + 
+                  {LineaTicket} + Subtotal + TotalImpuestos + Total + 
+                  (MetodoPago) + Estado
 
 LineaTicket = NumeroLinea + SKU + NombreProducto + Cantidad + PrecioUnitario + 
               (Descuento) + Subtotal

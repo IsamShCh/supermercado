@@ -14,6 +14,7 @@ import com.isam.grpc.client.InventarioGrpcClient;
 import com.isam.grpc.inventario.ItemVenta;
 import com.isam.model.EstadoTicket;
 import com.isam.model.ItemTicket;
+import com.isam.model.MetodoPago;
 import com.isam.model.Pago;
 import com.isam.model.Ticket;
 import com.isam.repository.PagoRepository;
@@ -65,17 +66,11 @@ public class VentasService {
                 .asRuntimeException();
         }
 
-        Long siguienteNumero = ticketRepository.getNextTicketNumber();
-        
-        // Creamos un id de ticket de maximo 50 caracteres
-        String anio = String.valueOf(LocalDate.now().getYear());
-        String numeroTicket = String.format("T-%s-%07d", anio, siguienteNumero);
-        
 
         // Crear nueva entidad Ticket
         Ticket ticket = new Ticket();
         ticket.setIdUsuario(idUsuario.trim());
-        ticket.setNumeroTicket(numeroTicket);
+        
         ticket.setFechaHora(LocalDateTime.now());
         ticket.setEstadoTicket(EstadoTicket.TEMPORAL);
         
@@ -89,7 +84,6 @@ public class VentasService {
         // Construir y retornar respuesta
         return new CrearNuevoTicketResponseDto(
             ticketGuardado.getIdTicket(),
-            numeroTicket,
             fechaHoraFormateada,
             nombreCajero.trim()
         );
@@ -276,7 +270,7 @@ public class VentasService {
         // Validar que el ticket no tenga un pago ya asociado
         if (ticket.getPago() != null) {
             throw Status.FAILED_PRECONDITION
-                .withDescription("No se pueden añadir productos a un ticket que ya tiene un pago procesado")
+                .withDescription("El ticket ya tiene un pago asociado. De momento no soportamos el pago de los productos con 2 medio de pago distintos a la vez. P.e. No se puede pagar una parte del ticket con tarjeta y complementarlo con un pago en efectivo.)")
                 .asRuntimeException();
         }
         
@@ -369,9 +363,9 @@ public class VentasService {
         }
 
         // Validar que el ticket no tenga un pago ya asociado
-        if (ticket.getPago() != null) {
+        if (ticket.getPago() == null) {
             throw Status.FAILED_PRECONDITION
-                .withDescription("No se pueden añadir productos a un ticket que ya tiene un pago procesado")
+                .withDescription("El ticket no tiene un pago procesado. Debe procesar el pago antes de cerrar el ticket")
                 .asRuntimeException();
         }
         
@@ -382,12 +376,12 @@ public class VentasService {
                 .asRuntimeException();
         }
         
-        // Validar que el ticket tenga un pago procesado
-        if (ticket.getPago() == null) {
-            throw Status.FAILED_PRECONDITION
-                .withDescription("El ticket no tiene un pago procesado. Debe procesar el pago antes de cerrar el ticket")
-                .asRuntimeException();
-        }
+
+        // Creamos un numero de ticket de maximo 50 caracteres
+        Long siguienteNumero = ticketRepository.getNextTicketNumber();
+        String anio = String.valueOf(LocalDate.now().getYear());
+        String numeroTicket = String.format("T-%s-%07d", anio, siguienteNumero);
+        ticket.setNumeroTicket(numeroTicket);
         
         // Calcular totales
         ticket.calcularSubtotal();
@@ -476,6 +470,84 @@ public class VentasService {
             // TODO: Implementar mecanismo de reintento o cola de mensajes para casos de fallo
             // Por ahora solo logueamos el error
         }
+    }
+    
+    /**
+     * Consulta el contenido de un ticket (temporal o cerrado)
+     * @param dto DTO con el ID del ticket o número de ticket
+     * @return Respuesta con los detalles completos del ticket
+     */
+    @Transactional(readOnly = true)
+    public com.isam.dto.ConsultarTicketResponseDto consultarTicket(com.isam.dto.ConsultarTicketRequestDto dto) {
+        
+        log.info("Consultando ticket: idTicket='{}', numeroTicket='{}'",
+            dto.idTicket(), dto.numeroTicket());
+        
+        // Buscar el ticket por ID o número
+        Ticket ticket;
+        if (dto.idTicket() != null && !dto.idTicket().trim().isEmpty()) {
+            // Buscar por ID
+            ticket = ticketRepository.findById(dto.idTicket())
+                .orElseThrow(() -> Status.NOT_FOUND
+                    .withDescription("Ticket no encontrado con ID '" + dto.idTicket() + "'")
+                    .asRuntimeException());
+        } else {
+            // Buscar por número de ticket
+            ticket = ticketRepository.findByNumeroTicket(dto.numeroTicket())
+                .orElseThrow(() -> Status.NOT_FOUND
+                    .withDescription("Ticket no encontrado con número '" + dto.numeroTicket() + "'")
+                    .asRuntimeException());
+        }
+        
+        // Construir lista de líneas de venta
+        List<LineaVentaDto> lineasVenta = new ArrayList<>();
+        for (ItemTicket item : ticket.getItems()) {
+            LineaVentaDto lineaVenta = new LineaVentaDto(
+                item.getNumeroLinea(),
+                item.getSku(),
+                item.getNombreProducto(),
+                item.getCantidad(),
+                item.getPrecioUnitario(),
+                item.getDescuento() != null ? item.getDescuento() : BigDecimal.ZERO,
+                null, // promocionAplicada - TODO: implementar cuando esté disponible
+                item.getSubtotal(),
+                item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO
+            );
+            lineasVenta.add(lineaVenta);
+        }
+        
+        // Obtener información del pago si existe
+        MetodoPago metodoPago = null;
+        BigDecimal montoRecibido = null;
+        BigDecimal montoCambio = null;
+        
+        if (ticket.getPago() != null) {
+            metodoPago = ticket.getPago().getMetodoPago();
+            montoRecibido = ticket.getPago().getMontoRecibido();
+            montoCambio = ticket.getPago().getMontoCambio();
+        }
+        
+        // TODO: Obtener nombre del cajero del contexto de autenticación o de la base de datos
+        String nombreCajero = "Cajero " + ticket.getIdUsuario();
+        
+        log.info("Ticket consultado exitosamente: numeroTicket='{}', estado={}",
+            ticket.getNumeroTicket(), ticket.getEstadoTicket());
+        
+        // Construir y retornar la respuesta
+        return new com.isam.dto.ConsultarTicketResponseDto(
+            ticket.getIdTicket(),
+            ticket.getNumeroTicket(),
+            ticket.getFechaHora().toString(),
+            nombreCajero,
+            lineasVenta,
+            ticket.getSubtotal() != null ? ticket.getSubtotal() : BigDecimal.ZERO,
+            ticket.getTotalImpuestos() != null ? ticket.getTotalImpuestos() : BigDecimal.ZERO,
+            ticket.getTotal() != null ? ticket.getTotal() : BigDecimal.ZERO,
+            metodoPago,
+            montoRecibido,
+            montoCambio,
+            ticket.getEstadoTicket()
+        );
     }
     
     private boolean isNotNullOrEmpty(String str) {

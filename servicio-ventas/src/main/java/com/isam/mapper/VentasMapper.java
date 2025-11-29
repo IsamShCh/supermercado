@@ -4,13 +4,17 @@ import com.isam.dto.AnadirProductoTicketRequestDto;
 import com.isam.dto.AnadirProductoTicketResponseDto;
 import com.isam.dto.CerrarTicketRequestDto;
 import com.isam.dto.CerrarTicketResponseDto;
+import com.isam.dto.ConsultarTicketRequestDto;
+import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
 import com.isam.dto.LineaVentaDto;
 import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.dto.ProcesarPagoResponseDto;
 import com.isam.grpc.ventas.AnadirProductoTicketRequest;
 import com.isam.grpc.ventas.CerrarTicketRequest;
+import com.isam.grpc.ventas.ConsultarTicketRequest;
 import com.isam.grpc.ventas.CrearNuevoTicketRequest;
+import com.isam.grpc.ventas.EstadoTicket;
 import com.isam.grpc.ventas.LineaVentaProto;
 import com.isam.grpc.ventas.MetodoPago;
 import com.isam.grpc.ventas.ProcesarPagoRequest;
@@ -31,7 +35,6 @@ public class VentasMapper {
             .setIdTicketTemporal(dto.idTicketTemporal())
             .setFechaHoraCreacion(dto.fechaHoraCreacion())
             .setNombreCajero(dto.nombreCajero())
-            .setNumeroTicket(dto.numeroTicket())
             .build();
     }
     
@@ -88,7 +91,14 @@ public class VentasMapper {
         com.isam.model.MetodoPago metodoPago = convertMetodoPago(request.getMetodoPago());
         
         // Convertir el monto recibido de String a BigDecimal
-        BigDecimal montoRecibido = new BigDecimal(request.getMontoRecibido());
+        BigDecimal montoRecibido;
+        try {
+            montoRecibido = new BigDecimal(request.getMontoRecibido());
+        } catch (NumberFormatException e) {
+            throw io.grpc.Status.INVALID_ARGUMENT
+                .withDescription("Formato de monto recibido inválido: '" + request.getMontoRecibido() + "' no es un número válido.")
+                .asRuntimeException();
+        }
         
         return new ProcesarPagoRequestDto(
             request.getIdTicketTemporal(),
@@ -220,5 +230,96 @@ public class VentasMapper {
         }
         
         return builder.build();
+    }
+    
+    /**
+     * Convierte un proto request de consultar ticket a DTO
+     * @param request Proto request de consultar ticket
+     * @return DTO con los datos del request
+     */
+    public ConsultarTicketRequestDto toDto(ConsultarTicketRequest request) {
+        if (request == null) {
+            return null;
+        }
+        
+        String idTicket = null;
+        String numeroTicket = null;
+        
+        // Manejar el oneof identificador_ticket
+        switch (request.getIdentificadorTicketCase()) {
+            case ID_TICKET:
+                idTicket = request.getIdTicket();
+                break;
+            case NUMERO_TICKET:
+                numeroTicket = request.getNumeroTicket();
+                break;
+            case IDENTIFICADORTICKET_NOT_SET:
+                // No se ha establecido ningún identificador
+                break;
+        }
+        
+        return new ConsultarTicketRequestDto(
+            idTicket,
+            numeroTicket
+        );
+    }
+    
+    /**
+     * Convierte un DTO de respuesta de consultar ticket a proto
+     * @param dto DTO de respuesta
+     * @return Proto response
+     */
+    public ConsultarTicketRequest.Response toProto(ConsultarTicketResponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        
+        // Convertir las líneas de venta
+        var lineasVentaProto = dto.lineasVenta().stream()
+            .map(this::convertLineaVentaToProto)
+            .collect(Collectors.toList());
+        
+        // Construir el builder
+        ConsultarTicketRequest.Response.Builder builder = ConsultarTicketRequest.Response.newBuilder()
+            .setIdTicket(dto.idTicket())
+            .setFechaHora(dto.fechaHora())
+            .setNombreCajero(dto.nombreCajero())
+            .addAllLineasVenta(lineasVentaProto)
+            .setSubtotal(dto.subtotal().toPlainString())
+            .setTotalImpuestos(dto.totalImpuestos().toPlainString())
+            .setTotal(dto.total().toPlainString())
+            .setEstado(convertEstadoTicketToProto(dto.estado()));
+        
+        // Campos opcionales
+        if (dto.numeroTicket() != null && !dto.numeroTicket().isEmpty()) {
+            builder.setNumeroTicket(dto.numeroTicket());
+        }
+        
+        if (dto.metodoPago() != null) {
+            builder.setMetodoPago(convertMetodoPagoToProto(dto.metodoPago()));
+        }
+        
+        if (dto.montoRecibido() != null) {
+            builder.setMontoRecibido(dto.montoRecibido().toPlainString());
+        }
+        
+        if (dto.montoCambio() != null) {
+            builder.setMontoCambio(dto.montoCambio().toPlainString());
+        }
+        
+        return builder.build();
+    }
+    
+    /**
+     * Convierte el enum EstadoTicket de modelo a proto
+     * @param estado Enum de modelo
+     * @return Enum de proto
+     */
+    private EstadoTicket convertEstadoTicketToProto(com.isam.model.EstadoTicket estado) {
+        return switch (estado) {
+            case TEMPORAL -> EstadoTicket.TEMPORAL;
+            case CERRADO -> EstadoTicket.CERRADO;
+            case CANCELADO -> EstadoTicket.CANCELADO;
+        };
     }
 }
