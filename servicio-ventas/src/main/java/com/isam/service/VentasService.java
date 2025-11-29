@@ -121,6 +121,11 @@ public class VentasService {
         
         // Validar que el ticket esté en estado TEMPORAL
         if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
+            if (ticket.getEstadoTicket() == EstadoTicket.PAGADO) {
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("El ticket ya está PAGADO. No se pueden añadir más productos.")
+                    .asRuntimeException();
+            }
             throw Status.FAILED_PRECONDITION
                 .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
                 .asRuntimeException();
@@ -262,6 +267,11 @@ public class VentasService {
         
         // Validar que el ticket esté en estado TEMPORAL
         if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
+            if (ticket.getEstadoTicket() == EstadoTicket.PAGADO) {
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("El ticket ya está PAGADO. No se puede volver a cobrar. En el futuro se implementará la posibilidad de pagar mezclando varios metodos a la vez.")
+                    .asRuntimeException();
+            }
             throw Status.FAILED_PRECONDITION
                 .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
                 .asRuntimeException();
@@ -318,6 +328,7 @@ public class VentasService {
         // Asociar el pago al ticket
         ticket.setPago(pago);
         ticket.setIdPago(pago.getIdPago());
+        ticket.setEstadoTicket(EstadoTicket.PAGADO);
         ticketRepository.save(ticket);
         
         log.info("Pago procesado exitosamente: idPago='{}', montoCambio={}",
@@ -355,10 +366,17 @@ public class VentasService {
                 .withDescription("Ticket temporal no encontrado con ID '" + dto.idTicketTemporal() + "'")
                 .asRuntimeException());
         
-        // Validar que el ticket esté en estado TEMPORAL
-        if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
+        // Validar que el ticket esté en estado PAGADO
+        if (ticket.getEstadoTicket() != EstadoTicket.PAGADO) {
+            // Si sigue en TEMPORAL, es que se saltaron el pago
+            if (ticket.getEstadoTicket() == EstadoTicket.TEMPORAL) {
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("El ticket está en estado TEMPORAL. Debe procesar el pago antes de cerrarlo.")
+                    .asRuntimeException();
+            }
+            // Si está CERRADO o CANCELADO
             throw Status.FAILED_PRECONDITION
-                .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
+                .withDescription("El ticket no está en estado PAGADO válido para cierre. Estado actual: " + ticket.getEstadoTicket())
                 .asRuntimeException();
         }
 

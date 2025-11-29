@@ -21,6 +21,7 @@ enum EstadoTicket {
   TEMPORAL = 1;
   CERRADO = 2;
   CANCELADO = 3;
+  PAGADO = 4;
 }
 
 enum MetodoPago {

@@ -320,6 +320,7 @@ public class VentasMapper {
             case TEMPORAL -> EstadoTicket.TEMPORAL;
             case CERRADO -> EstadoTicket.CERRADO;
             case CANCELADO -> EstadoTicket.CANCELADO;
+            case PAGADO -> EstadoTicket.PAGADO;
         };
     }
 }
