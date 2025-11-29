@@ -131,6 +131,13 @@ public class VentasService {
                 .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
                 .asRuntimeException();
         }
+
+        // Validar que el ticket no tenga un pago ya asociado
+        if (ticket.getPago() != null) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("No se pueden añadir productos a un ticket que ya tiene un pago procesado")
+                .asRuntimeException();
+        }
         
         // Traducir el código de barras a SKU usando el servicio de catálogo
         String sku;
@@ -265,6 +272,13 @@ public class VentasService {
                 .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
                 .asRuntimeException();
         }
+
+        // Validar que el ticket no tenga un pago ya asociado
+        if (ticket.getPago() != null) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("No se pueden añadir productos a un ticket que ya tiene un pago procesado")
+                .asRuntimeException();
+        }
         
         // Validar que el ticket tenga items
         if (ticket.getItems() == null || ticket.getItems().isEmpty()) {
@@ -351,6 +365,13 @@ public class VentasService {
         if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
             throw Status.FAILED_PRECONDITION
                 .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
+                .asRuntimeException();
+        }
+
+        // Validar que el ticket no tenga un pago ya asociado
+        if (ticket.getPago() != null) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("No se pueden añadir productos a un ticket que ya tiene un pago procesado")
                 .asRuntimeException();
         }
         
