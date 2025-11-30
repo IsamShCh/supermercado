@@ -2,6 +2,8 @@ package com.isam.service;
 
 import com.isam.dto.AnadirProductoTicketRequestDto;
 import com.isam.dto.AnadirProductoTicketResponseDto;
+import com.isam.dto.CancelarTicketRequestDto;
+import com.isam.dto.CancelarTicketResponseDto;
 import com.isam.dto.CerrarTicketRequestDto;
 import com.isam.dto.CerrarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
@@ -587,5 +589,80 @@ public class VentasService {
         DecimalFormat df = new DecimalFormat("#0.00", symbols);
         df.setRoundingMode(RoundingMode.HALF_UP);
         return df.format(precio);
+    }
+    
+    /**
+     * Cancela un ticket temporal o pagado
+     * @param dto DTO con el ID del ticket a cancelar
+     * @return Respuesta con los detalles de la cancelación
+     */
+    @Transactional
+    public CancelarTicketResponseDto cancelarTicket(CancelarTicketRequestDto dto) {
+        log.info("Cancelando ticket: idTicket='{}'", dto.idTicket());
+        
+        // Validar que el ID del ticket no sea nulo o vacío
+        if (!isNotNullOrEmpty(dto.idTicket())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El ID del ticket es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Buscar el ticket en la base de datos
+        Ticket ticket = ticketRepository.findById(dto.idTicket())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Ticket no encontrado con ID '" + dto.idTicket() + "'")
+                .asRuntimeException());
+        
+        // Validar que el ticket esté en estado TEMPORAL o PAGADO
+        if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL && ticket.getEstadoTicket() != EstadoTicket.PAGADO) {
+            if (ticket.getEstadoTicket() == EstadoTicket.CERRADO) {
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("El ticket está CERRADO. No se puede cancelar. Para revertir una venta cerrada, debe usar el proceso de devoluciones.")
+                    .asRuntimeException();
+            }
+            if (ticket.getEstadoTicket() == EstadoTicket.CANCELADO) {
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("El ticket ya está CANCELADO.")
+                    .asRuntimeException();
+            }
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no está en un estado válido para cancelación. Estado actual: " + ticket.getEstadoTicket())
+                .asRuntimeException();
+        }
+        
+        // TODO: Validar que el usuario sea el creador del ticket cuando se implemente autenticación
+        // Por ahora, cualquier usuario puede cancelar cualquier ticket
+        
+        // Preparar respuesta según si tiene pago o no
+        java.util.Optional<BigDecimal> montoADevolver = java.util.Optional.empty();
+        java.util.Optional<MetodoPago> metodoPagoOriginal = java.util.Optional.empty();
+        
+        if (ticket.getPago() != null) {
+            // Ticket con pago asociado - se debe devolver dinero
+            montoADevolver = java.util.Optional.of(ticket.getPago().getMontoRecibido());
+            metodoPagoOriginal = java.util.Optional.of(ticket.getPago().getMetodoPago());
+            
+            log.info("Ticket con pago cancelado. Monto a devolver: {}, Método: {}",
+                ticket.getPago().getMontoRecibido(), ticket.getPago().getMetodoPago());
+        } else {
+            // Ticket sin pago - cancelación simple            
+            log.info("Ticket sin pago cancelado exitosamente.");
+        }
+        
+        // Cambiar estado del ticket a CANCELADO
+        ticket.setEstadoTicket(EstadoTicket.CANCELADO);
+        
+        // Guardar el ticket actualizado
+        ticketRepository.save(ticket);
+        
+        log.info("Ticket cancelado exitosamente: idTicket='{}', estadoFinal={}",
+            ticket.getIdTicket(), ticket.getEstadoTicket());
+        
+        // Construir y retornar la respuesta
+        return new CancelarTicketResponseDto(
+            ticket.getIdTicket(),
+            montoADevolver,
+            metodoPagoOriginal
+        );
     }
 }

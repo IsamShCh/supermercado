@@ -178,6 +178,22 @@ message CerrarTicketRequest {
   }
 }
 
+// ========================================
+// AC25: Cancelar ticket temporal
+// ========================================
+message CancelarTicketRequest {
+  // SOLICITUD_BORRAR_TICKET
+  string id_ticket = 1;          // IDTicket
+
+  // AC25R: Ticket cancelado
+  message Response{
+    // CONFIRMACION_TICKET_BORRADO
+    string id_ticket = 1;                   // IDTicket
+    optional string monto_a_devolver = 2;  // MontoADevolver (solo si tiene pago)
+    optional MetodoPago metodo_pago_original = 3; // MetodoPago original (solo si tiene pago)
+  }
+}
+
 // Auxiliares
 
 // Mensaje auxiliar para las líneas de venta
@@ -238,6 +254,8 @@ service VentasService {
   rpc CrearNuevoTicket(CrearNuevoTicketRequest) returns (CrearNuevoTicketRequest.Response);
   // AC24: Añadir producto al ticket
   rpc AnadirProductoTicket(AnadirProductoTicketRequest) returns (AnadirProductoTicketRequest.Response);
+  // AC25: Cancelar ticket temporal o pagado (excluidos los cerrados)
+  rpc CancelarTicket(CancelarTicketRequest) returns (CancelarTicketRequest.Response);
   // AC27: Consultar contenido de un ticket
   rpc ConsultarTicket(ConsultarTicketRequest) returns (ConsultarTicketRequest.Response);
   // AC28: Procesar pago de un ticket

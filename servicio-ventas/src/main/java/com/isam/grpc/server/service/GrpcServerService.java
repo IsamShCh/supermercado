@@ -1,6 +1,8 @@
 package com.isam.grpc.server.service;
 
 import com.isam.dto.AnadirProductoTicketRequestDto;
+import com.isam.dto.CancelarTicketRequestDto;
+import com.isam.dto.CancelarTicketResponseDto;
 import com.isam.dto.CerrarTicketRequestDto;
 import com.isam.dto.ConsultarTicketRequestDto;
 import com.isam.dto.ConsultarTicketResponseDto;
@@ -228,6 +230,48 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
             
         } catch (Exception e) {
             log.error("Error al consultar ticket: {}", e.getMessage());
+            // responseObserver.onError(e);
+            throw e;
+        }
+    }
+    
+    @Override
+    public void cancelarTicket(CancelarTicketRequest request,
+            StreamObserver<com.isam.grpc.ventas.CancelarTicketRequest.Response> responseObserver) {
+        log.info("Recibida solicitud para cancelar ticket: idTicket='{}'", request.getIdTicket());
+        
+        try {
+            // Convertir proto a DTO
+            CancelarTicketRequestDto dto = ventasMapper.toDto(request);
+            // Validar
+            Set<ConstraintViolation<CancelarTicketRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+
+            // Llamar al servicio
+            CancelarTicketResponseDto responseDto = ventasService.cancelarTicket(dto);
+            
+            // Convertir DTO a proto
+            com.isam.grpc.ventas.CancelarTicketRequest.Response responseProto = ventasMapper.toProto(responseDto);
+            
+            log.info("Ticket cancelado exitosamente: idTicket='{}'", responseDto.idTicket());
+            
+            // Construir respuesta
+            responseObserver.onNext(responseProto);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            log.error("Error al cancelar ticket: {}", e.getMessage());
             // responseObserver.onError(e);
             throw e;
         }

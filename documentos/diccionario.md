@@ -532,7 +532,7 @@ CodigoBarrasGranel = *Código de barras especial que contiene SKU y peso*
 #### SOLICITUD_BORRAR_TICKET
 
 ```
-SOLICITUD_BORRAR_TICKET = IDTicketTemporal
+SOLICITUD_BORRAR_TICKET = IDTicket
 
 **Usado en AC25**
 
@@ -944,7 +944,10 @@ CONFIRMACION_PRODUCTO_AÑADIDO = IDTicketTemporal + SKU + IDItemTicket + NumeroL
 #### CONFIRMACION_TICKET_BORRADO
 
 ```
-CONFIRMACION_TICKET_BORRADO = IDTicketTemporal + Mensaje
+CONFIRMACION_TICKET_BORRADO = IDTicket + (MontoADevolver) + (MetodoPagoOriginal)
+
+MontoADevolver = *Decimal(10,2) cantidad total a reembolsar al cliente*
+MetodoPagoOriginal = [Efectivo | TarjetaDebito | TarjetaCredito | Transferencia]
 
 **Salida de AC25**
 

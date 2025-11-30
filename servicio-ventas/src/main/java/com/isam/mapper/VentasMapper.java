@@ -2,6 +2,8 @@ package com.isam.mapper;
 
 import com.isam.dto.AnadirProductoTicketRequestDto;
 import com.isam.dto.AnadirProductoTicketResponseDto;
+import com.isam.dto.CancelarTicketRequestDto;
+import com.isam.dto.CancelarTicketResponseDto;
 import com.isam.dto.CerrarTicketRequestDto;
 import com.isam.dto.CerrarTicketResponseDto;
 import com.isam.dto.ConsultarTicketRequestDto;
@@ -11,6 +13,7 @@ import com.isam.dto.LineaVentaDto;
 import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.dto.ProcesarPagoResponseDto;
 import com.isam.grpc.ventas.AnadirProductoTicketRequest;
+import com.isam.grpc.ventas.CancelarTicketRequest;
 import com.isam.grpc.ventas.CerrarTicketRequest;
 import com.isam.grpc.ventas.ConsultarTicketRequest;
 import com.isam.grpc.ventas.CrearNuevoTicketRequest;
@@ -322,5 +325,45 @@ public class VentasMapper {
             case CANCELADO -> EstadoTicket.CANCELADO;
             case PAGADO -> EstadoTicket.PAGADO;
         };
+    }
+    
+    /**
+     * Convierte un proto request de cancelar ticket a DTO
+     * @param request Proto request de cancelar ticket
+     * @return DTO con los datos del request
+     */
+    public CancelarTicketRequestDto toDto(CancelarTicketRequest request) {
+        if (request == null) {
+            return null;
+        }
+        
+        return new CancelarTicketRequestDto(
+            request.getIdTicket()
+        );
+    }
+    
+    /**
+     * Convierte un DTO de respuesta de cancelar ticket a proto
+     * @param dto DTO de respuesta
+     * @return Proto response
+     */
+    public CancelarTicketRequest.Response toProto(CancelarTicketResponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        
+        CancelarTicketRequest.Response.Builder builder = CancelarTicketRequest.Response.newBuilder()
+            .setIdTicket(dto.idTicket());
+        
+        // Campos opcionales
+        dto.montoADevolver().ifPresent(monto ->
+            builder.setMontoADevolver(monto.toPlainString()) // TODO - ¿Deberia usar un auxiliar que me lo panga en el formato en concreto?
+        );
+        
+        dto.metodoPagoOriginal().ifPresent(metodoPago ->
+            builder.setMetodoPagoOriginal(convertMetodoPagoToProto(metodoPago))
+        );
+        
+        return builder.build();
     }
 }
