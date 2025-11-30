@@ -7,10 +7,12 @@ import com.isam.dto.CancelarTicketResponseDto;
 import com.isam.dto.CerrarTicketRequestDto;
 import com.isam.dto.CerrarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
+import com.isam.dto.EliminarProductoTicketRequestDto;
+import com.isam.dto.EliminarProductoTicketResponseDto;
 import com.isam.dto.LineaVentaDto;
 import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.dto.ProcesarPagoResponseDto;
-import com.isam.grpc.catalogo.ProductoProto;
+import com.isam.dto.CatalogoClient.ProductoDto;
 import com.isam.grpc.client.CatalogoGrpcClient;
 import com.isam.grpc.client.InventarioGrpcClient;
 import com.isam.grpc.inventario.ItemVenta;
@@ -155,7 +157,7 @@ public class VentasService {
         }
         
         // Consultar el producto por SKU usando el servicio de catálogo
-        ProductoProto producto;
+        ProductoDto producto;
         try {
             producto = catalogoGrpcClient.consultarProducto(sku);
         } catch (StatusRuntimeException e) {
@@ -184,15 +186,15 @@ public class VentasService {
             nuevoItem.setTicket(ticket);
             nuevoItem.setNumeroLinea(ticket.getItems().size() + 1);
             nuevoItem.setSku(sku);
-            nuevoItem.setNombreProducto(producto.getNombre());
+            nuevoItem.setNombreProducto(producto.nombre());
             nuevoItem.setCantidad(BigDecimal.ONE);
-            nuevoItem.setPrecioUnitario(new BigDecimal(producto.getPrecioVenta()));
+            nuevoItem.setPrecioUnitario(producto.precioVenta());
             nuevoItem.setDescuento(BigDecimal.ZERO);
             nuevoItem.calcularSubtotal();
             
             // Añadir el item al ticket
             ticket.addItem(nuevoItem);
-            log.debug("Nuevo producto añadido al ticket: SKU='{}', Nombre='{}'", sku, producto.getNombre());
+            log.debug("Nuevo producto añadido al ticket: SKU='{}', Nombre='{}'", sku, producto.nombre());
         }
         
         // Recalcular el subtotal del ticket
@@ -575,6 +577,41 @@ public class VentasService {
     }
     
     /**
+     * Verifica si un producto permite cantidades decimales basado en su unidad de medida
+     * @param producto El producto a validar
+     * @return true si permite decimales, false si solo permite enteros
+     */
+    private boolean permiteDecimales(ProductoDto producto) {
+        // Si explícitamente es granel, permite decimales
+        if (producto.esGranel()) {
+            return true;
+        }
+        
+        // Unidades que permiten decimales (peso, volumen, longitud)
+        if (producto.unidadMedida() != null) {
+            switch (producto.unidadMedida()) {
+                case "KILOGRAMO":
+                case "GRAMO":
+                case "LITRO":
+                case "MILILITRO":
+                case "METRO":
+                    return true;
+                    
+                // Unidades que solo permiten enteros
+                case "UNIDAD":
+                case "PAQUETE":
+                case "DOCENA":
+                case "UNIDAD_MEDIDA_UNSPECIFIED":
+                default:
+                    return false;
+            }
+        }
+        
+        // Por defecto, no permite decimales si no hay unidad de medida definida
+        return false;
+    }
+    
+    /**
      * Formatea un BigDecimal a String asegurando que el separador decimal sea punto (.).
      * Esto garantiza consistencia independientemente de la configuración regional del sistema.
      * @param precio BigDecimal a formatear
@@ -663,6 +700,158 @@ public class VentasService {
             ticket.getIdTicket(),
             montoADevolver,
             metodoPagoOriginal
+        );
+    }
+    
+    /**
+     * Elimina un producto de un ticket temporal
+     * @param dto DTO con el ID del ticket temporal y el SKU del producto a eliminar
+     * @return Respuesta con los detalles de la eliminación y el subtotal actualizado
+     */
+    @Transactional
+    public EliminarProductoTicketResponseDto eliminarProductoTicket(EliminarProductoTicketRequestDto dto) {
+        log.info("Eliminando producto del ticket: idTicket='{}', sku='{}', cantidadAEliminar={}",
+            dto.idTicket(), dto.sku(), dto.cantidadAEliminar().orElse(null));
+        
+        // Validar que el ID del ticket no sea nulo o vacío
+        if (!isNotNullOrEmpty(dto.idTicket())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El ID del ticket es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Validar que el SKU no sea nulo o vacío
+        if (!isNotNullOrEmpty(dto.sku())) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("El SKU del producto es obligatorio")
+                .asRuntimeException();
+        }
+        
+        // Validar que la cantidad a eliminar sea positiva si se proporciona
+        if (dto.cantidadAEliminar().isPresent() && dto.cantidadAEliminar().get().compareTo(BigDecimal.ZERO) <= 0) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("La cantidad a eliminar debe ser mayor que 0")
+                .asRuntimeException();
+        }
+        
+        // Buscar el ticket en la base de datos
+        Ticket ticket = ticketRepository.findById(dto.idTicket())
+            .orElseThrow(() -> Status.NOT_FOUND
+                .withDescription("Ticket no encontrado con ID '" + dto.idTicket() + "'")
+                .asRuntimeException());
+        
+        // Validar que el ticket esté en estado TEMPORAL
+        if (ticket.getEstadoTicket() != EstadoTicket.TEMPORAL) {
+            if (ticket.getEstadoTicket() == EstadoTicket.PAGADO) {
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("El ticket ya está PAGADO. No se pueden eliminar productos.")
+                    .asRuntimeException();
+            }
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El ticket no está en estado TEMPORAL. Estado actual: " + ticket.getEstadoTicket())
+                .asRuntimeException();
+        }
+
+        // Validar que el ticket no tenga un pago ya asociado
+        if (ticket.getPago() != null) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("No se pueden eliminar productos de un ticket que ya tiene un pago procesado")
+                .asRuntimeException();
+        }
+        
+        // Buscar el item del producto en el ticket
+        ItemTicket itemExistente = ticket.getItems().stream()
+            .filter(item -> item.getSku().equals(dto.sku()))
+            .findFirst()
+            .orElse(null);
+        
+        if (itemExistente == null) {
+            throw Status.NOT_FOUND
+                .withDescription("El producto con SKU '" + dto.sku() + "' no se encuentra en el ticket")
+                .asRuntimeException();
+        }
+        
+        // Consultar información del producto para validar si permite decimales
+        ProductoDto producto;
+        try {
+            producto = catalogoGrpcClient.consultarProducto(dto.sku());
+        } catch (StatusRuntimeException e) {
+            log.error("Error al consultar producto para validación: {}", e.getMessage());
+            throw Status.INTERNAL
+                .withDescription("Error al validar el producto: " + e.getMessage())
+                .asRuntimeException();
+        }
+        
+        // Validar que la cantidad a eliminar sea compatible con el tipo de producto
+        if (dto.cantidadAEliminar().isPresent()) {
+            BigDecimal cantidadAEliminar = dto.cantidadAEliminar().get();
+            
+            // Si el producto NO permite decimales, verificar que la cantidad sea entera
+            boolean tieneParteDecimal = cantidadAEliminar.remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) != 0;
+            if (!permiteDecimales(producto) && tieneParteDecimal) {
+                throw Status.INVALID_ARGUMENT
+                    .withDescription(String.format(
+                        "No se puede eliminar una cantidad decimal (%.3f) de un producto que se vende por %s. Solo se permiten cantidades enteras.",
+                        cantidadAEliminar, producto.unidadMedida() != null ? producto.unidadMedida() : "unidades"))
+                    .asRuntimeException();
+            }
+        }
+        
+        // Determinar la cantidad a eliminar
+        BigDecimal cantidadAEliminar = dto.cantidadAEliminar()
+            .orElse(itemExistente.getCantidad()); // Si no se especifica, eliminar todo
+        
+        // Validar que no se intente eliminar más de la cantidad existente
+        if (cantidadAEliminar.compareTo(itemExistente.getCantidad()) > 0) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription(String.format(
+                    "La cantidad a eliminar (%.3f) es mayor que la cantidad existente (%.3f) para el producto '%s'",
+                    cantidadAEliminar, itemExistente.getCantidad(), producto.nombre()))
+                .asRuntimeException();
+        }
+        
+        // Guardar valores para la respuesta
+        BigDecimal cantidadAnterior = itemExistente.getCantidad();
+        BigDecimal subtotalAnterior = itemExistente.getSubtotal();
+        
+        // Realizar la eliminación
+        if (cantidadAEliminar.compareTo(cantidadAnterior) == 0) {
+            // Eliminación total: remover el item completamente
+            ticket.removeItem(itemExistente);
+            log.debug("Producto eliminado completamente del ticket: SKU='{}', Cantidad eliminada={}",
+                dto.sku(), cantidadAEliminar);
+        } else {
+            // Eliminación parcial: reducir la cantidad
+            BigDecimal nuevaCantidad = cantidadAnterior.subtract(cantidadAEliminar);
+            itemExistente.setCantidad(nuevaCantidad);
+            itemExistente.calcularSubtotal();
+            log.debug("Cantidad reducida del producto: SKU='{}', Cantidad anterior={}, Cantidad nueva={}",
+                dto.sku(), cantidadAnterior, nuevaCantidad);
+        }
+        
+        // Recalcular el subtotal del ticket
+        ticket.calcularSubtotal();
+        
+        // Guardar el ticket actualizado
+        ticket = ticketRepository.save(ticket);
+        
+        // Determinar si el item fue eliminado completamente
+        boolean itemEliminadoCompletamente = cantidadAEliminar.compareTo(cantidadAnterior) == 0;
+        
+        // Obtener el nombre del producto
+        String nombreProducto = itemEliminadoCompletamente ?
+            itemExistente.getNombreProducto() : itemExistente.getNombreProducto();
+        
+        // Construir y retornar la respuesta
+        return new EliminarProductoTicketResponseDto(
+            ticket.getIdTicket(),
+            dto.sku(),
+            nombreProducto,
+            cantidadAEliminar,
+            itemEliminadoCompletamente ?
+                BigDecimal.ZERO : cantidadAnterior.subtract(cantidadAEliminar),
+            itemEliminadoCompletamente,
+            ticket.getSubtotal() != null ? ticket.getSubtotal() : BigDecimal.ZERO
         );
     }
 }

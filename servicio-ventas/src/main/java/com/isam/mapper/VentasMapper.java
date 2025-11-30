@@ -9,6 +9,8 @@ import com.isam.dto.CerrarTicketResponseDto;
 import com.isam.dto.ConsultarTicketRequestDto;
 import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
+import com.isam.dto.EliminarProductoTicketRequestDto;
+import com.isam.dto.EliminarProductoTicketResponseDto;
 import com.isam.dto.LineaVentaDto;
 import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.dto.ProcesarPagoResponseDto;
@@ -17,6 +19,7 @@ import com.isam.grpc.ventas.CancelarTicketRequest;
 import com.isam.grpc.ventas.CerrarTicketRequest;
 import com.isam.grpc.ventas.ConsultarTicketRequest;
 import com.isam.grpc.ventas.CrearNuevoTicketRequest;
+import com.isam.grpc.ventas.EliminarProductoTicketRequest;
 import com.isam.grpc.ventas.EstadoTicket;
 import com.isam.grpc.ventas.LineaVentaProto;
 import com.isam.grpc.ventas.MetodoPago;
@@ -24,6 +27,7 @@ import com.isam.grpc.ventas.ProcesarPagoRequest;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -365,5 +369,55 @@ public class VentasMapper {
         );
         
         return builder.build();
+    }
+    
+    /**
+     * Convierte un proto request de eliminar producto a DTO
+     * @param request Proto request de eliminar producto
+     * @return DTO con los datos del request
+     */
+    public EliminarProductoTicketRequestDto toDto(EliminarProductoTicketRequest request) {
+        if (request == null) {
+            return null;
+        }
+        
+        // Convertir la cantidad opcional a eliminar
+        Optional<BigDecimal> cantidadAEliminar = Optional.empty();
+        if (request.hasCantidadAEliminar()) {
+            try {
+                cantidadAEliminar = Optional.of(new BigDecimal(request.getCantidadAEliminar()));
+            } catch (NumberFormatException e) {
+                throw io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("Formato de cantidad a eliminar inválido: '" + request.getCantidadAEliminar() + "' no es un número válido.")
+                    .asRuntimeException();
+            }
+        }
+        
+        return new EliminarProductoTicketRequestDto(
+            request.getIdTicket(),
+            request.getSku(),
+            cantidadAEliminar
+        );
+    }
+    
+    /**
+     * Convierte un DTO de respuesta de eliminar producto a proto
+     * @param dto DTO de respuesta
+     * @return Proto response
+     */
+    public EliminarProductoTicketRequest.Response toProto(EliminarProductoTicketResponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        
+        return EliminarProductoTicketRequest.Response.newBuilder()
+            .setIdTicket(dto.idTicket())
+            .setSku(dto.sku())
+            .setNombreProducto(dto.nombreProducto())
+            .setCantidadEliminada(dto.cantidadEliminada().toPlainString())
+            .setCantidadRestante(dto.cantidadRestante().toPlainString())
+            .setItemEliminadoCompletamente(dto.itemEliminadoCompletamente())
+            .setSubtotalTicketActual(dto.subtotalTicketActual().toPlainString())
+            .build();
     }
 }

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,10 +78,29 @@ public class Ticket {
         item.setTicket(this);
     }
     
+    /**
+     * Elimina un item del ticket y opcionalmente reordena los números de línea.
+     * @param item El item a eliminar
+     */
+    public void removeItem(ItemTicket item) {
+        items.remove(item);
+        item.setTicket(null);
+        
+        // TODO: Descomentar si se desea reordenar los números de línea después de eliminar
+        // Reordenar números de línea para mantener secuencia 1, 2, 3... sin huecos
+        /*
+        int contador = 1;
+        for (ItemTicket i : items) {
+            i.setNumeroLinea(contador++);
+        }
+        */
+    }
+    
     public void calcularSubtotal() {
         this.subtotal = items.stream()
             .map(ItemTicket::getSubtotal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .setScale(2, RoundingMode.HALF_UP);
     }
     
     @Override

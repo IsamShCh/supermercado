@@ -541,7 +541,7 @@ SOLICITUD_BORRAR_TICKET = IDTicket
 #### INFO_ELIMINAR_PRODUCTO_TICKET
 
 ```
-INFO_ELIMINAR_PRODUCTO_TICKET = IDTicketTemporal + SKU
+INFO_ELIMINAR_PRODUCTO_TICKET = IDTicket + SKU + (CantidadAEliminar)
 
 **Usado en AC26**
 
@@ -956,8 +956,13 @@ MetodoPagoOriginal = [Efectivo | TarjetaDebito | TarjetaCredito | Transferencia]
 #### CONFIRMACION_PRODUCTO_ELIMINADO_TICKET
 
 ```
-CONFIRMACION_PRODUCTO_ELIMINADO_TICKET = IDTicketTemporal + SKU + 
-                                         SubtotalTicketActual + Mensaje
+CONFIRMACION_PRODUCTO_ELIMINADO_TICKET = IDTicket + SKU + NombreProducto + CantidadEliminada + CantidadRestente + ItemEliminadoCompletamente + SubtotalTicketActual
+
+CantidadEliminada = *Decimal(10,3)*
+CantidadRestente = *Decimal(10,3)*
+SubtotalTicketActual = *Decimal(10,2)*
+ItemEliminadoCompletamente = *Booleano*
+
 
 **Salida de AC26**
 

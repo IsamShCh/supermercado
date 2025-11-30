@@ -8,7 +8,6 @@ import com.isam.dto.ConsultarTicketRequestDto;
 import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
 import com.isam.dto.ProcesarPagoRequestDto;
-import com.isam.grpc.catalogo.ProductoProto;
 import com.isam.grpc.client.CatalogoGrpcClient;
 import com.isam.model.EstadoTicket;
 import com.isam.model.Ticket;
@@ -127,11 +126,21 @@ class VentasServiceTest {
             codigoBarras
         );
         
-        ProductoProto producto = ProductoProto.newBuilder()
-            .setSku(sku)
-            .setNombre("Producto Test")
-            .setPrecioVenta("10.50")
-            .build();
+        com.isam.dto.CatalogoClient.ProductoDto producto = new com.isam.dto.CatalogoClient.ProductoDto(
+            sku,
+            "1234567890123",
+            null,
+            "Producto Test",
+            "Descripción del producto",
+            new BigDecimal("10.50"),
+            false,
+            false,
+            null,
+            "FIFO",
+            "KILOGRAMOS",
+            null,
+            "ACTIVO"
+        );
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));

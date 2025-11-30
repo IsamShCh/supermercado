@@ -1,5 +1,7 @@
 package com.isam.grpc.client;
 
+import com.isam.dto.CatalogoClient.CategoriaDto;
+import com.isam.dto.CatalogoClient.ProductoDto;
 import com.isam.grpc.catalogo.CatalogoServiceGrpc;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.ProductoProto;
@@ -11,7 +13,12 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
+
+import java.math.BigDecimal;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -101,7 +108,7 @@ public class CatalogoGrpcClient {
      * @return Los datos del producto
      * @throws StatusRuntimeException Si hay error en la comunicación
      */
-    public ProductoProto consultarProducto(String sku) throws StatusRuntimeException {
+    public ProductoDto consultarProducto(String sku) throws StatusRuntimeException {
         log.debug("Consultando producto con SKU '{}'", sku);
         
         ConsultarProductoRequest request = ConsultarProductoRequest.newBuilder()
@@ -113,6 +120,45 @@ public class CatalogoGrpcClient {
         ProductoProto producto = response.getProducto();
         log.debug("Producto consultado: SKU='{}', Nombre='{}', Precio='{}'", producto.getSku(), producto.getNombre(), producto.getPrecioVenta());
         
-        return producto;
+        // Convertir CategoriaProto a CategoriaDto si existe
+        CategoriaDto categoriaDto = null;
+        if (producto.hasCategoria()) {
+            categoriaDto = new CategoriaDto(
+                producto.getCategoria().getIdCategoria(),
+                producto.getCategoria().getNombreCategoria(),
+                producto.getCategoria().getDescripcion()
+            );
+        }
+        
+        // Extraer EAN o PLU
+        String ean = producto.hasEan() ? producto.getEan() : null;
+        String plu = producto.hasPlu() ? producto.getPlu() : null;
+        
+        // Convertir enums a strings (acceso directo para campos regulares)
+        String politicaRotacion = producto.getPoliticaRotacion() != null ?
+            producto.getPoliticaRotacion().name() : null;
+        String unidadMedida = producto.getUnidadMedida() != null ?
+            producto.getUnidadMedida().name() : null;
+        String estado = producto.getEstado() != null ?
+            producto.getEstado().name() : null;
+        
+        // Convertir precio de string a BigDecimal
+        BigDecimal precioVenta = new BigDecimal(producto.getPrecioVenta());
+        
+        return new ProductoDto(
+            producto.getSku(),
+            ean,
+            plu,
+            producto.getNombre(),
+            producto.getDescripcion(),
+            precioVenta,
+            producto.getCaduca(),
+            producto.getEsGranel(),
+            categoriaDto,
+            politicaRotacion,
+            unidadMedida,
+            producto.getEtiquetasList(),
+            estado
+        );
     }
 }

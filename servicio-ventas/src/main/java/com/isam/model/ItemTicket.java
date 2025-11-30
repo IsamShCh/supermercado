@@ -79,7 +79,8 @@ public class ItemTicket {
     private BigDecimal impuesto;
     
     public void calcularSubtotal() {
-        BigDecimal subtotalSinDescuento = precioUnitario.multiply(cantidad);
+        BigDecimal subtotalSinDescuento = precioUnitario.multiply(cantidad)
+                    .setScale(2, java.math.RoundingMode.HALF_UP); // Multiplicar un numero de precision 1 con uno de precision 2 produce un numero de precision decimal 3.
         if (descuento != null && descuento.compareTo(BigDecimal.ZERO) > 0) {
             this.subtotal = subtotalSinDescuento.subtract(descuento);
         } else {

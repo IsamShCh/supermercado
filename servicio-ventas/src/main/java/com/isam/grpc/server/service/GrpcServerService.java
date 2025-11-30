@@ -7,6 +7,8 @@ import com.isam.dto.CerrarTicketRequestDto;
 import com.isam.dto.ConsultarTicketRequestDto;
 import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
+import com.isam.dto.EliminarProductoTicketRequestDto;
+import com.isam.dto.EliminarProductoTicketResponseDto;
 import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.grpc.ventas.*;
 import com.isam.grpc.ventas.CrearNuevoTicketRequest.Response;
@@ -272,6 +274,50 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
             
         } catch (Exception e) {
             log.error("Error al cancelar ticket: {}", e.getMessage());
+            // responseObserver.onError(e);
+            throw e;
+        }
+    }
+    
+    @Override
+    public void eliminarProductoTicket(EliminarProductoTicketRequest request,
+            StreamObserver<EliminarProductoTicketRequest.Response> responseObserver) {
+        log.info("Recibida solicitud para eliminar producto del ticket: idTicket='{}', sku='{}', cantidadAEliminar={}",
+            request.getIdTicket(), request.getSku(), request.hasCantidadAEliminar() ? request.getCantidadAEliminar() : "null");
+        
+        try {
+            // Convertir proto a DTO
+            EliminarProductoTicketRequestDto dto = ventasMapper.toDto(request);
+            // Validar
+            Set<ConstraintViolation<EliminarProductoTicketRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errores = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+
+                responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                        .withDescription(errores)
+                        .asRuntimeException()
+                );
+                return;
+            }
+
+            // Llamar al servicio
+            EliminarProductoTicketResponseDto responseDto = ventasService.eliminarProductoTicket(dto);
+            
+            // Convertir DTO a proto
+            EliminarProductoTicketRequest.Response responseProto = ventasMapper.toProto(responseDto);
+            
+            log.info("Producto eliminado exitosamente del ticket: SKU='{}', cantidadEliminada={}, subtotalActual={}",
+                responseDto.sku(), responseDto.cantidadEliminada(), responseDto.subtotalTicketActual());
+            
+            // Construir respuesta
+            responseObserver.onNext(responseProto);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            log.error("Error al eliminar producto del ticket: {}", e.getMessage());
             // responseObserver.onError(e);
             throw e;
         }
