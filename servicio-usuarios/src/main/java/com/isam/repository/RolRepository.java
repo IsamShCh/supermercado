@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -34,4 +35,11 @@ public interface RolRepository extends JpaRepository<Rol, String>, JpaSpecificat
      * @return Lista de roles que coinciden con el criterio
      */
     java.util.List<Rol> findByNombreRolContainingIgnoreCase(String nombreRol);
+    
+    /**
+     * Busca roles por una lista de IDs.
+     * @param ids Lista de IDs de roles a buscar
+     * @return Lista de roles encontrados
+     */
+    java.util.List<Rol> findAllByIdRol(java.util.List<String> ids);
 }

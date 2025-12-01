@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+import com.isam.model.enums.EstadoSesion;
+
 /**
  * Representa una sesión de usuario en el sistema.
  * Almacena información sobre el login y logout de usuarios.

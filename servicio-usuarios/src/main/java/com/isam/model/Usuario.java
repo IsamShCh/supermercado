@@ -8,6 +8,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.isam.model.enums.EstadoUsuario;
+
 /**
  * Representa un usuario en el sistema de autenticación.
  * Contiene información básica del usuario y sus credenciales de acceso.

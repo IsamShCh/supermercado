@@ -1,7 +1,7 @@
 package com.isam.repository;
 
 import com.isam.model.Sesion;
-import com.isam.model.EstadoSesion;
+import com.isam.model.enums.EstadoSesion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;

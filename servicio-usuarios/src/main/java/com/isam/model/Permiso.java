@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import java.util.List;
 
+import com.isam.model.enums.AccionPermiso;
+
 /**
  * Representa un permiso en el sistema de autenticación.
  * Define una acción específica que se puede realizar sobre un recurso.

@@ -1,4 +1,4 @@
-package com.isam.model;
+package com.isam.model.enums;
 
 /**
  * Enumeración para las acciones posibles de un permiso en el sistema.

@@ -1,7 +1,7 @@
 package com.isam.repository;
 
 import com.isam.model.Permiso;
-import com.isam.model.AccionPermiso;
+import com.isam.model.enums.AccionPermiso;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
