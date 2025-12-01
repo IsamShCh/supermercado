@@ -23,7 +23,7 @@ public class Rol {
     private String idRol;
     
     @NotBlank(message = "El nombre del rol es obligatorio")
-    @Size(max = 100, message = "El nombre del rol no puede exceder 100 caracteres")
+    @Size(min = 3, max = 100, message = "El nombre del rol debe tener entre 3 y 100 caracteres")
     @Column(name = "NombreRol", length = 100, nullable = false, unique = true)
     private String nombreRol;
     

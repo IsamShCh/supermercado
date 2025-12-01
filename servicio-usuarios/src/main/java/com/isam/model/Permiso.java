@@ -25,7 +25,7 @@ public class Permiso {
     private String idPermiso;
     
     @NotBlank(message = "El nombre del permiso es obligatorio")
-    @Size(max = 100, message = "El nombre del permiso no puede exceder 100 caracteres")
+    @Size(min = 5, max = 100, message = "El nombre del permiso no puede exceder 100 caracteres")
     @Column(name = "NombrePermiso", length = 100, nullable = false, unique = true)
     private String nombrePermiso;
     
