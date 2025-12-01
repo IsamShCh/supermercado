@@ -35,8 +35,21 @@ services:
     volumes:
       - pgdata_ventas:/var/lib/postgresql/data
 
+  usuarios-db:
+    image: postgres:15-alpine
+    container_name: usuarios-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: contrasena_secreta
+      POSTGRES_DB: usuarios-db
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata_usuarios:/var/lib/postgresql/data
+
 
 volumes:
   pgdata_catalogo:
   pgdata_inventario:
   pgdata_ventas:
+  pgdata_usuarios:

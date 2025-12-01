@@ -22,6 +22,7 @@
         <module>servicio-catalogo</module>
         <module>servicio-inventario</module>
         <module>servicio-ventas</module>
+        <module>servicio-usuarios</module>
     </modules>
 
 
