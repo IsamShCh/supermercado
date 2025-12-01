@@ -628,12 +628,28 @@ SOLICITUD_DESACTIVAR_USUARIO = IDUsuario
 
 ```
 
-#### INFO_GESTION_ROL
+#### INFO_NUEVO_ROL
 
 ```
-INFO_GESTION_ROL = Accion + (IDRol) + NombreRol + (DescripcionRol)
+INFO_NUEVO_ROL = NombreRol + (DescripcionRol)
 
-Accion = [Crear | Modificar | Eliminar]
+**Usado en AC35**
+
+```
+
+#### INFO_MODIFICAR_ROL
+
+```
+INFO_MODIFICAR_ROL = IDRol + (NombreRol) + (DescripcionRol)
+
+**Usado en AC35**
+
+```
+
+#### SOLICITUD_ELIMINAR_ROL
+
+```
+SOLICITUD_ELIMINAR_ROL = IDRol
 
 **Usado en AC35**
 
@@ -1055,12 +1071,28 @@ CONFIRMACION_USUARIO_DESACTIVADO = IDUsuario + NombreUsuario + Mensaje
 
 ```
 
-#### CONFIRMACION_ROL_GESTIONADO
+#### CONFIRMACION_ROL_CREADO
 
 ```
-CONFIRMACION_ROL_GESTIONADO = (IDRol) + NombreRol + Accion + Mensaje
+CONFIRMACION_ROL_CREADO = IDRol + NombreRol + Mensaje
 
-Accion = [Creado | Modificado | Eliminado]
+**Salida de AC35**
+
+```
+
+#### CONFIRMACION_ROL_MODIFICADO
+
+```
+CONFIRMACION_ROL_MODIFICADO = IDRol + NombreRol + Mensaje
+
+**Salida de AC35**
+
+```
+
+#### CONFIRMACION_ROL_ELIMINADO
+
+```
+CONFIRMACION_ROL_ELIMINADO = IDRol + NombreRol + Mensaje
 
 **Salida de AC35**
 

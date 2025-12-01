@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package isam.usuarios;
+
+option java_multiple_files = true;
+option java_package = "com.isam.grpc.usuarios";
+option java_outer_classname = "UsuariosProto";
+
+// ========================================
+// SECCIÓN: Enumeraciones
+// ========================================
+
+enum EstadoUsuario {
+    ESTADO_USUARIO_NO_ESPECIFICADO = 0;
+    ACTIVO = 1;
+    INACTIVO = 2;
+}
+
+enum AccionPermiso {
+    ACCION_PERMISO_NO_ESPECIFICADO = 0;
+    CREAR = 1;
+    LEER = 2;
+    ACTUALIZAR = 3;
+    ELIMINAR = 4;
+    EJECUTAR = 5;
+}
+
+// ========================================
+// SECCIÓN: Entidades Proto
+// ========================================
+
+message UsuarioProto {
+    string id_usuario = 1;
+    string nombre_usuario = 2;
+    string nombre_completo = 3;
+    EstadoUsuario estado = 4;
+    string fecha_creacion = 5;
+    optional string fecha_ultimo_acceso = 6;
+    bool requiere_cambio_password = 7;
+    repeated RolProto roles = 8;
+}
+
+message RolProto {
+    string id_rol = 1;
+    string nombre_rol = 2;
+    string descripcion = 3;
+}
+
+message PermisoProto {
+    string id_permiso = 1;
+    string nombre_permiso = 2;
+    string descripcion = 3;
+    string recurso = 4;
+    AccionPermiso accion = 5;
+}
+
+// ========================================
+// SECCIÓN: Peticiones y Respuestas
+// ========================================
+
+// --- Gestión de Usuarios (CRUD) ---
+
+message CrearUsuarioRequest {
+    // INFO_NUEVO_USUARIO
+    string nombre_usuario = 1;
+    string password = 2;
+    string nombre_completo = 3;
+    repeated string id_roles = 4;
+
+    message Response {
+        // CONFIRMACION_USUARIO_CREADO
+        UsuarioProto usuario = 1;
+    }
+}
+
+message ModificarUsuarioRequest {
+    // INFO_MODIFICAR_USUARIO
+    string id_usuario = 1;
+    optional string nombre_usuario = 2;
+    optional string nombre_completo = 3;
+    repeated string id_roles = 4;
+
+    message Response {
+        // CONFIRMACION_USUARIO_MODIFICADO
+        UsuarioProto usuario = 1;
+    }
+}
+
+message DesactivarUsuarioRequest {
+    // SOLICITUD_DESACTIVAR_USUARIO
+    string id_usuario = 1;
+
+    message Response {
+        // CONFIRMACION_USUARIO_DESACTIVADO
+        // Respuesta vacia en caso de éxito. Los error se comunican con codigos status gRPC.
+    }
+}
+
+message ConsultarUsuariosRequest {
+    optional string id_usuario = 1;
+    optional string nombre_usuario = 2;
+    optional string id_rol = 3;
+
+    message Response {
+        repeated UsuarioProto usuarios = 1;
+    }
+}
+
+
+
+// --- Autenticación y Sesión ---
+
+message IniciarSesionRequest {
+    // CREDENCIALES_LOGIN
+    string nombre_usuario = 1;
+    string password = 2;
+
+    message Response {
+        // TOKEN_AUTENTICACION
+        string token_jwt = 1;
+        UsuarioProto usuario = 2;
+    }
+}
+
+message CerrarSesionRequest {
+    // SOLICITUD_LOGOUT
+    // El token se envía en los metadatos
+
+    message Response {
+        // CONFIRMACION_LOGOUT
+        // Respuesta vacía en caso de éxito.
+    }
+}
+
+message VerificarTokenRequest {
+    string token_jwt = 1;
+
+    message Response{
+        bool es_valido = 1;
+        optional string id_usuario = 2;
+        optional string nombre_usuario = 3;
+        repeated RolProto roles = 4;
+    }
+}
+
+
+// --- Gestión de Contraseña ---
+
+message CambiarPasswordRequest {
+    // CAMBIO_CONTRASEÑA
+    string password_actual = 1;
+    string password_nueva = 2;
+
+    message Response {
+        // CONFIRMACION_CONTRASEÑA_CAMBIADA
+        // Respuesta vacía en caso de éxito.
+    }
+}
+
+message RestablecerPasswordRequest {
+    // SOLICITUD_RESTABLECER_CONTRASEÑA
+    string id_usuario = 1;
+
+    message Response {
+        // CONFIRMACION_CONTRASEÑA_RESTABLECIDA
+        string id_usuario = 1;
+        string password_temporal = 2;
+    }
+}
+
+
+// --- Gestión de Roles y Permisos (RBAC) ---
+
+message CrearRolRequest {
+    // INFO_NUEVO_ROL
+    string nombre_rol = 1;
+    optional string descripcion = 2;
+
+    message Response {
+        // CONFIRMACION_ROL_CREADO
+        RolProto rol = 1;
+    }
+}
+
+message ModificarRolRequest {
+    // INFO_MODIFICAR_ROL
+    string id_rol = 1;
+    optional string nombre_rol = 2;
+    optional string descripcion = 3;
+
+    message Response {
+        // CONFIRMACION_ROL_MODIFICADO
+        RolProto rol = 1;
+    }
+}
+
+message EliminarRolRequest {
+    // SOLICITUD_ELIMINAR_ROL
+    string id_rol = 1;
+
+    message Response {
+        // CONFIRMACION_ROL_ELIMINADO
+        // Respuesta vacia en caso de éxito. Los error se comunican con codigos status gRPC.
+    }
+}
+
+message AsignarPermisosRequest {
+    // INFO_ASIGNAR_PERMISOS
+    string id_rol = 1;
+    repeated string id_permisos = 2;
+
+    message Response {
+        // CONFIRMACION_PERMISOS_ASIGNADOS
+        // Respuesta vacia en caso de éxito. Los error se comunican con codigos status gRPC.
+    }
+}
+
+message ListarRolesRequest {
+
+    message Response {
+        repeated RolProto roles = 1;
+    }
+}
+
+message ListarPermisosRequest {
+
+    message Response {
+        repeated PermisoProto permisos = 1;
+    }
+}
+
+
+// ========================================
+// SECCIÓN: Definición del Servicio
+// ========================================
+
+service UsuarioService {
+    // --- Endpoints de Gestión de Usuarios ---
+    rpc CrearUsuario(CrearUsuarioRequest) returns (CrearUsuarioRequest.Response);
+    rpc ModificarUsuario(ModificarUsuarioRequest) returns (ModificarUsuarioRequest.Response);
+    rpc DesactivarUsuario(DesactivarUsuarioRequest) returns (DesactivarUsuarioRequest.Response);
+    rpc ConsultarUsuarios(ConsultarUsuariosRequest) returns (ConsultarUsuariosRequest.Response);
+
+    // --- Endpoints de Autenticación y Sesión ---
+    rpc IniciarSesion(IniciarSesionRequest) returns (IniciarSesionRequest.Response);
+    rpc CerrarSesion(CerrarSesionRequest) returns (CerrarSesionRequest.Response);
+    rpc VerificarToken(VerificarTokenRequest) returns (VerificarTokenRequest.Response);
+
+    // --- Endpoints de Gestión de Contraseña ---
+    rpc CambiarPassword(CambiarPasswordRequest) returns (CambiarPasswordRequest.Response);
+    rpc RestablecerPassword(RestablecerPasswordRequest) returns (RestablecerPasswordRequest.Response);
+
+    // --- Endpoints de Gestión de Roles y Permisos ---
+    rpc CrearRol(CrearRolRequest) returns (CrearRolRequest.Response);
+    rpc ModificarRol(ModificarRolRequest) returns (ModificarRolRequest.Response);
+    rpc EliminarRol(EliminarRolRequest) returns (EliminarRolRequest.Response);
+    rpc AsignarPermisosARol(AsignarPermisosRequest) returns (AsignarPermisosRequest.Response);
+    rpc ListarRoles(ListarRolesRequest) returns (ListarRolesRequest.Response);
+    rpc ListarPermisos(ListarPermisosRequest) returns (ListarPermisosRequest.Response);
+}

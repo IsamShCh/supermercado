@@ -242,9 +242,21 @@ Entidad Externa: Administrador del Sistema
 Flujo de entrada: SOLICITUD_DESACTIVAR_USUARIO = IDUsuario
 Almacenes: USUARIOS
 Requisitos satisfechos: RF47
-#NOTE - AC35: Administrador del sistema gestiona roles
+#NOTE - AC35: Administrador del sistema crea un rol
 Entidad Externa: Administrador del Sistema
-Flujo de entrada: INFO_GESTION_ROL = Accion + NombreRol + DescripcionRol
+Flujo de entrada: INFO_NUEVO_ROL = NombreRol + (DescripcionRol)
+Almacenes: ROLES
+Requisitos satisfechos: RF49
+
+#NOTE - AC35.1: Administrador del sistema modifica un rol existente
+Entidad Externa: Administrador del Sistema
+Flujo de entrada: INFO_MODIFICAR_ROL = IDRol + (NombreRol) + (DescripcionRol)
+Almacenes: ROLES
+Requisitos satisfechos: RF49
+
+#NOTE - AC35.2: Administrador del sistema elimina un rol
+Entidad Externa: Administrador del Sistema
+Flujo de entrada: SOLICITUD_ELIMINAR_ROL = IDRol
 Almacenes: ROLES
 Requisitos satisfechos: RF49
 #NOTE - AC36: Administrador del sistema asigna permisos a un rol
