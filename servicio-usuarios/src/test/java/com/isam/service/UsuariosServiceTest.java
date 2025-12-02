@@ -4,6 +4,8 @@ import com.isam.dto.rol.AsignarPermisosRequestDto;
 import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
 import com.isam.dto.rol.CrearRolResponseDto;
+import com.isam.dto.rol.ListarRolesRequestDto;
+import com.isam.dto.rol.ListarRolesResponseDto;
 import com.isam.dto.rol.RolDto;
 import com.isam.mapper.UsuariosMapper;
 import com.isam.mapper.UsuariosMapperAuto;
@@ -481,6 +483,178 @@ class UsuariosServiceTest {
         assertFalse(permisosEncontradosList.isEmpty());
         Permiso permisoVerificado = permisosEncontradosList.get(0);
         assertEquals(permisoExistente.getIdPermiso(), permisoVerificado.getIdPermiso());
+    }
+
+    @Test
+    void listarRoles_BaseDatosVacia_RetornaListaVacia() {
+        // Given
+        ListarRolesRequestDto dto = new ListarRolesRequestDto();
+
+        // When
+        ListarRolesResponseDto resultado = usuariosService.listarRoles(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertNotNull(resultado.roles());
+        assertEquals(0, resultado.roles().size());
+    }
+
+    @Test
+    void listarRoles_ConRolesExistentes_RetornaTodosLosRoles() {
+        // Given
+        // Crear roles de prueba
+        Rol rol1 = new Rol();
+        rol1.setNombreRol("Administrador");
+        rol1.setDescripcionRol("Rol con permisos completos");
+        rol1 = rolRepository.save(rol1);
+
+        Rol rol2 = new Rol();
+        rol2.setNombreRol("Cajero");
+        rol2.setDescripcionRol("Rol para operaciones de caja");
+        rol2 = rolRepository.save(rol2);
+
+        Rol rol3 = new Rol();
+        rol3.setNombreRol("Supervisor");
+        rol3.setDescripcionRol("Rol de supervisión");
+        rol3 = rolRepository.save(rol3);
+
+        ListarRolesRequestDto dto = new ListarRolesRequestDto();
+
+        // When
+        ListarRolesResponseDto resultado = usuariosService.listarRoles(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertNotNull(resultado.roles());
+        assertEquals(3, resultado.roles().size());
+
+        // Verificar que todos los roles están presentes
+        List<String> nombresRoles = resultado.roles().stream()
+            .map(RolDto::nombreRol)
+            .toList();
+        
+        assertTrue(nombresRoles.contains("Administrador"));
+        assertTrue(nombresRoles.contains("Cajero"));
+        assertTrue(nombresRoles.contains("Supervisor"));
+    }
+
+    @Test
+    void listarRoles_ConRolSinDescripcion_RetornaRolCorrectamente() {
+        // Given
+        Rol rolSinDescripcion = new Rol();
+        rolSinDescripcion.setNombreRol("Temporal");
+        rolSinDescripcion.setDescripcionRol(null);
+        rolSinDescripcion = rolRepository.save(rolSinDescripcion);
+
+        ListarRolesRequestDto dto = new ListarRolesRequestDto();
+
+        // When
+        ListarRolesResponseDto resultado = usuariosService.listarRoles(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertEquals(1, resultado.roles().size());
+        
+        RolDto rolDto = resultado.roles().get(0);
+        assertEquals("Temporal", rolDto.nombreRol());
+        assertNull(rolDto.descripcion());
+        assertNotNull(rolDto.idRol());
+    }
+
+    @Test
+    void listarRoles_VerificarEstructuraDto_RetornaDatosCompletos() {
+        // Given
+        Rol rol = new Rol();
+        rol.setNombreRol("Gerente");
+        rol.setDescripcionRol("Rol de gerencia con acceso completo");
+        rol = rolRepository.save(rol);
+
+        ListarRolesRequestDto dto = new ListarRolesRequestDto();
+
+        // When
+        ListarRolesResponseDto resultado = usuariosService.listarRoles(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertEquals(1, resultado.roles().size());
+        
+        RolDto rolDto = resultado.roles().get(0);
+        
+        // Verificar que todos los campos están presentes y son correctos
+        assertNotNull(rolDto.idRol());
+        assertEquals("Gerente", rolDto.nombreRol());
+        assertEquals("Rol de gerencia con acceso completo", rolDto.descripcion());
+        
+        // Verificar que el ID corresponde al rol guardado
+        assertEquals(rol.getIdRol(), rolDto.idRol());
+    }
+
+    @Test
+    void listarRoles_MultiplesRolesVerificarOrden_RetornaRolesEnOrdenAlfabetico() {
+        // Given
+        // Crear roles en orden desordenado para verificar si hay algún orden específico
+        Rol rol1 = new Rol();
+        rol1.setNombreRol("Zar");
+        rol1.setDescripcionRol("Rol Z");
+        rol1 = rolRepository.save(rol1);
+
+        Rol rol2 = new Rol();
+        rol2.setNombreRol("Alpha");
+        rol2.setDescripcionRol("Rol A");
+        rol2 = rolRepository.save(rol2);
+
+        Rol rol3 = new Rol();
+        rol3.setNombreRol("Beta");
+        rol3.setDescripcionRol("Rol B");
+        rol3 = rolRepository.save(rol3);
+
+        ListarRolesRequestDto dto = new ListarRolesRequestDto();
+
+        // When
+        ListarRolesResponseDto resultado = usuariosService.listarRoles(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertEquals(3, resultado.roles().size());
+        
+        // Verificar que todos los roles están presentes (sin importar el orden)
+        List<String> nombresRoles = resultado.roles().stream()
+            .map(RolDto::nombreRol)
+            .toList();
+        
+        assertTrue(nombresRoles.contains("Zar"));
+        assertTrue(nombresRoles.contains("Alpha"));
+        assertTrue(nombresRoles.contains("Beta"));
+    }
+
+    @Test
+    void listarRoles_ConCaracteresEspeciales_RetornaRolesCorrectamente() {
+        // Given
+        Rol rol1 = new Rol();
+        rol1.setNombreRol("Admin-TI");
+        rol1.setDescripcionRol("Administrador de TI");
+        rol1 = rolRepository.save(rol1);
+
+        Rol rol2 = new Rol();
+        rol2.setNombreRol("Jefe de Almacén");
+        rol2.setDescripcionRol("Responsable de almacén");
+        rol2 = rolRepository.save(rol2);
+
+        ListarRolesRequestDto dto = new ListarRolesRequestDto();
+
+        // When
+        ListarRolesResponseDto resultado = usuariosService.listarRoles(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertEquals(2, resultado.roles().size());
+        
+        List<String> nombresRoles = resultado.roles().stream()
+            .map(RolDto::nombreRol)
+            .toList();
+        
+        assertTrue(nombresRoles.contains("Admin-TI"));
+        assertTrue(nombresRoles.contains("Jefe de Almacén"));
     }
 
 }

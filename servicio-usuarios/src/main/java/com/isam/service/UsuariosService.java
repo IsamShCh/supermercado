@@ -1,9 +1,14 @@
 package com.isam.service;
 
+import com.isam.dto.permiso.ListarPermisosRequestDto;
+import com.isam.dto.permiso.ListarPermisosResponseDto;
+import com.isam.dto.permiso.PermisoDto;
 import com.isam.dto.rol.AsignarPermisosRequestDto;
 import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
 import com.isam.dto.rol.CrearRolResponseDto;
+import com.isam.dto.rol.ListarRolesRequestDto;
+import com.isam.dto.rol.ListarRolesResponseDto;
 import com.isam.dto.rol.RolDto;
 import com.isam.mapper.UsuariosMapper;
 import com.isam.mapper.UsuariosMapperAuto;
@@ -169,6 +174,37 @@ public class UsuariosService {
             permisosAsignar.size(), rol.getNombreRol());
         
         return new AsignarPermisosResponseDto();
+    }
+
+    /**
+     * Lista todos los roles del sistema.
+     * @return DTO con la lista de roles
+     */
+    @Transactional(readOnly = true)
+    public ListarRolesResponseDto listarRoles(ListarRolesRequestDto dto) {
+        log.info("Listando todos los roles");
+        List<Rol> roles = rolRepository.findAll();
+        // Mapeamos automaticamente todos los Roles a Dto y agrupamos en una lista.
+        List<RolDto> rolDtos = roles.stream()
+            .map(usuariosMapperAuto::toDto)
+            .toList();
+        log.info("Se encontraron {} roles", rolDtos.size());
+        return new ListarRolesResponseDto(rolDtos);
+    }
+
+    /**
+     * Lista todos los permisos del sistema.
+     * @return DTO con la lista de permisos
+     */
+    @Transactional(readOnly = true)
+    public ListarPermisosResponseDto listarPermisos(ListarPermisosRequestDto dto) {
+        log.info("Listando todos los permisos");
+        List<Permiso> permisos = permisoRepository.findAll();
+        List<PermisoDto> permisoDtos = permisos.stream()
+            .map(usuariosMapperAuto::toDto)
+            .toList();
+        log.info("Se encontraron {} permisos", permisoDtos.size());
+        return new ListarPermisosResponseDto(permisoDtos);
     }
     
     /**

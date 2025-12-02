@@ -6,6 +6,7 @@ import com.isam.dto.usuario.*;
 import com.isam.dto.permiso.*;
 import com.isam.grpc.usuarios.*;
 import com.isam.model.enums.EstadoUsuario;
+import com.isam.model.Permiso;
 import com.isam.model.Rol;
 import com.isam.model.enums.AccionPermiso;
 import org.mapstruct.Mapper;
@@ -85,7 +86,10 @@ public interface UsuariosMapperAuto {
     // ========================================
 
     @Mapping(target = "descripcion", source = "descripcionRol" )
-    RolDto toDto(Rol rol);
+    RolDto toDto(Rol entity);
+
+    PermisoDto toDto(Permiso entity);
+
 
     // ========================================
     // SECCIÓN: Conversiones de Request/Response
@@ -176,6 +180,38 @@ public interface UsuariosMapperAuto {
 
     @Mapping(target = "permisos", expression = "java(mapPermisosList(response.getPermisosList()))")
     ListarPermisosResponseDto toDto(ListarPermisosRequest.Response response);
+
+    ListarRolesRequestDto toDto(ListarRolesRequest request);
+
+    default ListarRolesRequest.Response toProto(ListarRolesResponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        
+        ListarRolesRequest.Response.Builder builder = ListarRolesRequest.Response.newBuilder();
+        
+        if (dto.roles() != null && !dto.roles().isEmpty()) {
+            builder.addAllRoles(mapRolesListToProto(dto.roles()));
+        }
+        
+        return builder.build();
+    }
+
+    ListarPermisosRequestDto toDto(ListarPermisosRequest request);
+
+    default ListarPermisosRequest.Response toProto(ListarPermisosResponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        
+        ListarPermisosRequest.Response.Builder builder = ListarPermisosRequest.Response.newBuilder();
+        
+        if (dto.permisos() != null && !dto.permisos().isEmpty()) {
+            builder.addAllPermisos(mapPermisosListToProto(dto.permisos()));
+        }
+        
+        return builder.build();
+    }
 
     // ========================================
     // SECCIÓN: Conversiones de Enums
