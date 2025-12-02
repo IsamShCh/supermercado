@@ -41,5 +41,5 @@ public interface RolRepository extends JpaRepository<Rol, String>, JpaSpecificat
      * @param ids Lista de IDs de roles a buscar
      * @return Lista de roles encontrados
      */
-    java.util.List<Rol> findAllByIdRol(java.util.List<String> ids);
+    java.util.List<Rol> findByIdRolIn(java.util.List<String> ids);
 }

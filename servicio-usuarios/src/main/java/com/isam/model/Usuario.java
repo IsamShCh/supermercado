@@ -26,7 +26,7 @@ public class Usuario {
     private String idUsuario;
     
     @NotBlank(message = "El nombre de usuario es obligatorio")
-    @Size(min = 5, max = 50, message = "El nombre de usuario debe tener entre 5 y 50 caracteres")
+    @Size(min = 3, max = 50, message = "El nombre de usuario debe tener entre 3 y 50 caracteres")
     @Column(name = "NombreUsuario", length = 50, unique = true, nullable = false)
     private String nombreUsuario;
     
