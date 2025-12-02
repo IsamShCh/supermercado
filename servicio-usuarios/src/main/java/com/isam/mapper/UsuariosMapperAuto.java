@@ -6,6 +6,7 @@ import com.isam.dto.usuario.*;
 import com.isam.dto.permiso.*;
 import com.isam.grpc.usuarios.*;
 import com.isam.model.enums.EstadoUsuario;
+import com.isam.model.Rol;
 import com.isam.model.enums.AccionPermiso;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -78,6 +79,13 @@ public interface UsuariosMapperAuto {
 
     @Mapping(target = "accion", expression = "java(mapAccionPermisoProtoToModel(proto.getAccion()))")
     PermisoDto toDto(PermisoProto proto);
+
+    // ========================================
+    // SECCIÓN: Conversiones de Entidad a DTO
+    // ========================================
+
+    @Mapping(target = "descripcion", source = "descripcionRol" )
+    RolDto toDto(Rol rol);
 
     // ========================================
     // SECCIÓN: Conversiones de Request/Response
@@ -160,6 +168,8 @@ public interface UsuariosMapperAuto {
 
     @Mapping(target = "idPermisos", expression = "java(mapStringList(request.getIdPermisosList()))")
     AsignarPermisosRequestDto toDto(AsignarPermisosRequest request);
+
+    AsignarPermisosRequest.Response toProto(AsignarPermisosResponseDto dto);
 
     @Mapping(target = "roles", expression = "java(mapRolesList(response.getRolesList()))")
     ListarRolesResponseDto toDto(ListarRolesRequest.Response response);

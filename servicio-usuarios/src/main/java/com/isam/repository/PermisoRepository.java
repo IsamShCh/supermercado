@@ -43,4 +43,11 @@ public interface PermisoRepository extends JpaRepository<Permiso, String>, JpaSp
      * @return Lista de permisos que coinciden con el criterio
      */
     java.util.List<Permiso> findByNombrePermisoContainingIgnoreCase(String nombrePermiso);
+    
+    /**
+     * Verifica si existe un permiso con el nombre especificado.
+     * @param nombrePermiso Nombre del permiso a verificar
+     * @return true si existe, false en caso contrario
+     */
+    boolean existsByNombrePermiso(String nombrePermiso);
 }

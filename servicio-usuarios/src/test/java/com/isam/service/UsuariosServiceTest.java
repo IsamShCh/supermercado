@@ -1,10 +1,16 @@
 package com.isam.service;
 
+import com.isam.dto.rol.AsignarPermisosRequestDto;
+import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
 import com.isam.dto.rol.CrearRolResponseDto;
 import com.isam.dto.rol.RolDto;
 import com.isam.mapper.UsuariosMapper;
+import com.isam.mapper.UsuariosMapperAuto;
+import com.isam.model.Permiso;
 import com.isam.model.Rol;
+import com.isam.model.enums.AccionPermiso;
+import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,13 +24,15 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+
 /**
  * Tests de integración para UsuariosService.
  * Prueba la funcionalidad de gestión de usuarios y roles.
  */
 @DataJpaTest(includeFilters = @ComponentScan.Filter(
     type = FilterType.ASSIGNABLE_TYPE,
-    classes = {UsuariosService.class, UsuariosMapper.class}
+    classes = {UsuariosService.class, UsuariosMapper.class, UsuariosMapperAuto.class}
 ))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
@@ -35,11 +43,15 @@ class UsuariosServiceTest {
 
     @Autowired
     private RolRepository rolRepository;
+    
+    @Autowired
+    private PermisoRepository permisoRepository;
 
     @BeforeEach
     void setUp() {
         // Limpiar base de datos
         rolRepository.deleteAll();
+        permisoRepository.deleteAll();
     }
 
     @Test
@@ -249,4 +261,226 @@ class UsuariosServiceTest {
         assertEquals("Admin-TI", resultado.rol().nombreRol());
         assertTrue(rolRepository.existsByNombreRol("Admin-TI"));
     }
+
+    @Test
+    void asignarPermisosARol_RolExistenteYPermisosValidos_AsignaCorrectamente() {
+        // Given
+        // Crear rol
+        Rol rol = new Rol();
+        rol.setNombreRol("Gerente");
+        rol.setDescripcionRol("Rol de gerencia");
+        rol.setPermisos(new java.util.ArrayList<>());
+        rol = rolRepository.save(rol);
+        
+        // Crear permisos con nombres únicos para evitar conflictos
+        Permiso permiso1 = new Permiso("CREAR_USUARIOS_TEST", "Crear usuarios test", "usuarios", AccionPermiso.CREAR);
+        Permiso permiso2 = new Permiso("LEER_USUARIOS_TEST", "Leer usuarios test", "usuarios", AccionPermiso.LEER);
+        permiso1 = permisoRepository.save(permiso1);
+        permiso2 = permisoRepository.save(permiso2);
+        
+        AsignarPermisosRequestDto dto = new AsignarPermisosRequestDto(
+            rol.getIdRol(),
+            List.of(permiso1.getIdPermiso(), permiso2.getIdPermiso())
+        );
+
+        // When
+        AsignarPermisosResponseDto resultado = usuariosService.asignarPermisosARol(dto);
+
+        // Then
+        assertNotNull(resultado);
+        
+        // Verificar que los permisos se asignaron correctamente
+        Rol rolActualizado = rolRepository.findById(rol.getIdRol()).orElse(null);
+        assertNotNull(rolActualizado);
+        assertEquals(2, rolActualizado.getPermisos().size());
+        
+        // Verificar que los permisos asignados son los correctos
+        List<String> idsPermisosAsignados = rolActualizado.getPermisos().stream()
+            .map(Permiso::getIdPermiso)
+            .toList();
+        assertTrue(idsPermisosAsignados.contains(permiso1.getIdPermiso()));
+        assertTrue(idsPermisosAsignados.contains(permiso2.getIdPermiso()));
+    }
+
+    @Test
+    void asignarPermisosARol_RolNoExistente_LanzaExcepcion() {
+        // Given
+        String idRolInexistente = "rol-inexistente";
+        Permiso permiso = new Permiso("CREAR_USUARIOS_TEST2", "Crear usuarios test2", "usuarios", AccionPermiso.CREAR);
+        permiso = permisoRepository.save(permiso);
+        
+        AsignarPermisosRequestDto dto = new AsignarPermisosRequestDto(
+            idRolInexistente,
+            List.of(permiso.getIdPermiso())
+        );
+
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> usuariosService.asignarPermisosARol(dto)
+        );
+        
+        assertTrue(exception.getMessage().contains("Rol no encontrado con ID: '" + idRolInexistente + "'"));
+        assertEquals(io.grpc.Status.Code.NOT_FOUND, exception.getStatus().getCode());
+    }
+
+    @Test
+    void asignarPermisosARol_PermisoNoExistente_LanzaExcepcion() {
+        // Given
+        // Crear rol
+        Rol rol = new Rol();
+        rol.setNombreRol("Supervisor");
+        rol.setDescripcionRol("Rol de supervisión");
+        rol.setPermisos(new java.util.ArrayList<>());
+        rol = rolRepository.save(rol);
+        
+        String idPermisoInexistente = "permiso-inexistente";
+        
+        AsignarPermisosRequestDto dto = new AsignarPermisosRequestDto(
+            rol.getIdRol(),
+            List.of(idPermisoInexistente)
+        );
+
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> usuariosService.asignarPermisosARol(dto)
+        );
+        
+        assertTrue(exception.getMessage().contains("Permisos no encontrados: " + idPermisoInexistente));
+        assertEquals(io.grpc.Status.Code.NOT_FOUND, exception.getStatus().getCode());
+    }
+
+    @Test
+    void asignarPermisosARol_ReemplazaPermisosExistentes_ReemplazaCorrectamente() {
+        // Given
+        // Crear rol
+        Rol rol = new Rol();
+        rol.setNombreRol("Administrador");
+        rol.setDescripcionRol("Rol de administración");
+        rol.setPermisos(new java.util.ArrayList<>());
+        rol = rolRepository.save(rol);
+        
+        // Crear permisos iniciales con nombres únicos
+        Permiso permiso1 = new Permiso("CREAR_USUARIOS_TEST3", "Crear usuarios test3", "usuarios", AccionPermiso.CREAR);
+        Permiso permiso2 = new Permiso("LEER_USUARIOS_TEST3", "Leer usuarios test3", "usuarios", AccionPermiso.LEER);
+        permiso1 = permisoRepository.save(permiso1);
+        permiso2 = permisoRepository.save(permiso2);
+        
+        // Asignar permisos iniciales
+        rol.getPermisos().add(permiso1);
+        rol = rolRepository.save(rol);
+        
+        // Crear nuevos permisos para reemplazar con nombres únicos
+        Permiso permiso3 = new Permiso("ACTUALIZAR_USUARIOS_TEST3", "Actualizar usuarios test3", "usuarios", AccionPermiso.ACTUALIZAR);
+        Permiso permiso4 = new Permiso("ELIMINAR_USUARIOS_TEST3", "Eliminar usuarios test3", "usuarios", AccionPermiso.ELIMINAR);
+        permiso3 = permisoRepository.save(permiso3);
+        permiso4 = permisoRepository.save(permiso4);
+        
+        AsignarPermisosRequestDto dto = new AsignarPermisosRequestDto(
+            rol.getIdRol(),
+            List.of(permiso3.getIdPermiso(), permiso4.getIdPermiso())
+        );
+
+        // When
+        AsignarPermisosResponseDto resultado = usuariosService.asignarPermisosARol(dto);
+
+        // Then
+        assertNotNull(resultado);
+        
+        // Verificar que los permisos se reemplazaron correctamente
+        Rol rolActualizado = rolRepository.findById(rol.getIdRol()).orElse(null);
+        assertNotNull(rolActualizado);
+        assertEquals(2, rolActualizado.getPermisos().size());
+        
+        // Verificar que los permisos son los nuevos (no los antiguos)
+        List<String> idsPermisosAsignados = rolActualizado.getPermisos().stream()
+            .map(Permiso::getIdPermiso)
+            .toList();
+        assertFalse(idsPermisosAsignados.contains(permiso1.getIdPermiso()));
+        assertFalse(idsPermisosAsignados.contains(permiso2.getIdPermiso()));
+        assertTrue(idsPermisosAsignados.contains(permiso3.getIdPermiso()));
+        assertTrue(idsPermisosAsignados.contains(permiso4.getIdPermiso()));
+    }
+
+    @Test
+    void asignarPermisosARol_ListaVacia_LimpiaPermisos() {
+        // Given
+        // Crear rol
+        Rol rol = new Rol();
+        rol.setNombreRol("Temporero");
+        rol.setDescripcionRol("Rol temporal");
+        rol.setPermisos(new java.util.ArrayList<>());
+        rol = rolRepository.save(rol);
+        
+        // Crear y asignar permisos iniciales con nombre único
+        Permiso permiso1 = new Permiso("CREAR_USUARIOS_TEST4", "Crear usuarios test4", "usuarios", AccionPermiso.CREAR);
+        permiso1 = permisoRepository.save(permiso1);
+        rol.getPermisos().add(permiso1);
+        rol = rolRepository.save(rol);
+        
+        AsignarPermisosRequestDto dto = new AsignarPermisosRequestDto(
+            rol.getIdRol(),
+            List.of() // Lista vacía
+        );
+
+        // When
+        AsignarPermisosResponseDto resultado = usuariosService.asignarPermisosARol(dto);
+
+        // Then
+        assertNotNull(resultado);
+        
+        // Verificar que se limpiaron los permisos
+        Rol rolActualizado = rolRepository.findById(rol.getIdRol()).orElse(null);
+        assertNotNull(rolActualizado);
+        assertEquals(0, rolActualizado.getPermisos().size());
+    }
+
+    @Test
+    void inicializarPermisos_BaseDatosVacia_CreaTodosLosPermisos() {
+        // Given
+        // La base de datos está vacía (se limpió en setUp)
+
+        // When
+        usuariosService.inicializarPermisos();
+
+        // Then
+        // Verificar que se crearon todos los permisos esperados
+        List<Permiso> todosLosPermisos = permisoRepository.findAll();
+        
+        // Deberían haber 13 recursos x 5 acciones = 65 permisos
+        assertEquals(65, todosLosPermisos.size());
+        
+        // Verificar permisos específicos
+        assertTrue(permisoRepository.existsByNombrePermiso("CREAR_USUARIOS"));
+        assertTrue(permisoRepository.existsByNombrePermiso("LEER_ROLES"));
+        assertTrue(permisoRepository.existsByNombrePermiso("ACTUALIZAR_PERMISOS"));
+        assertTrue(permisoRepository.existsByNombrePermiso("ELIMINAR_CATALOGO"));
+        assertTrue(permisoRepository.existsByNombrePermiso("EJECUTAR_VENTAS"));
+    }
+
+    @Test
+    void inicializarPermisos_PermisosExistentes_NoCreaDuplicados() {
+        // Given
+        // Crear algunos permisos manualmente con nombre único
+        Permiso permisoExistente = new Permiso("CREAR_USUARIOS_TEST5", "Crear usuarios test5", "usuarios", AccionPermiso.CREAR);
+        permisoRepository.save(permisoExistente);
+        
+        long countInicial = permisoRepository.count();
+        
+        // When
+        usuariosService.inicializarPermisos();
+        
+        // Then
+        // Verificar que no se crearon duplicados
+        long countFinal = permisoRepository.count();
+        assertEquals(66, countFinal); // 65 permisos base + 1 permiso de prueba
+        
+        // Verificar que el permiso existente sigue siendo el mismo
+        List<Permiso> permisosEncontradosList = permisoRepository.findByNombrePermisoContainingIgnoreCase("CREAR_USUARIOS_TEST5");
+        assertFalse(permisosEncontradosList.isEmpty());
+        Permiso permisoVerificado = permisosEncontradosList.get(0);
+        assertEquals(permisoExistente.getIdPermiso(), permisoVerificado.getIdPermiso());
+    }
+
 }
