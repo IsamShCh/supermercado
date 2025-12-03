@@ -10,6 +10,8 @@ import com.isam.dto.rol.CrearRolResponseDto;
 import com.isam.dto.rol.ListarRolesRequestDto;
 import com.isam.dto.rol.ListarRolesResponseDto;
 import com.isam.dto.rol.RolDto;
+import com.isam.dto.usuario.ConsultarUsuariosRequestDto;
+import com.isam.dto.usuario.ConsultarUsuariosResponseDto;
 import com.isam.dto.usuario.CrearUsuarioRequestDto;
 import com.isam.dto.usuario.CrearUsuarioResponseDto;
 import com.isam.dto.usuario.UsuarioDto;
@@ -274,6 +276,38 @@ public class UsuariosService {
             .toList();
         log.info("Se encontraron {} permisos", permisoDtos.size());
         return new ListarPermisosResponseDto(permisoDtos);
+    }
+
+    /**
+     * Consulta usuarios basándose en criterios de filtrado.
+     * @param dto DTO con los filtros de búsqueda (id, nombre, rol)
+     * @return DTO con la lista de usuarios encontrados
+     */
+    @Transactional(readOnly = true)
+    public ConsultarUsuariosResponseDto consultarUsuarios(ConsultarUsuariosRequestDto dto) {
+        log.info("Consultando usuarios con filtros: idUsuario={}, nombreUsuario={}, idRol={}", 
+            dto.idUsuario().orElse("N/A"), 
+            dto.nombreUsuario().orElse("N/A"), 
+            dto.idRol().orElse("N/A"));
+
+        // Crear especificación de búsqueda
+        org.springframework.data.jpa.domain.Specification<Usuario> spec = 
+            com.isam.repository.UsuarioSpecifications.conFiltros(
+                dto.idUsuario(), 
+                dto.nombreUsuario(), 
+                dto.idRol()
+            );
+
+        // Ejecutar consulta
+        List<Usuario> usuarios = usuarioRepository.findAll(spec);
+
+        // Convertir a DTOs
+        List<UsuarioDto> usuarioDtos = usuarios.stream()
+            .map(usuariosMapper::toDto)
+            .toList();
+
+        log.info("Se encontraron {} usuarios", usuarioDtos.size());
+        return new com.isam.dto.usuario.ConsultarUsuariosResponseDto(usuarioDtos);
     }
     
     /**

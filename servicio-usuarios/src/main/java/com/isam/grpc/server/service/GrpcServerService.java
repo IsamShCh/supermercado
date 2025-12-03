@@ -237,4 +237,45 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
         }
     }
 
+    /**
+     * Consulta usuarios con filtros opcionales.
+     */
+    @Override
+    public void consultarUsuarios(com.isam.grpc.usuarios.ConsultarUsuariosRequest request, 
+                                StreamObserver<com.isam.grpc.usuarios.ConsultarUsuariosRequest.Response> responseObserver) {
+        log.info("Recibida petición para consultar usuarios");
+
+        try {
+            // Convertir request gRPC a DTO
+            com.isam.dto.usuario.ConsultarUsuariosRequestDto dto = usuariosMapper.toDto(request);
+
+            // Validar el DTO
+            Set<ConstraintViolation<com.isam.dto.usuario.ConsultarUsuariosRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errorMessage = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+                
+                responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("Errores de validación: " + errorMessage)
+                    .asRuntimeException());
+                return;
+            }
+
+            // Ejecutar la lógica de negocio
+            var response = usuariosService.consultarUsuarios(dto);
+
+            // Convertir respuesta a gRPC y enviar
+            com.isam.grpc.usuarios.ConsultarUsuariosRequest.Response grpcResponse = usuariosMapper.toProto(response);
+            responseObserver.onNext(grpcResponse);
+            responseObserver.onCompleted();
+
+            log.info("Consulta de usuarios completada: {} usuarios encontrados", response.usuarios().size());
+
+        } catch (Exception e) {
+            log.error("Error al consultar usuarios", e);
+            throw e;
+        }
+    }
+
 }

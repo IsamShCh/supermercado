@@ -1,5 +1,6 @@
 package com.isam.dto.usuario;
 
+import jakarta.validation.constraints.Size;
 import java.util.Optional;
 
 /**
@@ -9,9 +10,9 @@ import java.util.Optional;
  */
 public record ConsultarUsuariosRequestDto(
     
-    Optional<String> idUsuario,
+    Optional<@Size(max = 36, message = "El ID de usuario no puede exceder 36 caracteres") String> idUsuario,
     
-    Optional<String> nombreUsuario,
+    Optional<@Size(max = 50, message = "El nombre de usuario no puede exceder 50 caracteres") String> nombreUsuario,
     
-    Optional<String> idRol
+    Optional<@Size(max = 36, message = "El ID de rol no puede exceder 36 caracteres") String> idRol
 ) {}

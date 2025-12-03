@@ -380,6 +380,38 @@ public class UsuariosMapper {
         };
     }
 
+    /**
+     * Convierte gRPC ConsultarUsuariosRequest a DTO.
+     */
+    public com.isam.dto.usuario.ConsultarUsuariosRequestDto toDto(com.isam.grpc.usuarios.ConsultarUsuariosRequest request) {
+        return new com.isam.dto.usuario.ConsultarUsuariosRequestDto(
+            request.hasIdUsuario() ? Optional.of(request.getIdUsuario()) : Optional.empty(),
+            request.hasNombreUsuario() ? Optional.of(request.getNombreUsuario()) : Optional.empty(),
+            request.hasIdRol() ? Optional.of(request.getIdRol()) : Optional.empty()
+        );
+    }
+
+    /**
+     * Convierte ConsultarUsuariosResponseDto a proto ConsultarUsuariosRequest.Response.
+     */
+    public com.isam.grpc.usuarios.ConsultarUsuariosRequest.Response toProto(com.isam.dto.usuario.ConsultarUsuariosResponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        com.isam.grpc.usuarios.ConsultarUsuariosRequest.Response.Builder builder = 
+            com.isam.grpc.usuarios.ConsultarUsuariosRequest.Response.newBuilder();
+        
+        if (dto.usuarios() != null && !dto.usuarios().isEmpty()) {
+            List<UsuarioProto> usuariosProto = dto.usuarios().stream()
+                .map(this::toProto)
+                .collect(Collectors.toList());
+            builder.addAllUsuarios(usuariosProto);
+        }
+        
+        return builder.build();
+    }
+
     // ========================================
     // SECCIÓN: Conversiones de Proto a DTO (Request)
     // ========================================
