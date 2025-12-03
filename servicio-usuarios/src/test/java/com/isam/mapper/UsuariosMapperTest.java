@@ -1,17 +1,32 @@
 package com.isam.mapper;
 
-import com.isam.dto.autenticacion.*;
-import com.isam.dto.rol.*;
-import com.isam.dto.usuario.*;
-import com.isam.dto.permiso.*;
-import com.isam.grpc.usuarios.*;
+import com.isam.dto.permiso.ListarPermisosRequestDto;
+import com.isam.dto.permiso.ListarPermisosResponseDto;
+import com.isam.dto.permiso.PermisoDto;
+import com.isam.dto.rol.AsignarPermisosRequestDto;
+import com.isam.dto.rol.AsignarPermisosResponseDto;
+import com.isam.dto.rol.CrearRolRequestDto;
+import com.isam.dto.rol.CrearRolResponseDto;
+import com.isam.dto.rol.ListarRolesRequestDto;
+import com.isam.dto.rol.ListarRolesResponseDto;
+import com.isam.dto.rol.RolDto;
+import com.isam.dto.usuario.CrearUsuarioRequestDto;
+import com.isam.dto.usuario.CrearUsuarioResponseDto;
+import com.isam.dto.usuario.UsuarioDto;
+import com.isam.grpc.usuarios.AsignarPermisosRequest;
+import com.isam.grpc.usuarios.CrearRolRequest;
+import com.isam.grpc.usuarios.CrearUsuarioRequest;
+import com.isam.grpc.usuarios.ListarPermisosRequest;
+import com.isam.grpc.usuarios.ListarRolesRequest;
+import com.isam.grpc.usuarios.PermisoProto;
+import com.isam.grpc.usuarios.RolProto;
+import com.isam.grpc.usuarios.UsuarioProto;
+import com.isam.model.Rol;
+import com.isam.model.Usuario;
 import com.isam.model.enums.EstadoUsuario;
 import com.isam.model.enums.AccionPermiso;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,11 +38,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests para UsuariosMapper manual.
  * Prueba todas las conversiones entre DTOs y Proto Messages.
  */
-@DataJpaTest
-@ActiveProfiles("test")
 class UsuariosMapperTest {
 
-    @Autowired
     private UsuariosMapper mapper;
 
     private UsuarioDto usuarioDto;
@@ -36,20 +48,21 @@ class UsuariosMapperTest {
 
     @BeforeEach
     void setUp() {
-        // Setup test data
-        rolDto = new RolDto("ROL-001", "Administrador", "Rol de administrador");
-        permisoDto = new PermisoDto("PERM-001", "Gestionar Usuarios", "Permiso para gestionar usuarios", "usuarios", AccionPermiso.CREAR);
+        mapper = new UsuariosMapper();
 
         usuarioDto = new UsuarioDto(
             "USR-001",
             "jdoe",
             "John Doe",
             EstadoUsuario.ACTIVO,
-            "2023-01-15",
-            Optional.of("2023-12-01"),
+            "2023-01-01T10:00:00",
+            Optional.of("2023-01-02T15:30:00"),
             false,
-            List.of(rolDto)
+            List.of(new RolDto("ROL-001", "Admin", "Administrador"))
         );
+
+        rolDto = new RolDto("ROL-001", "Administrador", "Rol de administrador");
+        permisoDto = new PermisoDto("PERM-001", "Gestionar Usuarios", "Permite gestionar usuarios", "usuarios", AccionPermiso.CREAR);
     }
 
     // ========================================
@@ -67,8 +80,8 @@ class UsuariosMapperTest {
         assertEquals("jdoe", resultado.getNombreUsuario());
         assertEquals("John Doe", resultado.getNombreCompleto());
         assertEquals(com.isam.grpc.usuarios.EstadoUsuario.ACTIVO, resultado.getEstado());
-        assertEquals("2023-01-15", resultado.getFechaCreacion());
-        assertEquals("2023-12-01", resultado.getFechaUltimoAcceso());
+        assertEquals("2023-01-01T10:00:00", resultado.getFechaCreacion());
+        assertEquals("2023-01-02T15:30:00", resultado.getFechaUltimoAcceso());
         assertFalse(resultado.getRequiereCambioPassword());
         assertEquals(1, resultado.getRolesCount());
     }
@@ -121,7 +134,7 @@ class UsuariosMapperTest {
         assertNotNull(resultado);
         assertEquals("PERM-001", resultado.getIdPermiso());
         assertEquals("Gestionar Usuarios", resultado.getNombrePermiso());
-        assertEquals("Permiso para gestionar usuarios", resultado.getDescripcion());
+        assertEquals("Permite gestionar usuarios", resultado.getDescripcion());
         assertEquals("usuarios", resultado.getRecurso());
         assertEquals(com.isam.grpc.usuarios.AccionPermiso.CREAR, resultado.getAccion());
     }

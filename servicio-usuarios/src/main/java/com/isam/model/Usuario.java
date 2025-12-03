@@ -31,12 +31,8 @@ public class Usuario {
     private String nombreUsuario;
     
     @NotBlank(message = "El hash de la contraseña es obligatorio")
-    @Column(name = "HashContraseña", nullable = false)
-    private String hashContraseña;
-    
-    @NotBlank(message = "El salt es obligatorio")
-    @Column(name = "Salt", nullable = false)
-    private String salt;
+    @Column(name = "HashContrasena", nullable = false)
+    private String hashContrasena;
     
     @NotBlank(message = "El nombre completo es obligatorio")
     @Size(max = 200, message = "El nombre completo no puede exceder 200 caracteres")
@@ -56,8 +52,8 @@ public class Usuario {
     private LocalDateTime fechaUltimoAcceso;
     
     @NotNull(message = "El flag de cambio de contraseña es obligatorio")
-    @Column(name = "RequiereCambioContraseña", nullable = false)
-    private Boolean requiereCambioContraseña = false;
+    @Column(name = "RequiereCambioContrasena", nullable = false)
+    private Boolean requiereCambioContrasena = false;
     
     // Relaciones
     @ManyToMany(fetch = FetchType.LAZY)
@@ -74,10 +70,9 @@ public class Usuario {
     // Constructors
     public Usuario() {}
     
-    public Usuario(String nombreUsuario, String hashContraseña, String salt, String nombreCompleto) {
+    public Usuario(String nombreUsuario, String hashContrasena, String nombreCompleto) {
         this.nombreUsuario = nombreUsuario;
-        this.hashContraseña = hashContraseña;
-        this.salt = salt;
+        this.hashContrasena = hashContrasena;
         this.nombreCompleto = nombreCompleto;
         this.fechaCreacion = LocalDateTime.now();
     }

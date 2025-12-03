@@ -1,5 +1,6 @@
 package com.isam.service;
 
+import com.isam.config.SecurityConfig;
 import com.isam.dto.rol.AsignarPermisosRequestDto;
 import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
@@ -19,7 +20,6 @@ import com.isam.model.enums.EstadoUsuario;
 import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
 import com.isam.repository.UsuarioRepository;
-import com.isam.util.PasswordUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +29,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,7 +42,7 @@ import java.util.List;
  */
 @DataJpaTest(includeFilters = @ComponentScan.Filter(
     type = FilterType.ASSIGNABLE_TYPE,
-    classes = {UsuariosService.class, UsuariosMapper.class, PasswordUtil.class}
+    classes = {UsuariosService.class, UsuariosMapper.class, SecurityConfig.class}
 ))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
@@ -58,6 +59,9 @@ class UsuariosServiceTest {
     
     @Autowired
     private PermisoRepository permisoRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Rol rolAdmin;
     private Rol rolVendedor;
@@ -211,6 +215,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_MultiplesRoles_CadaUnoConIdUnico() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto1 = new CrearRolRequestDto("Gerente", "Rol de gerencia");
         CrearRolRequestDto dto2 = new CrearRolRequestDto("Vendedor", "Rol de ventas");
         CrearRolRequestDto dto3 = new CrearRolRequestDto("Almacenero", "Rol de almacén");
@@ -513,6 +518,7 @@ class UsuariosServiceTest {
     @Test
     void listarRoles_BaseDatosVacia_RetornaListaVacia() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         ListarRolesRequestDto dto = new ListarRolesRequestDto();
 
         // When
@@ -527,6 +533,7 @@ class UsuariosServiceTest {
     @Test
     void listarRoles_ConRolesExistentes_RetornaTodosLosRoles() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear roles de prueba
         Rol rol1 = new Rol();
         rol1.setNombreRol("Administrador");
@@ -566,6 +573,7 @@ class UsuariosServiceTest {
     @Test
     void listarRoles_ConRolSinDescripcion_RetornaRolCorrectamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         Rol rolSinDescripcion = new Rol();
         rolSinDescripcion.setNombreRol("Temporal");
         rolSinDescripcion.setDescripcionRol(null);
@@ -589,6 +597,7 @@ class UsuariosServiceTest {
     @Test
     void listarRoles_VerificarEstructuraDto_RetornaDatosCompletos() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         Rol rol = new Rol();
         rol.setNombreRol("Gerente");
         rol.setDescripcionRol("Rol de gerencia con acceso completo");
@@ -617,6 +626,7 @@ class UsuariosServiceTest {
     @Test
     void listarRoles_MultiplesRolesVerificarOrden_RetornaRolesEnOrdenAlfabetico() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear roles en orden desordenado para verificar si hay algún orden específico
         Rol rol1 = new Rol();
         rol1.setNombreRol("Zar");
@@ -725,15 +735,14 @@ class UsuariosServiceTest {
         Usuario usuarioGuardado = usuarioRepository.findById(resultado.usuario().idUsuario()).orElseThrow();
         
         // Verificar que el hash no es la contraseña original
-        assertNotEquals(passwordOriginal, usuarioGuardado.getHashContraseña());
+        assertNotEquals(passwordOriginal, usuarioGuardado.getHashContrasena());
         
-        // Verificar que se generó un salt
-        assertNotNull(usuarioGuardado.getSalt());
-        assertFalse(usuarioGuardado.getSalt().isEmpty());
+        // Verificar que el hash es válido (usando BCrypt)
+        assertTrue(passwordEncoder.matches(passwordOriginal, usuarioGuardado.getHashContrasena()));
         
         // Verificar que el hash tiene contenido
-        assertNotNull(usuarioGuardado.getHashContraseña());
-        assertFalse(usuarioGuardado.getHashContraseña().isEmpty());
+        assertNotNull(usuarioGuardado.getHashContrasena());
+        assertFalse(usuarioGuardado.getHashContrasena().isEmpty());
     }
 
     @Test
@@ -843,7 +852,7 @@ class UsuariosServiceTest {
         // Then
         Usuario usuarioGuardado = usuarioRepository.findById(resultado.usuario().idUsuario()).orElseThrow();
         assertEquals(EstadoUsuario.ACTIVO, usuarioGuardado.getEstado());
-        assertFalse(usuarioGuardado.getRequiereCambioContraseña());
+        assertFalse(usuarioGuardado.getRequiereCambioContrasena());
         assertNull(usuarioGuardado.getFechaUltimoAcceso());
         assertNotNull(usuarioGuardado.getFechaCreacion());
     }
@@ -912,6 +921,7 @@ class UsuariosServiceTest {
     @Test
     void listarRoles_ConCaracteresEspeciales_RetornaRolesCorrectamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         Rol rol1 = new Rol();
         rol1.setNombreRol("Admin-TI");
         rol1.setDescripcionRol("Administrador de TI");

@@ -23,7 +23,7 @@ import com.isam.repository.UsuarioRepository;
 import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
 import com.isam.repository.SesionRepository;
-import com.isam.util.PasswordUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import io.grpc.Status;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +50,7 @@ public class UsuariosService {
     private final PermisoRepository permisoRepository;
     private final SesionRepository sesionRepository;
     private final UsuariosMapper usuariosMapper;
-    private final PasswordUtil passwordUtil;
+    private final PasswordEncoder passwordEncoder;
 
 
     /**
@@ -66,6 +66,13 @@ public class UsuariosService {
         if (usuarioRepository.existsByNombreUsuario(dto.nombreUsuario())) {
             throw Status.ALREADY_EXISTS
                 .withDescription("Ya existe un usuario con el nombre '" + dto.nombreUsuario() + "'")
+                .asRuntimeException();
+        }
+
+        // Verificar que se proporcionó al menos un rol
+        if (dto.idRoles() == null || dto.idRoles().isEmpty()) {
+            throw Status.INVALID_ARGUMENT
+                .withDescription("Debe asignar al menos un rol al usuario")
                 .asRuntimeException();
         }
 
@@ -87,19 +94,17 @@ public class UsuariosService {
                 .asRuntimeException();
         }
 
-        // Generar salt y hashear contraseña
-        String salt = passwordUtil.generarSalt();
-        String hashContraseña = passwordUtil.hashearPassword(dto.password(), salt);
+        // Generar hash contraseña
+        String hashContrasena = passwordEncoder.encode(dto.password());
 
         // Crear la entidad Usuario
         Usuario usuario = new Usuario();
         usuario.setNombreUsuario(dto.nombreUsuario());
-        usuario.setHashContraseña(hashContraseña);
-        usuario.setSalt(salt);
+        usuario.setHashContrasena(hashContrasena);
         usuario.setNombreCompleto(dto.nombreCompleto());
         usuario.setEstado(EstadoUsuario.ACTIVO);
         usuario.setFechaCreacion(LocalDateTime.now());
-        usuario.setRequiereCambioContraseña(false);
+        usuario.setRequiereCambioContrasena(false);
         usuario.setRoles(roles);
 
         // Guardar el usuario

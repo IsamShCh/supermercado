@@ -117,7 +117,7 @@ class VentasServiceTest {
     }
     
     @Test
-    void anadirProductoTicket_ProductoNuevo_AñadeProductoExitosamente() {
+    void anadirProductoTicket_ProductoNuevo_AnadeProductoExitosamente() {
         // Given
         String codigoBarras = "1234567890123";
         String sku = "SKU-001";

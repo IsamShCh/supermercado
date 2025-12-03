@@ -5,13 +5,12 @@ erDiagram
     USUARIO {
     string IDUsuario PK
     string NombreUsuario UK
-    string HashContraseña
-    string Salt
+    string HashContrasena
     string NombreCompleto
     enum EstadoUsuario "Activo, Inactivo"
     timestamp FechaCreacion
     timestamp FechaUltimoAcceso
-    boolean RequiereCambioContraseña
+    boolean RequiereCambioContrasena
     }
 
     ROLES {

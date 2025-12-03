@@ -62,6 +62,10 @@ public class UsuariosMapper {
      * Convierte RolDto a proto RolProto.
      */
     public RolProto toProto(RolDto rolDto) {
+        if (rolDto == null) {
+            return null;
+        }
+
         RolProto.Builder builder = RolProto.newBuilder()
             .setIdRol(rolDto.idRol())
             .setNombreRol(rolDto.nombreRol());
@@ -125,7 +129,7 @@ public class UsuariosMapper {
             usuario.getFechaUltimoAcceso() != null
                 ? Optional.of(usuario.getFechaUltimoAcceso().format(formatter))
                 : Optional.empty(),
-            usuario.getRequiereCambioContraseña(),
+            usuario.getRequiereCambioContrasena(),
             rolesDto
         );
     }

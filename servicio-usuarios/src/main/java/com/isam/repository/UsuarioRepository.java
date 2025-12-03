@@ -41,7 +41,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String>, JpaSp
      * @param true para buscar usuarios que requieren cambio, false para los que no
      * @return Lista de usuarios que requieren cambio de contraseña
      */
-    java.util.List<Usuario> findByRequiereCambioContraseñaTrue();
+    java.util.List<Usuario> findByRequiereCambioContrasenaTrue();
     
     /**
      * Busca usuarios por nombre completo (búsqueda parcial).
