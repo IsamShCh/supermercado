@@ -1,6 +1,7 @@
 package com.isam.dto.usuario;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -23,6 +24,7 @@ public record CrearUsuarioRequestDto(
     @Size(max = 200, message = "El nombre completo no puede exceder 200 caracteres")
     String nombreCompleto,
     
+    @NotEmpty(message = "Debe asignar al menos un rol")
     @NotNull(message = "Los roles son obligatorios")
-    List<String> idRoles
+    List<@NotBlank(message = "El ID del rol es obligatorio") String> idRoles
 ) {}

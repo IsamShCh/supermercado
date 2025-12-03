@@ -7,13 +7,20 @@ import com.isam.dto.rol.CrearRolResponseDto;
 import com.isam.dto.rol.ListarRolesRequestDto;
 import com.isam.dto.rol.ListarRolesResponseDto;
 import com.isam.dto.rol.RolDto;
+import com.isam.dto.usuario.CrearUsuarioRequestDto;
+import com.isam.dto.usuario.CrearUsuarioResponseDto;
+import com.isam.dto.usuario.UsuarioDto;
 import com.isam.mapper.UsuariosMapper;
-import com.isam.mapper.UsuariosMapperAuto;
 import com.isam.model.Permiso;
 import com.isam.model.Rol;
+import com.isam.model.Usuario;
 import com.isam.model.enums.AccionPermiso;
+import com.isam.model.enums.EstadoUsuario;
 import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
+import com.isam.repository.UsuarioRepository;
+import com.isam.util.PasswordUtil;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +41,7 @@ import java.util.List;
  */
 @DataJpaTest(includeFilters = @ComponentScan.Filter(
     type = FilterType.ASSIGNABLE_TYPE,
-    classes = {UsuariosService.class, UsuariosMapper.class, UsuariosMapperAuto.class}
+    classes = {UsuariosService.class, UsuariosMapper.class, PasswordUtil.class}
 ))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
@@ -44,16 +51,34 @@ class UsuariosServiceTest {
     private UsuariosService usuariosService;
 
     @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
     private RolRepository rolRepository;
     
     @Autowired
     private PermisoRepository permisoRepository;
 
+    private Rol rolAdmin;
+    private Rol rolVendedor;
+
     @BeforeEach
     void setUp() {
         // Limpiar base de datos
+        usuarioRepository.deleteAll();
         rolRepository.deleteAll();
         permisoRepository.deleteAll();
+
+        // Crear roles de prueba
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+
+        rolVendedor = new Rol();
+        rolVendedor.setNombreRol("VENDEDOR");
+        rolVendedor.setDescripcionRol("Vendedor de tienda");
+        rolVendedor = rolRepository.save(rolVendedor);
     }
 
     @Test
@@ -626,6 +651,263 @@ class UsuariosServiceTest {
         assertTrue(nombresRoles.contains("Alpha"));
         assertTrue(nombresRoles.contains("Beta"));
     }
+
+    @Test
+    void crearUsuario_DatosValidos_CreaUsuarioExitosamente() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "jdoe",
+            "Password123!",
+            "John Doe",
+            List.of(rolAdmin.getIdRol())
+        );
+
+        // When
+        CrearUsuarioResponseDto resultado = usuariosService.crearUsuario(dto);
+
+        // Then
+        assertNotNull(resultado);
+        assertNotNull(resultado.usuario());
+        
+        UsuarioDto usuario = resultado.usuario();
+        assertNotNull(usuario.idUsuario());
+        assertEquals("jdoe", usuario.nombreUsuario());
+        assertEquals("John Doe", usuario.nombreCompleto());
+        assertEquals(EstadoUsuario.ACTIVO, usuario.estado());
+        assertNotNull(usuario.fechaCreacion());
+        assertTrue(usuario.fechaUltimoAcceso().isEmpty());
+        assertFalse(usuario.requiereCambioPassword());
+        assertEquals(1, usuario.roles().size());
+        assertEquals("ADMIN", usuario.roles().get(0).nombreRol());
+    }
+
+    @Test
+    void crearUsuario_ConMultiplesRoles_AsignaRolesCorrectamente() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "mjones",
+            "SecurePass456!",
+            "Mary Jones",
+            List.of(rolAdmin.getIdRol(), rolVendedor.getIdRol())
+        );
+
+        // When
+        CrearUsuarioResponseDto resultado = usuariosService.crearUsuario(dto);
+
+        // Then
+        assertNotNull(resultado);
+        UsuarioDto usuario = resultado.usuario();
+        assertEquals(2, usuario.roles().size());
+        
+        List<String> nombresRoles = usuario.roles().stream()
+            .map(rol -> rol.nombreRol())
+            .sorted()
+            .toList();
+        
+        assertEquals(List.of("ADMIN", "VENDEDOR"), nombresRoles);
+    }
+
+    @Test
+    void crearUsuario_PasswordHasheadaCorrectamente_NoGuardaPasswordEnTextoPlano() {
+        // Given
+        String passwordOriginal = "MySecretPassword123!";
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "testuser",
+            passwordOriginal,
+            "Test User",
+            List.of(rolVendedor.getIdRol())
+        );
+
+        // When
+        CrearUsuarioResponseDto resultado = usuariosService.crearUsuario(dto);
+
+        // Then
+        Usuario usuarioGuardado = usuarioRepository.findById(resultado.usuario().idUsuario()).orElseThrow();
+        
+        // Verificar que el hash no es la contraseña original
+        assertNotEquals(passwordOriginal, usuarioGuardado.getHashContraseña());
+        
+        // Verificar que se generó un salt
+        assertNotNull(usuarioGuardado.getSalt());
+        assertFalse(usuarioGuardado.getSalt().isEmpty());
+        
+        // Verificar que el hash tiene contenido
+        assertNotNull(usuarioGuardado.getHashContraseña());
+        assertFalse(usuarioGuardado.getHashContraseña().isEmpty());
+    }
+
+    @Test
+    void crearUsuario_NombreUsuarioDuplicado_LanzaExcepcion() {
+        // Given
+        CrearUsuarioRequestDto dto1 = new CrearUsuarioRequestDto(
+            "duplicate",
+            "Password123!",
+            "First User",
+            List.of(rolAdmin.getIdRol())
+        );
+        usuariosService.crearUsuario(dto1);
+
+        CrearUsuarioRequestDto dto2 = new CrearUsuarioRequestDto(
+            "duplicate",
+            "DifferentPass456!",
+            "Second User",
+            List.of(rolVendedor.getIdRol())
+        );
+
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> usuariosService.crearUsuario(dto2)
+        );
+
+        assertEquals(Status.ALREADY_EXISTS.getCode(), exception.getStatus().getCode());
+        assertTrue(exception.getMessage().contains("Ya existe un usuario con el nombre 'duplicate'"));
+    }
+
+    @Test
+    void crearUsuario_SinRoles_LanzaExcepcion() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "noroles",
+            "Password123!",
+            "No Roles User",
+            List.of()
+        );
+
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> usuariosService.crearUsuario(dto)
+        );
+
+        assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
+        assertTrue(exception.getMessage().contains("Debe asignar al menos un rol al usuario"));
+    }
+
+    @Test
+    void crearUsuario_RolNoExistente_LanzaExcepcion() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "invalidrole",
+            "Password123!",
+            "Invalid Role User",
+            List.of("rol-inexistente-123")
+        );
+
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> usuariosService.crearUsuario(dto)
+        );
+
+        assertEquals(Status.NOT_FOUND.getCode(), exception.getStatus().getCode());
+        assertTrue(exception.getMessage().contains("Roles no encontrados"));
+        assertTrue(exception.getMessage().contains("rol-inexistente-123"));
+    }
+
+    @Test
+    void crearUsuario_AlgunosRolesNoExisten_LanzaExcepcion() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "partialinvalid",
+            "Password123!",
+            "Partial Invalid User",
+            List.of(rolAdmin.getIdRol(), "rol-inexistente-456", "rol-inexistente-789")
+        );
+
+        // When & Then
+        StatusRuntimeException exception = assertThrows(
+            StatusRuntimeException.class,
+            () -> usuariosService.crearUsuario(dto)
+        );
+
+        assertEquals(Status.NOT_FOUND.getCode(), exception.getStatus().getCode());
+        assertTrue(exception.getMessage().contains("Roles no encontrados"));
+        assertTrue(exception.getMessage().contains("rol-inexistente-456"));
+        assertTrue(exception.getMessage().contains("rol-inexistente-789"));
+    }
+
+    @Test
+    void crearUsuario_VerificaEstadoInicial_EstadoActivoPorDefecto() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "activeuser",
+            "Password123!",
+            "Active User",
+            List.of(rolVendedor.getIdRol())
+        );
+
+        // When
+        CrearUsuarioResponseDto resultado = usuariosService.crearUsuario(dto);
+
+        // Then
+        Usuario usuarioGuardado = usuarioRepository.findById(resultado.usuario().idUsuario()).orElseThrow();
+        assertEquals(EstadoUsuario.ACTIVO, usuarioGuardado.getEstado());
+        assertFalse(usuarioGuardado.getRequiereCambioContraseña());
+        assertNull(usuarioGuardado.getFechaUltimoAcceso());
+        assertNotNull(usuarioGuardado.getFechaCreacion());
+    }
+
+    @Test
+    void crearUsuario_VerificaPersistencia_UsuarioGuardadoEnBaseDeDatos() {
+        // Given
+        CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
+            "persistent",
+            "Password123!",
+            "Persistent User",
+            List.of(rolAdmin.getIdRol())
+        );
+
+        // When
+        CrearUsuarioResponseDto resultado = usuariosService.crearUsuario(dto);
+
+        // Then
+        assertTrue(usuarioRepository.existsByNombreUsuario("persistent"));
+        
+        Usuario usuarioRecuperado = usuarioRepository.findByNombreUsuario("persistent").orElseThrow();
+        assertEquals(resultado.usuario().idUsuario(), usuarioRecuperado.getIdUsuario());
+        assertEquals("Persistent User", usuarioRecuperado.getNombreCompleto());
+        assertEquals(1, usuarioRecuperado.getRoles().size());
+    }
+
+    @Test
+    void crearUsuario_NombresUsuarioDiferentes_CreaMultiplesUsuarios() {
+        // Given
+        CrearUsuarioRequestDto dto1 = new CrearUsuarioRequestDto(
+            "user1",
+            "Password123!",
+            "User One",
+            List.of(rolAdmin.getIdRol())
+        );
+
+        CrearUsuarioRequestDto dto2 = new CrearUsuarioRequestDto(
+            "user2",
+            "Password456!",
+            "User Two",
+            List.of(rolVendedor.getIdRol())
+        );
+
+        CrearUsuarioRequestDto dto3 = new CrearUsuarioRequestDto(
+            "user3",
+            "Password789!",
+            "User Three",
+            List.of(rolAdmin.getIdRol(), rolVendedor.getIdRol())
+        );
+
+        // When
+        usuariosService.crearUsuario(dto1);
+        usuariosService.crearUsuario(dto2);
+        usuariosService.crearUsuario(dto3);
+
+        // Then
+        List<Usuario> todosLosUsuarios = usuarioRepository.findAll();
+        assertEquals(3, todosLosUsuarios.size());
+        
+        assertTrue(usuarioRepository.existsByNombreUsuario("user1"));
+        assertTrue(usuarioRepository.existsByNombreUsuario("user2"));
+        assertTrue(usuarioRepository.existsByNombreUsuario("user3"));
+    }
+
 
     @Test
     void listarRoles_ConCaracteresEspeciales_RetornaRolesCorrectamente() {

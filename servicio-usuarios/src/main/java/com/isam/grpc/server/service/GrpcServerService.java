@@ -9,13 +9,15 @@ import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
 import com.isam.dto.rol.ListarRolesRequestDto;
 import com.isam.dto.rol.ListarRolesResponseDto;
+import com.isam.dto.usuario.CrearUsuarioRequestDto;
+import com.isam.dto.usuario.CrearUsuarioResponseDto;
 import com.isam.grpc.usuarios.AsignarPermisosRequest;
 import com.isam.grpc.usuarios.CrearRolRequest;
+import com.isam.grpc.usuarios.CrearUsuarioRequest;
 import com.isam.grpc.usuarios.ListarPermisosRequest;
 import com.isam.grpc.usuarios.ListarRolesRequest;
 import com.isam.grpc.usuarios.UsuarioServiceGrpc;
 import com.isam.mapper.UsuariosMapper;
-import com.isam.mapper.UsuariosMapperAuto;
 import com.isam.service.UsuariosService;
 import io.grpc.stub.StreamObserver;
 import jakarta.validation.ConstraintViolation;
@@ -33,8 +35,47 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
     
     private final UsuariosService usuariosService;
     private final UsuariosMapper usuariosMapper;
-    private final UsuariosMapperAuto usuariosMapperAuto;
     private final Validator validator;
+
+    /**
+     * Crea un nuevo usuario en el sistema.
+     */
+    @Override
+    public void crearUsuario(CrearUsuarioRequest request, StreamObserver<CrearUsuarioRequest.Response> responseObserver) {
+        log.info("Recibida petición para crear usuario: {}", request.getNombreUsuario());
+
+        try {
+            // Convertir request gRPC a DTO
+            CrearUsuarioRequestDto dto = usuariosMapper.toDto(request);
+
+            // Validar el DTO
+            Set<ConstraintViolation<CrearUsuarioRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errorMessage = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+                
+                responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("Errores de validación: " + errorMessage)
+                    .asRuntimeException());
+                return;
+            }
+
+            // Ejecutar la lógica de negocio
+            CrearUsuarioResponseDto response = usuariosService.crearUsuario(dto);
+
+            // Convertir respuesta a gRPC y enviar
+            CrearUsuarioRequest.Response grpcResponse = usuariosMapper.toProto(response);
+            responseObserver.onNext(grpcResponse);
+            responseObserver.onCompleted();
+
+            log.info("Usuario creado exitosamente: {}", response.usuario().nombreUsuario());
+
+        } catch (Exception e) {
+            log.error("Error al crear usuario", e);
+            throw e; // Se encargara el interceptor de capturarla
+        }
+    }
 
     /**
      * Crea un nuevo rol en el sistema.
@@ -85,7 +126,7 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
 
         try {
             // Convertir request gRPC a DTO
-            AsignarPermisosRequestDto dto = usuariosMapperAuto.toDto(request);
+            AsignarPermisosRequestDto dto = usuariosMapper.toDto(request);
 
             // Validar el DTO
             Set<ConstraintViolation<AsignarPermisosRequestDto>> violations = validator.validate(dto);
@@ -104,7 +145,7 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
             var response = usuariosService.asignarPermisosARol(dto);
 
             // Convertir respuesta a gRPC y enviar
-            AsignarPermisosRequest.Response grpcResponse = usuariosMapperAuto.toProto(response);
+            AsignarPermisosRequest.Response grpcResponse = usuariosMapper.toProto(response);
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();
 
@@ -125,7 +166,7 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
 
         try {
             // Convertir request gRPC a DTO
-            ListarRolesRequestDto dto = usuariosMapperAuto.toDto(request);
+            ListarRolesRequestDto dto = usuariosMapper.toDto(request);
 
             // Validar el DTO (aunque está vacío, mantenemos la estructura)
             Set<ConstraintViolation<ListarRolesRequestDto>> violations = validator.validate(dto);
@@ -144,7 +185,7 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
             var response = usuariosService.listarRoles(dto);
 
             // Convertir respuesta a gRPC y enviar
-            ListarRolesRequest.Response grpcResponse = usuariosMapperAuto.toProto(response);
+            ListarRolesRequest.Response grpcResponse = usuariosMapper.toProto(response);
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();
 
@@ -165,7 +206,7 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
 
         try {
             // Convertir request gRPC a DTO
-            ListarPermisosRequestDto dto = usuariosMapperAuto.toDto(request);
+            ListarPermisosRequestDto dto = usuariosMapper.toDto(request);
 
             // Validar el DTO (aunque está vacío, mantenemos la estructura)
             Set<ConstraintViolation<ListarPermisosRequestDto>> violations = validator.validate(dto);
@@ -184,7 +225,7 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
             var response = usuariosService.listarPermisos(dto);
 
             // Convertir respuesta a gRPC y enviar
-            ListarPermisosRequest.Response grpcResponse = usuariosMapperAuto.toProto(response);
+            ListarPermisosRequest.Response grpcResponse = usuariosMapper.toProto(response);
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();
 

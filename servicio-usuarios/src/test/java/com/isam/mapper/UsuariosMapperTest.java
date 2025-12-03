@@ -9,6 +9,9 @@ import com.isam.model.enums.EstadoUsuario;
 import com.isam.model.enums.AccionPermiso;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,9 +19,16 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class UsuariosMapperAutoTest {
+/**
+ * Tests para UsuariosMapper manual.
+ * Prueba todas las conversiones entre DTOs y Proto Messages.
+ */
+@DataJpaTest
+@ActiveProfiles("test")
+class UsuariosMapperTest {
 
-    private UsuariosMapperAuto mapper = UsuariosMapperAuto.INSTANCE;
+    @Autowired
+    private UsuariosMapper mapper;
 
     private UsuarioDto usuarioDto;
     private RolDto rolDto;
@@ -266,60 +276,6 @@ class UsuariosMapperAutoTest {
         assertEquals("newuser", resultado.getUsuario().getNombreUsuario());
     }
 
-    // ========================================
-    // SECCIÓN: Tests de Conversiones de Autenticación
-    // ========================================
-
-    @Test
-    void toDto_IniciarSesionRequest_ConvierteCorrectamente() {
-        // Given
-        IniciarSesionRequest request = IniciarSesionRequest.newBuilder()
-            .setNombreUsuario("jdoe")
-            .setPassword("password123")
-            .build();
-
-        // When
-        IniciarSesionRequestDto resultado = mapper.toDto(request);
-
-        // Then
-        assertNotNull(resultado);
-        assertEquals("jdoe", resultado.nombreUsuario());
-        assertEquals("password123", resultado.password());
-    }
-
-    @Test
-    void toProto_IniciarSesionResponseDto_ConvierteCorrectamente() {
-        // Given
-        UsuarioDto usuarioDto = new UsuarioDto(
-            "USR-001",
-            "jdoe",
-            "John Doe",
-            EstadoUsuario.ACTIVO,
-            "2023-01-15",
-            Optional.empty(),
-            false,
-            List.of()
-        );
-
-        IniciarSesionResponseDto responseDto = new IniciarSesionResponseDto(
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
-            usuarioDto
-        );
-
-        // When
-        IniciarSesionRequest.Response resultado = mapper.toProto(responseDto);
-
-        // Then
-        assertNotNull(resultado);
-        assertEquals("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", resultado.getTokenJwt());
-        assertNotNull(resultado.getUsuario());
-        assertEquals("USR-001", resultado.getUsuario().getIdUsuario());
-    }
-
-    // ========================================
-    // SECCIÓN: Tests de Conversiones de Roles y Permisos
-    // ========================================
-
     @Test
     void toDto_CrearRolRequest_ConvierteCorrectamente() {
         // Given
@@ -353,94 +309,89 @@ class UsuariosMapperAutoTest {
         assertEquals("Nuevo Rol", resultado.getRol().getNombreRol());
     }
 
-    // ========================================
-    // SECCIÓN: Tests de Conversiones de Enums
-    // ========================================
-
     @Test
-    void mapEstadoUsuarioToProto_EnumActivo_ConvierteCorrectamente() {
+    void toDto_AsignarPermisosRequest_ConvierteCorrectamente() {
+        // Given
+        AsignarPermisosRequest request = AsignarPermisosRequest.newBuilder()
+            .setIdRol("ROL-001")
+            .addIdPermisos("PERM-001")
+            .addIdPermisos("PERM-002")
+            .build();
+
         // When
-        com.isam.grpc.usuarios.EstadoUsuario resultado = mapper.mapEstadoUsuarioModelToProto(EstadoUsuario.ACTIVO);
+        AsignarPermisosRequestDto resultado = mapper.toDto(request);
 
         // Then
-        assertEquals(com.isam.grpc.usuarios.EstadoUsuario.ACTIVO, resultado);
+        assertNotNull(resultado);
+        assertEquals("ROL-001", resultado.idRol());
+        assertEquals(2, resultado.idPermisos().size());
+        assertTrue(resultado.idPermisos().containsAll(Arrays.asList("PERM-001", "PERM-002")));
     }
 
     @Test
-    void mapEstadoUsuarioToProto_EnumInactivo_ConvierteCorrectamente() {
+    void toProto_AsignarPermisosResponseDto_ConvierteCorrectamente() {
+        // Given
+        AsignarPermisosResponseDto responseDto = new AsignarPermisosResponseDto();
+
         // When
-        com.isam.grpc.usuarios.EstadoUsuario resultado = mapper.mapEstadoUsuarioModelToProto(EstadoUsuario.INACTIVO);
+        AsignarPermisosRequest.Response resultado = mapper.toProto(responseDto);
 
         // Then
-        assertEquals(com.isam.grpc.usuarios.EstadoUsuario.INACTIVO, resultado);
+        assertNotNull(resultado);
     }
 
     @Test
-    void mapEstadoUsuarioToProto_EnumNulo_UsaValorPorDefecto() {
+    void toDto_ListarRolesRequest_ConvierteCorrectamente() {
+        // Given
+        ListarRolesRequest request = ListarRolesRequest.newBuilder().build();
+
         // When
-        com.isam.grpc.usuarios.EstadoUsuario resultado = mapper.mapEstadoUsuarioModelToProto(null);
+        ListarRolesRequestDto resultado = mapper.toDto(request);
 
         // Then
-        assertEquals(com.isam.grpc.usuarios.EstadoUsuario.ESTADO_USUARIO_NO_ESPECIFICADO, resultado);
+        assertNotNull(resultado);
     }
 
     @Test
-    void mapAccionPermisoToProto_EnumCrear_ConvierteCorrectamente() {
+    void toProto_ListarRolesResponseDto_ConvierteCorrectamente() {
+        // Given
+        ListarRolesResponseDto responseDto = new ListarRolesResponseDto(List.of(rolDto));
+
         // When
-        com.isam.grpc.usuarios.AccionPermiso resultado = mapper.mapAccionPermisoModelToProto(AccionPermiso.CREAR);
+        ListarRolesRequest.Response resultado = mapper.toProto(responseDto);
 
         // Then
-        assertEquals(com.isam.grpc.usuarios.AccionPermiso.CREAR, resultado);
+        assertNotNull(resultado);
+        assertEquals(1, resultado.getRolesCount());
+        assertEquals("ROL-001", resultado.getRoles(0).getIdRol());
+        assertEquals("Administrador", resultado.getRoles(0).getNombreRol());
     }
 
     @Test
-    void mapAccionPermisoToProto_EnumLeer_ConvierteCorrectamente() {
+    void toDto_ListarPermisosRequest_ConvierteCorrectamente() {
+        // Given
+        ListarPermisosRequest request = ListarPermisosRequest.newBuilder().build();
+
         // When
-        com.isam.grpc.usuarios.AccionPermiso resultado = mapper.mapAccionPermisoModelToProto(AccionPermiso.LEER);
+        ListarPermisosRequestDto resultado = mapper.toDto(request);
 
         // Then
-        assertEquals(com.isam.grpc.usuarios.AccionPermiso.LEER, resultado);
-    }
-
-    // ========================================
-    // SECCIÓN: Tests de Manejo de Nulos y Campos Opcionales
-    // ========================================
-
-    @Test
-    void mapOptionalString_ValorNoNulo_ConvierteCorrectamente() {
-        // When
-        Optional<String> resultado = mapper.mapOptionalString("testValue");
-
-        // Then
-        assertTrue(resultado.isPresent());
-        assertEquals("testValue", resultado.get());
+        assertNotNull(resultado);
     }
 
     @Test
-    void mapOptionalString_ValorNulo_ConvierteCorrectamente() {
+    void toProto_ListarPermisosResponseDto_ConvierteCorrectamente() {
+        // Given
+        ListarPermisosResponseDto responseDto = new ListarPermisosResponseDto(List.of(permisoDto));
+
         // When
-        Optional<String> resultado = mapper.mapOptionalString(null);
+        ListarPermisosRequest.Response resultado = mapper.toProto(responseDto);
 
         // Then
-        assertFalse(resultado.isPresent());
-    }
-
-    @Test
-    void mapOptionalToString_OpcionalConValor_ConvierteCorrectamente() {
-        // When
-        String resultado = mapper.mapOptionalToString(Optional.of("testValue"));
-
-        // Then
-        assertEquals("testValue", resultado);
-    }
-
-    @Test
-    void mapOptionalToString_OpcionalVacio_ConvierteCorrectamente() {
-        // When
-        String resultado = mapper.mapOptionalToString(Optional.empty());
-
-        // Then
-        assertEquals("", resultado);
+        assertNotNull(resultado);
+        assertEquals(1, resultado.getPermisosCount());
+        assertEquals("PERM-001", resultado.getPermisos(0).getIdPermiso());
+        assertEquals("Gestionar Usuarios", resultado.getPermisos(0).getNombrePermiso());
     }
 
     // ========================================
@@ -478,6 +429,24 @@ class UsuariosMapperAutoTest {
     void toDto_RolProtoNulo_RetornaNulo() {
         // When
         RolDto resultado = mapper.toDto((RolProto) null);
+
+        // Then
+        assertNull(resultado);
+    }
+
+    @Test
+    void toProto_PermisoDtoNulo_RetornaNulo() {
+        // When
+        PermisoProto resultado = mapper.toProto((PermisoDto) null);
+
+        // Then
+        assertNull(resultado);
+    }
+
+    @Test
+    void toDto_PermisoProtoNulo_RetornaNulo() {
+        // When
+        PermisoDto resultado = mapper.toDto((PermisoProto) null);
 
         // Then
         assertNull(resultado);

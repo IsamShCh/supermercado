@@ -10,15 +10,20 @@ import com.isam.dto.rol.CrearRolResponseDto;
 import com.isam.dto.rol.ListarRolesRequestDto;
 import com.isam.dto.rol.ListarRolesResponseDto;
 import com.isam.dto.rol.RolDto;
+import com.isam.dto.usuario.CrearUsuarioRequestDto;
+import com.isam.dto.usuario.CrearUsuarioResponseDto;
+import com.isam.dto.usuario.UsuarioDto;
 import com.isam.mapper.UsuariosMapper;
-import com.isam.mapper.UsuariosMapperAuto;
 import com.isam.model.Permiso;
 import com.isam.model.Rol;
+import com.isam.model.Usuario;
 import com.isam.model.enums.AccionPermiso;
+import com.isam.model.enums.EstadoUsuario;
 import com.isam.repository.UsuarioRepository;
 import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
 import com.isam.repository.SesionRepository;
+import com.isam.util.PasswordUtil;
 import io.grpc.Status;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,8 +50,66 @@ public class UsuariosService {
     private final PermisoRepository permisoRepository;
     private final SesionRepository sesionRepository;
     private final UsuariosMapper usuariosMapper;
-    private final UsuariosMapperAuto usuariosMapperAuto;
+    private final PasswordUtil passwordUtil;
 
+
+    /**
+     * Crea un nuevo usuario en el sistema.
+     * @param dto DTO con los datos del usuario a crear
+     * @return DTO con los datos del usuario creado
+     */
+    @Transactional
+    public CrearUsuarioResponseDto crearUsuario(CrearUsuarioRequestDto dto) {
+        log.info("Creando usuario con nombre: {}", dto.nombreUsuario());
+
+        // Verificar si ya existe un usuario con ese nombre
+        if (usuarioRepository.existsByNombreUsuario(dto.nombreUsuario())) {
+            throw Status.ALREADY_EXISTS
+                .withDescription("Ya existe un usuario con el nombre '" + dto.nombreUsuario() + "'")
+                .asRuntimeException();
+        }
+
+        // Obtener los roles solicitados
+        List<Rol> roles = rolRepository.findAllById(dto.idRoles());
+        
+        // Verificar que todos los roles existen
+        if (roles.size() != dto.idRoles().size()) {
+            List<String> idsEncontrados = roles.stream()
+                .map(Rol::getIdRol)
+                .toList();
+            
+            List<String> idsNoEncontrados = dto.idRoles().stream()
+                .filter(id -> !idsEncontrados.contains(id))
+                .toList();
+            
+            throw Status.NOT_FOUND
+                .withDescription("Roles no encontrados: " + String.join(", ", idsNoEncontrados))
+                .asRuntimeException();
+        }
+
+        // Generar salt y hashear contraseña
+        String salt = passwordUtil.generarSalt();
+        String hashContraseña = passwordUtil.hashearPassword(dto.password(), salt);
+
+        // Crear la entidad Usuario
+        Usuario usuario = new Usuario();
+        usuario.setNombreUsuario(dto.nombreUsuario());
+        usuario.setHashContraseña(hashContraseña);
+        usuario.setSalt(salt);
+        usuario.setNombreCompleto(dto.nombreCompleto());
+        usuario.setEstado(EstadoUsuario.ACTIVO);
+        usuario.setFechaCreacion(LocalDateTime.now());
+        usuario.setRequiereCambioContraseña(false);
+        usuario.setRoles(roles);
+
+        // Guardar el usuario
+        Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        log.info("Usuario creado exitosamente con ID: {}", usuarioGuardado.getIdUsuario());
+
+        // Convertir a DTO y retornar
+        UsuarioDto usuarioDto = usuariosMapper.toDto(usuarioGuardado);
+        return new CrearUsuarioResponseDto(usuarioDto);
+    }
 
     /**
      * Crea un nuevo rol en el sistema.
@@ -186,7 +250,7 @@ public class UsuariosService {
         List<Rol> roles = rolRepository.findAll();
         // Mapeamos automaticamente todos los Roles a Dto y agrupamos en una lista.
         List<RolDto> rolDtos = roles.stream()
-            .map(usuariosMapperAuto::toDto)
+            .map(usuariosMapper::toDto)
             .toList();
         log.info("Se encontraron {} roles", rolDtos.size());
         return new ListarRolesResponseDto(rolDtos);
@@ -201,7 +265,7 @@ public class UsuariosService {
         log.info("Listando todos los permisos");
         List<Permiso> permisos = permisoRepository.findAll();
         List<PermisoDto> permisoDtos = permisos.stream()
-            .map(usuariosMapperAuto::toDto)
+            .map(usuariosMapper::toDto)
             .toList();
         log.info("Se encontraron {} permisos", permisoDtos.size());
         return new ListarPermisosResponseDto(permisoDtos);
