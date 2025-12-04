@@ -1,5 +1,15 @@
 package com.isam.mapper;
 
+import com.isam.dto.autenticacion.IniciarSesionRequestDto;
+import com.isam.dto.autenticacion.IniciarSesionResponseDto;
+import com.isam.dto.autenticacion.CerrarSesionRequestDto;
+import com.isam.dto.autenticacion.CerrarSesionResponseDto;
+import com.isam.dto.autenticacion.VerificarTokenRequestDto;
+import com.isam.dto.autenticacion.VerificarTokenResponseDto;
+import com.isam.grpc.usuarios.IniciarSesionRequest;
+import com.isam.grpc.usuarios.CerrarSesionRequest;
+import com.isam.grpc.usuarios.VerificarTokenRequest;
+
 import com.isam.dto.rol.AsignarPermisosRequestDto;
 import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
@@ -36,6 +46,79 @@ import java.util.stream.Collectors;
 
 @Component
 public class UsuariosMapper {
+    // ========================================
+    // SECCIÓN: Autenticación y Sesión
+    // ========================================
+
+    /**
+     * Convierte gRPC IniciarSesionRequest a DTO.
+     */
+    public IniciarSesionRequestDto toDto(IniciarSesionRequest request) {
+        return new IniciarSesionRequestDto(
+            request.getNombreUsuario(),
+            request.getPassword()
+        );
+    }
+
+    /**
+     * Convierte IniciarSesionResponseDto a proto IniciarSesionRequest.Response.
+     */
+    public IniciarSesionRequest.Response toProto(IniciarSesionResponseDto dto) {
+        return IniciarSesionRequest.Response.newBuilder()
+            .setTokenJwt(dto.tokenJwt())
+            .setUsuario(toProto(dto.usuario()))
+            .build();
+    }
+
+    /**
+     * Convierte gRPC CerrarSesionRequest a DTO.
+     */
+    public CerrarSesionRequestDto toDto(CerrarSesionRequest request) {
+        return new CerrarSesionRequestDto();
+    }
+
+    /**
+     * Convierte CerrarSesionResponseDto a proto CerrarSesionRequest.Response.
+     */
+    public CerrarSesionRequest.Response toProto(CerrarSesionResponseDto dto) {
+        return CerrarSesionRequest.Response.newBuilder().build();
+    }
+
+    /**
+     * Convierte gRPC VerificarTokenRequest a DTO.
+     */
+    public VerificarTokenRequestDto toDto(VerificarTokenRequest request) {
+        return new VerificarTokenRequestDto(
+            request.getTokenJwt()
+        );
+    }
+
+    /**
+     * Convierte VerificarTokenResponseDto a proto VerificarTokenRequest.Response.
+     */
+    public VerificarTokenRequest.Response toProto(VerificarTokenResponseDto dto) {
+        VerificarTokenRequest.Response.Builder builder = VerificarTokenRequest.Response.newBuilder()
+            .setEsValido(dto.esValido());
+        
+        if (dto.esValido()) {
+            if (dto.idUsuario() != null && dto.idUsuario().isPresent()) {
+                builder.setIdUsuario(dto.idUsuario().get());
+            }
+            
+            if (dto.nombreUsuario() != null && dto.nombreUsuario().isPresent()) {
+                builder.setNombreUsuario(dto.nombreUsuario().get());
+            }
+            
+            if (dto.roles() != null && !dto.roles().isEmpty()) {
+                List<RolProto> rolesProto = dto.roles().stream()
+                    .map(this::toProto)
+                    .collect(Collectors.toList());
+                builder.addAllRoles(rolesProto);
+            }
+        }
+        
+        return builder.build();
+    }
 
     /**
      * Convierte gRPC CrearRolRequest a DTO.

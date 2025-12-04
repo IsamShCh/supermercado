@@ -1,20 +1,19 @@
 package com.isam.grpc.server;
 
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.isam.grpc.interceptor.ExceptionInterceptor;
+import com.isam.grpc.interceptor.AuthorizationInterceptor;
 import com.isam.grpc.server.service.GrpcServerService;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import lombok.RequiredArgsConstructor;
-
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
@@ -23,12 +22,13 @@ public class GrpcServer {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
 
-    @Value("${grpc.port:9092}")
+    @Value("${grpc.port:9093}")
     int port;
     private Server server;
 
     private final GrpcServerService grpcServerService;
     private final ExceptionInterceptor exceptionInterceptor;
+    private final AuthorizationInterceptor authorizationInterceptor;
 
 
     public void start() throws IOException, InterruptedException {
@@ -36,6 +36,7 @@ public class GrpcServer {
         server = ServerBuilder.forPort(port)
                 .addService(grpcServerService)
                 .intercept(exceptionInterceptor)
+                .intercept(authorizationInterceptor)
                 .build()
                 .start();
         LOG.info("Los siguientes servicios están disponibles:");
@@ -53,7 +54,7 @@ public class GrpcServer {
         if(this.server != null){
             server.shutdown();
         }
-
+        
     }
 
     public void block() throws InterruptedException {

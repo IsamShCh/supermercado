@@ -2,6 +2,11 @@ package com.isam.grpc.server.service;
 
 import org.springframework.stereotype.Service;
 
+import com.isam.dto.autenticacion.IniciarSesionRequestDto;
+import com.isam.dto.autenticacion.VerificarTokenRequestDto;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.isam.grpc.usuarios.*;
 import com.isam.dto.permiso.ListarPermisosRequestDto;
 import com.isam.dto.permiso.ListarPermisosResponseDto;
 import com.isam.dto.rol.AsignarPermisosRequestDto;
@@ -11,12 +16,6 @@ import com.isam.dto.rol.ListarRolesRequestDto;
 import com.isam.dto.rol.ListarRolesResponseDto;
 import com.isam.dto.usuario.CrearUsuarioRequestDto;
 import com.isam.dto.usuario.CrearUsuarioResponseDto;
-import com.isam.grpc.usuarios.AsignarPermisosRequest;
-import com.isam.grpc.usuarios.CrearRolRequest;
-import com.isam.grpc.usuarios.CrearUsuarioRequest;
-import com.isam.grpc.usuarios.ListarPermisosRequest;
-import com.isam.grpc.usuarios.ListarRolesRequest;
-import com.isam.grpc.usuarios.UsuarioServiceGrpc;
 import com.isam.mapper.UsuariosMapper;
 import com.isam.service.UsuariosService;
 import io.grpc.stub.StreamObserver;
@@ -36,6 +35,118 @@ public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase
     private final UsuariosService usuariosService;
     private final UsuariosMapper usuariosMapper;
     private final Validator validator;
+
+    // ... (métodos existentes)
+
+    /**
+     * Inicia sesión en el sistema.
+     */
+    @Override
+    public void iniciarSesion(IniciarSesionRequest request, StreamObserver<IniciarSesionRequest.Response> responseObserver) {
+        log.info("Recibida petición de inicio de sesión para: {}", request.getNombreUsuario());
+
+        try {
+            // Convertir request gRPC a DTO
+            IniciarSesionRequestDto dto = usuariosMapper.toDto(request);
+
+            // Validar el DTO
+            Set<ConstraintViolation<IniciarSesionRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errorMessage = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+                
+                responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("Errores de validación: " + errorMessage)
+                    .asRuntimeException());
+                return;
+            }
+
+            // Ejecutar la lógica de negocio
+            var response = usuariosService.iniciarSesion(dto);
+
+            // Convertir respuesta a gRPC y enviar
+            IniciarSesionRequest.Response grpcResponse = usuariosMapper.toProto(response);
+            responseObserver.onNext(grpcResponse);
+            responseObserver.onCompleted();
+
+            log.info("Sesión iniciada exitosamente para: {}", request.getNombreUsuario());
+
+        } catch (Exception e) {
+            log.error("Error al iniciar sesión", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Cierra la sesión actual.
+     */
+    @Override
+    public void cerrarSesion(CerrarSesionRequest request, StreamObserver<CerrarSesionRequest.Response> responseObserver) {
+        log.info("Recibida petición de cierre de sesión");
+
+        try {
+            // Obtener token del contexto de seguridad
+            // El token se obtiene del header Authorization que fue procesado por AuthorizationInterceptor
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth != null ? auth.getName() : null;
+            String token = auth != null ? (String) auth.getCredentials() : null;
+            
+            // Ejecutar la lógica de negocio
+            usuariosService.cerrarSesion(token);
+
+            // Responder vacío (éxito)
+            CerrarSesionRequest.Response grpcResponse = CerrarSesionRequest.Response.newBuilder().build();
+            responseObserver.onNext(grpcResponse);
+            responseObserver.onCompleted();
+
+            log.info("Sesión cerrada correctamente para usuario: {}", username);
+
+        } catch (Exception e) {
+            log.error("Error al cerrar sesión", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Verifica la validez de un token JWT.
+     */
+    @Override
+    public void verificarToken(VerificarTokenRequest request, StreamObserver<VerificarTokenRequest.Response> responseObserver) {
+        log.debug("Recibida petición de verificación de token");
+
+        try {
+            // Convertir request gRPC a DTO
+            VerificarTokenRequestDto dto = usuariosMapper.toDto(request);
+
+            // Validar el DTO
+            Set<ConstraintViolation<VerificarTokenRequestDto>> violations = validator.validate(dto);
+            if (!violations.isEmpty()) {
+                String errorMessage = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+                
+                responseObserver.onError(io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("Errores de validación: " + errorMessage)
+                    .asRuntimeException());
+                return;
+            }
+
+            // Ejecutar la lógica de negocio
+            var response = usuariosService.verificarToken(dto);
+
+            // Convertir respuesta a gRPC y enviar
+            VerificarTokenRequest.Response grpcResponse = usuariosMapper.toProto(response);
+            responseObserver.onNext(grpcResponse);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            log.error("Error al verificar token", e);
+            throw e;
+        }
+    }
+    
+    // ... (otros métodos existentes)
 
     /**
      * Crea un nuevo usuario en el sistema.

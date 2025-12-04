@@ -1,5 +1,12 @@
 package com.isam.service;
 
+import com.isam.dto.autenticacion.IniciarSesionRequestDto;
+import com.isam.dto.autenticacion.IniciarSesionResponseDto;
+import com.isam.dto.autenticacion.VerificarTokenRequestDto;
+import com.isam.dto.autenticacion.VerificarTokenResponseDto;
+import com.isam.model.Sesion;
+import com.isam.model.enums.EstadoSesion;
+import com.isam.util.JwtUtil;
 import com.isam.dto.permiso.ListarPermisosRequestDto;
 import com.isam.dto.permiso.ListarPermisosResponseDto;
 import com.isam.dto.permiso.PermisoDto;
@@ -25,6 +32,7 @@ import com.isam.repository.UsuarioRepository;
 import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
 import com.isam.repository.SesionRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import io.grpc.Status;
 import jakarta.annotation.PostConstruct;
@@ -36,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Servicio para la gestión de usuarios.
@@ -53,7 +62,146 @@ public class UsuariosService {
     private final SesionRepository sesionRepository;
     private final UsuariosMapper usuariosMapper;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
+
+    /**
+     * Inicia sesión en el sistema.
+     * @param dto Credenciales del usuario
+     * @return Token JWT y datos del usuario
+     */
+    @Transactional
+    public IniciarSesionResponseDto iniciarSesion(IniciarSesionRequestDto dto) {
+        log.info("Intento de inicio de sesión para usuario: {}", dto.nombreUsuario());
+
+        // Buscar usuario
+        Usuario usuario = usuarioRepository.findByNombreUsuario(dto.nombreUsuario())
+            .orElseThrow(() -> Status.UNAUTHENTICATED
+                .withDescription("Credenciales inválidas")
+                .asRuntimeException());
+
+        // Verificar contraseña
+        if (!passwordEncoder.matches(dto.password(), usuario.getHashContrasena())) {
+            throw Status.UNAUTHENTICATED
+                .withDescription("Credenciales inválidas")
+                .asRuntimeException();
+        }
+
+        // Verificar estado del usuario
+        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
+            throw Status.PERMISSION_DENIED
+                .withDescription("El usuario no está activo")
+                .asRuntimeException();
+        }
+
+        // Actualizar fecha de último acceso
+        usuario.setFechaUltimoAcceso(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+
+        // Generar Token
+        String token = jwtUtil.generateToken(usuario);
+
+        // Crear Sesión
+        Sesion sesion = new Sesion(token, usuario);
+        sesionRepository.save(sesion);
+
+        log.info("Sesión iniciada exitosamente para: {}", usuario.getNombreUsuario());
+        
+        return new IniciarSesionResponseDto(token, usuariosMapper.toDto(usuario));
+    }
+
+    /**
+     * Cierra la sesión invalidando el token.
+     * @param token Token JWT a invalidar
+     */
+    @Transactional
+    public void cerrarSesion(String token) {
+        log.info("Cerrando sesión para token: {}...", token != null && token.length() > 10 ? token.substring(0, 10) : "null");
+
+        if (token == null || token.isBlank()) {
+            
+            throw Status.INVALID_ARGUMENT
+                .withDescription("No se puede cerrar sesion. Token no proporcionado")
+                .asRuntimeException();
+        }
+
+        // Eliminar prefijo "Bearer " si existe
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        // Buscar sesión
+        Optional<Sesion> sesionOpt = sesionRepository.findByTokenJWT(token);
+        
+        if (sesionOpt.isPresent()) {
+
+            if(sesionOpt.get().getEstado() == EstadoSesion.CERRADA){
+                throw Status.FAILED_PRECONDITION
+                    .withDescription("La sesión ya está cerrada")
+                    .asRuntimeException();
+            }
+
+            Sesion sesion = sesionOpt.get();
+            sesion.setEstado(EstadoSesion.CERRADA);
+            sesion.setFechaHoraFin(LocalDateTime.now());
+            sesionRepository.save(sesion);
+            log.info("Sesión cerrada exitosamente");
+        } else {
+            log.warn("No se encontró sesión activa para el token proporcionado");
+            throw Status.NOT_FOUND
+                .withDescription("No se encontró sesión activa para el token proporcionado")
+                .asRuntimeException();
+        }
+    }
+
+    /**
+     * Verifica si un token JWT es válido.
+     * @param dto Token a verificar
+     * @return Resultado de la verificación y datos del usuario
+     */
+    @Transactional(readOnly = true)
+    public VerificarTokenResponseDto verificarToken(VerificarTokenRequestDto dto) {
+        String token = dto.tokenJwt();
+        
+        if (token == null || token.isBlank()) {
+            return new VerificarTokenResponseDto(false, Optional.empty(), Optional.empty(), List.of());
+        }
+        
+        // Eliminar prefijo "Bearer " si existe
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        // Validar estructura y firma del token
+        if (!jwtUtil.validateToken(token)) {
+            return new VerificarTokenResponseDto(false, Optional.empty(), Optional.empty(), List.of());
+        }
+
+        // Verificar estado de la sesión en BD
+        Optional<Sesion> sesionOpt = sesionRepository.findByTokenJWT(token);
+        if (sesionOpt.isEmpty() || sesionOpt.get().getEstado() != EstadoSesion.ACTIVA) {
+            return new VerificarTokenResponseDto(false, Optional.empty(), Optional.empty(), List.of());
+        }
+
+        // Extraer datos
+        String idUsuario = jwtUtil.extractIdUsuario(token);
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
+        
+        if (usuario == null) {
+            return new VerificarTokenResponseDto(false, Optional.empty(), Optional.empty(), List.of());
+        }
+
+        List<RolDto> roles = usuario.getRoles().stream()
+            .map(usuariosMapper::toDto)
+            .toList();
+
+        return new VerificarTokenResponseDto(
+            true, 
+            Optional.of(usuario.getIdUsuario()), 
+            Optional.of(usuario.getNombreUsuario()), 
+            roles
+        );
+    }
 
     /**
      * Crea un nuevo usuario en el sistema.
@@ -61,6 +209,7 @@ public class UsuariosService {
      * @return DTO con los datos del usuario creado
      */
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_USUARIOS')")
     public CrearUsuarioResponseDto crearUsuario(CrearUsuarioRequestDto dto) {
         log.info("Creando usuario con nombre: {}", dto.nombreUsuario());
 
@@ -124,6 +273,7 @@ public class UsuariosService {
      * @return DTO con los datos del rol creado
      */
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_ROLES')")
     public CrearRolResponseDto crearRol(CrearRolRequestDto dto) {
         log.info("Creando rol con nombre: {}", dto.nombreRol());
 
@@ -149,9 +299,11 @@ public class UsuariosService {
     }
 
     /**
-     * Inicializa los permisos del sistema si no existen.
-     * Este método se ejecuta al iniciar la aplicación y crea los permisos básicos
-     * para cada recurso y acción del sistema.
+     * Inicializa los permisos del sistema y el usuario admin por defecto si no existen.
+     * Este método se ejecuta al iniciar la aplicación y crea:
+     * 1. Los permisos básicos para cada recurso y acción del sistema
+     * 2. Un rol "ADMIN" con todos los permisos
+     * 3. Un usuario "admin" con el rol ADMIN (solo si la BD está vacía)
      */
     @PostConstruct
     @Transactional
@@ -199,6 +351,66 @@ public class UsuariosService {
         } else {
             log.info("Todos los permisos del sistema ya existen");
         }
+        
+        // Inicializar usuario admin solo si la BD está vacía
+        inicializarUsuarioAdmin();
+    }
+    
+    /**
+     * Crea el usuario admin por defecto si no existen usuarios en el sistema.
+     * Credenciales:
+     * - Usuario: admin
+     * - Contraseña: admin123
+     *
+     * IMPORTANTE: Esta contraseña debe cambiarse en el primer inicio de sesión.
+     */
+    private void inicializarUsuarioAdmin() {
+        // Verificar si ya existen usuarios en el sistema
+        long cantidadUsuarios = usuarioRepository.count();
+        
+        if (cantidadUsuarios > 0) {
+            log.info("Ya existen {} usuarios en el sistema. No se creará el usuario admin por defecto.", cantidadUsuarios);
+            return;
+        }
+        
+        log.info("Base de datos vacía. Creando usuario admin por defecto...");
+        
+        // Crear o buscar rol ADMIN
+        Rol rolAdmin = rolRepository.findByNombreRol("ADMIN")
+            .orElseGet(() -> {
+                log.info("Creando rol ADMIN...");
+                Rol nuevoRol = new Rol();
+                nuevoRol.setNombreRol("ADMIN");
+                nuevoRol.setDescripcionRol("Administrador del sistema con todos los permisos");
+                nuevoRol.setPermisos(new java.util.ArrayList<>()); // Inicializar lista vacía
+                return rolRepository.save(nuevoRol);
+            });
+        
+        // Asignar todos los permisos al rol ADMIN
+        List<Permiso> todosLosPermisos = permisoRepository.findAll();
+        
+        // Asegurar que la lista de permisos esté inicializada
+        if (rolAdmin.getPermisos() == null) {
+            rolAdmin.setPermisos(new java.util.ArrayList<>());
+        }
+        
+        rolAdmin.getPermisos().clear();
+        rolAdmin.getPermisos().addAll(todosLosPermisos);
+        rolRepository.save(rolAdmin);
+        log.info("Se asignaron {} permisos al rol ADMIN", todosLosPermisos.size());
+        
+        // Crear usuario admin
+        Usuario admin = new Usuario();
+        admin.setNombreUsuario("admin");
+        admin.setHashContrasena(passwordEncoder.encode("admin123"));
+        admin.setNombreCompleto("Administrador del Sistema");
+        admin.setEstado(EstadoUsuario.ACTIVO);
+        admin.setFechaCreacion(LocalDateTime.now());
+        admin.setRequiereCambioContrasena(true); // Forzar cambio de contraseña
+        admin.setRoles(List.of(rolAdmin));
+        
+        usuarioRepository.save(admin);
+        
     }
     
     /**
@@ -207,6 +419,7 @@ public class UsuariosService {
      * @return DTO de respuesta vacío en caso de éxito
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_ROLES')")
     public AsignarPermisosResponseDto asignarPermisosARol(AsignarPermisosRequestDto dto) {
         log.info("Asignando permisos al rol: {}", dto.idRol());
         
@@ -240,6 +453,19 @@ public class UsuariosService {
         
         // Guardar el rol con los nuevos permisos
         rolRepository.save(rol);
+
+        // Invalidar todas las sesiones activas de los usuarios que poseen este rol
+        usuarioRepository.findByRolesContaining(rol).forEach(usuario -> {
+            sesionRepository.findByUsuarioIdUsuario(usuario.getIdUsuario()).stream()
+                .filter(sesion -> sesion.getEstado() == EstadoSesion.ACTIVA)
+                .forEach(sesion -> {
+                    sesion.setEstado(EstadoSesion.CERRADA);
+                    sesion.setFechaHoraFin(LocalDateTime.now());
+                    sesionRepository.save(sesion);
+                    log.info("Sesión {} invalidada por cambio de permisos del rol '{}' para usuario '{}'",
+                            sesion.getTokenJWT(), rol.getNombreRol(), usuario.getNombreUsuario());
+                });
+        });
         
         log.info("Se asignaron {} permisos al rol '{}'",
             permisosAsignar.size(), rol.getNombreRol());
@@ -252,6 +478,7 @@ public class UsuariosService {
      * @return DTO con la lista de roles
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_ROLES')")
     public ListarRolesResponseDto listarRoles(ListarRolesRequestDto dto) {
         log.info("Listando todos los roles");
         List<Rol> roles = rolRepository.findAll();
@@ -268,6 +495,7 @@ public class UsuariosService {
      * @return DTO con la lista de permisos
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_PERMISOS')")
     public ListarPermisosResponseDto listarPermisos(ListarPermisosRequestDto dto) {
         log.info("Listando todos los permisos");
         List<Permiso> permisos = permisoRepository.findAll();
@@ -284,6 +512,7 @@ public class UsuariosService {
      * @return DTO con la lista de usuarios encontrados
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_USUARIOS')")
     public ConsultarUsuariosResponseDto consultarUsuarios(ConsultarUsuariosRequestDto dto) {
         log.info("Consultando usuarios con filtros: idUsuario={}, nombreUsuario={}, idRol={}", 
             dto.idUsuario().orElse("N/A"), 
@@ -297,6 +526,7 @@ public class UsuariosService {
                 dto.nombreUsuario(), 
                 dto.idRol()
             );
+        // org.springframework.data.jpa.domain.Specification<Usuario> spec = buildSpecification(dto); // En enfoque de arriba es mejor
 
         // Ejecutar consulta
         List<Usuario> usuarios = usuarioRepository.findAll(spec);
@@ -308,6 +538,36 @@ public class UsuariosService {
 
         log.info("Se encontraron {} usuarios", usuarioDtos.size());
         return new com.isam.dto.usuario.ConsultarUsuariosResponseDto(usuarioDtos);
+    }
+
+    /**
+     * Construye la especificación de búsqueda para usuarios (Estilo Catalogo).
+     */
+    private org.springframework.data.jpa.domain.Specification<Usuario> buildSpecification(com.isam.dto.usuario.ConsultarUsuariosRequestDto dto) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+
+            // Filtro por ID Usuario
+            if (dto.idUsuario().isPresent() && !dto.idUsuario().get().isEmpty()) {
+                predicates.add(cb.equal(root.get("idUsuario"), dto.idUsuario().get()));
+            }
+
+            // Filtro por Nombre Usuario (LIKE)
+            if (dto.nombreUsuario().isPresent() && !dto.nombreUsuario().get().isEmpty()) {
+                predicates.add(cb.like(
+                    cb.lower(root.get("nombreUsuario")), 
+                    "%" + dto.nombreUsuario().get().toLowerCase() + "%"
+                ));
+            }
+
+            // Filtro por Rol (JOIN)
+            if (dto.idRol().isPresent() && !dto.idRol().get().isEmpty()) {
+                jakarta.persistence.criteria.Join<Usuario, Rol> rolesJoin = root.join("roles", jakarta.persistence.criteria.JoinType.INNER);
+                predicates.add(cb.equal(rolesJoin.get("idRol"), dto.idRol().get()));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
     }
     
     /**

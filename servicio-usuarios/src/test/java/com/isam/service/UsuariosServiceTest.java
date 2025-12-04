@@ -19,7 +19,9 @@ import com.isam.model.enums.AccionPermiso;
 import com.isam.model.enums.EstadoUsuario;
 import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
+import com.isam.repository.SesionRepository;
 import com.isam.repository.UsuarioRepository;
+import com.isam.util.JwtUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +29,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -42,10 +48,11 @@ import java.util.List;
  */
 @DataJpaTest(includeFilters = @ComponentScan.Filter(
     type = FilterType.ASSIGNABLE_TYPE,
-    classes = {UsuariosService.class, UsuariosMapper.class, SecurityConfig.class}
+    classes = {UsuariosService.class, UsuariosMapper.class}
 ))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@Import(UsuariosServiceTest.Config.class)
 class UsuariosServiceTest {
 
     @Autowired
@@ -61,33 +68,42 @@ class UsuariosServiceTest {
     private PermisoRepository permisoRepository;
 
     @Autowired
+    private SesionRepository sesionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private Rol rolAdmin;
     private Rol rolVendedor;
 
+    @TestConfiguration
+    static class Config {
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+            return new BCryptPasswordEncoder();
+        }
+
+        @Bean
+        public JwtUtil jwtUtil() {
+            return new JwtUtil();
+        }
+    }
+
     @BeforeEach
     void setUp() {
         // Limpiar base de datos
+        sesionRepository.deleteAll();
         usuarioRepository.deleteAll();
         rolRepository.deleteAll();
         permisoRepository.deleteAll();
-
-        // Crear roles de prueba
-        rolAdmin = new Rol();
-        rolAdmin.setNombreRol("ADMIN");
-        rolAdmin.setDescripcionRol("Administrador del sistema");
-        rolAdmin = rolRepository.save(rolAdmin);
-
-        rolVendedor = new Rol();
-        rolVendedor.setNombreRol("VENDEDOR");
-        rolVendedor.setDescripcionRol("Vendedor de tienda");
-        rolVendedor = rolRepository.save(rolVendedor);
+        
+        // No crear roles aquí - cada test creará los que necesite
     }
 
     @Test
     void crearRol_DatosValidos_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "Administrador",
             "Rol con permisos completos de administración"
@@ -112,6 +128,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_SinDescripcion_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "Cajero",
             null
@@ -136,6 +153,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_NombreDuplicado_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         Rol rolExistente = new Rol();
         rolExistente.setNombreRol("Supervisor");
         rolExistente.setDescripcionRol("Rol de supervisión");
@@ -159,6 +177,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_NombreMinimo_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "ABC",
             "Rol con nombre mínimo de 3 caracteres"
@@ -177,6 +196,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_NombreLargo_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         String nombreLargo = "A".repeat(100); // 100 caracteres (máximo permitido)
         CrearRolRequestDto dto = new CrearRolRequestDto(
             nombreLargo,
@@ -196,6 +216,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_DescripcionLarga_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         String descripcionLarga = "D".repeat(500); // 500 caracteres (máximo permitido)
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "RolDescripcionLarga",
@@ -242,6 +263,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_VerificarPersistencia_RolSeGuardaCorrectamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "Auditor",
             "Rol de auditoría y control"
@@ -263,6 +285,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_NombresConEspacios_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "Jefe de Almacén",
             "Rol con espacios en el nombre"
@@ -280,6 +303,7 @@ class UsuariosServiceTest {
     @Test
     void crearRol_NombresConCaracteresEspeciales_CreaRolExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearRolRequestDto dto = new CrearRolRequestDto(
             "Admin-TI",
             "Rol con guión en el nombre"
@@ -297,6 +321,7 @@ class UsuariosServiceTest {
     @Test
     void asignarPermisosARol_RolExistenteYPermisosValidos_AsignaCorrectamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear rol
         Rol rol = new Rol();
         rol.setNombreRol("Gerente");
@@ -337,6 +362,7 @@ class UsuariosServiceTest {
     @Test
     void asignarPermisosARol_RolNoExistente_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles
         String idRolInexistente = "rol-inexistente";
         Permiso permiso = new Permiso("CREAR_USUARIOS_TEST2", "Crear usuarios test2", "usuarios", AccionPermiso.CREAR);
         permiso = permisoRepository.save(permiso);
@@ -359,6 +385,7 @@ class UsuariosServiceTest {
     @Test
     void asignarPermisosARol_PermisoNoExistente_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear rol
         Rol rol = new Rol();
         rol.setNombreRol("Supervisor");
@@ -386,6 +413,7 @@ class UsuariosServiceTest {
     @Test
     void asignarPermisosARol_ReemplazaPermisosExistentes_ReemplazaCorrectamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear rol
         Rol rol = new Rol();
         rol.setNombreRol("Administrador");
@@ -438,6 +466,7 @@ class UsuariosServiceTest {
     @Test
     void asignarPermisosARol_ListaVacia_LimpiaPermisos() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear rol
         Rol rol = new Rol();
         rol.setNombreRol("Temporero");
@@ -471,6 +500,7 @@ class UsuariosServiceTest {
     @Test
     void inicializarPermisos_BaseDatosVacia_CreaTodosLosPermisos() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // La base de datos está vacía (se limpió en setUp)
 
         // When
@@ -494,6 +524,7 @@ class UsuariosServiceTest {
     @Test
     void inicializarPermisos_PermisosExistentes_NoCreaDuplicados() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         // Crear algunos permisos manualmente con nombre único
         Permiso permisoExistente = new Permiso("CREAR_USUARIOS_TEST5", "Crear usuarios test5", "usuarios", AccionPermiso.CREAR);
         permisoRepository.save(permisoExistente);
@@ -665,6 +696,13 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_DatosValidos_CreaUsuarioExitosamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear rol necesario
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+        
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "jdoe",
             "Password123!",
@@ -694,6 +732,18 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_ConMultiplesRoles_AsignaRolesCorrectamente() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear roles necesarios
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+        
+        rolVendedor = new Rol();
+        rolVendedor.setNombreRol("VENDEDOR");
+        rolVendedor.setDescripcionRol("Vendedor de tienda");
+        rolVendedor = rolRepository.save(rolVendedor);
+        
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "mjones",
             "SecurePass456!",
@@ -720,6 +770,13 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_PasswordHasheadaCorrectamente_NoGuardaPasswordEnTextoPlano() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear rol necesario
+        rolVendedor = new Rol();
+        rolVendedor.setNombreRol("VENDEDOR");
+        rolVendedor.setDescripcionRol("Vendedor de tienda");
+        rolVendedor = rolRepository.save(rolVendedor);
+        
         String passwordOriginal = "MySecretPassword123!";
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "testuser",
@@ -748,6 +805,18 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_NombreUsuarioDuplicado_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear roles necesarios
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+        
+        rolVendedor = new Rol();
+        rolVendedor.setNombreRol("VENDEDOR");
+        rolVendedor.setDescripcionRol("Vendedor de tienda");
+        rolVendedor = rolRepository.save(rolVendedor);
+        
         CrearUsuarioRequestDto dto1 = new CrearUsuarioRequestDto(
             "duplicate",
             "Password123!",
@@ -776,6 +845,7 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_SinRoles_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "noroles",
             "Password123!",
@@ -796,6 +866,7 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_RolNoExistente_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "invalidrole",
             "Password123!",
@@ -817,6 +888,13 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_AlgunosRolesNoExisten_LanzaExcepcion() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear rol necesario
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+        
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "partialinvalid",
             "Password123!",
@@ -839,6 +917,13 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_VerificaEstadoInicial_EstadoActivoPorDefecto() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear rol necesario
+        rolVendedor = new Rol();
+        rolVendedor.setNombreRol("VENDEDOR");
+        rolVendedor.setDescripcionRol("Vendedor de tienda");
+        rolVendedor = rolRepository.save(rolVendedor);
+        
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "activeuser",
             "Password123!",
@@ -860,6 +945,13 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_VerificaPersistencia_UsuarioGuardadoEnBaseDeDatos() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear rol necesario
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+        
         CrearUsuarioRequestDto dto = new CrearUsuarioRequestDto(
             "persistent",
             "Password123!",
@@ -882,6 +974,18 @@ class UsuariosServiceTest {
     @Test
     void crearUsuario_NombresUsuarioDiferentes_CreaMultiplesUsuarios() {
         // Given
+        rolRepository.deleteAll(); // Limpiar roles creados en setUp
+        // Recrear roles necesarios
+        rolAdmin = new Rol();
+        rolAdmin.setNombreRol("ADMIN");
+        rolAdmin.setDescripcionRol("Administrador del sistema");
+        rolAdmin = rolRepository.save(rolAdmin);
+        
+        rolVendedor = new Rol();
+        rolVendedor.setNombreRol("VENDEDOR");
+        rolVendedor.setDescripcionRol("Vendedor de tienda");
+        rolVendedor = rolRepository.save(rolVendedor);
+        
         CrearUsuarioRequestDto dto1 = new CrearUsuarioRequestDto(
             "user1",
             "Password123!",

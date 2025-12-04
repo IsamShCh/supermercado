@@ -17,6 +17,8 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 
 // JPA Persistence Exceptions
 import jakarta.persistence.PersistenceException;
@@ -95,7 +97,27 @@ public class ExceptionUtils {
      * Maps specific exception types to gRPC status codes with appropriate messages
      */
     private static <T extends GeneratedMessage> com.google.rpc.Status mapExceptionToStatus(Throwable cause, T mensajeGenerico) {
-        
+
+
+        // ============================================================
+        // 0) SPRING SECURITY EXCEPTIONS
+        // ============================================================
+        // Caso 1: Usuario anónimo intenta acceder a recurso protegido
+        if (cause instanceof AuthenticationCredentialsNotFoundException) {
+            return buildStatus(Code.UNAUTHENTICATED_VALUE, // Código gRPC 16
+                "No autenticado. Debe iniciar sesión y enviar un token válido para realizar esta acción.",
+                null, mensajeGenerico);
+        }
+
+        // Caso 2: Usuario logueado pero sin permisos suficientes.
+        if (cause instanceof org.springframework.security.access.AccessDeniedException) {
+            return buildStatus(Code.PERMISSION_DENIED_VALUE, // Código gRPC 7
+                "Acceso denegado. No tiene los permisos necesarios para realizar esta acción.",
+                null, mensajeGenerico);
+        }
+
+
+
         // ============================================================
         // 1) SPRING DATA ACCESS EXCEPTIONS
         // ============================================================

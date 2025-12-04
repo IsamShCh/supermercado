@@ -49,4 +49,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String>, JpaSp
      * @return Lista de usuarios que coinciden con el criterio
      */
     java.util.List<Usuario> findByNombreCompletoContainingIgnoreCase(String nombreCompleto);
+
+    /**
+     * Busca usuarios que tienen un rol específico.
+     * @param rol Rol por el cual buscar usuarios
+     * @return Lista de usuarios que tienen el rol especificado
+     */
+    java.util.List<Usuario> findByRolesContaining(com.isam.model.Rol rol);
 }

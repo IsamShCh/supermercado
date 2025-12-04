@@ -20,7 +20,7 @@ import com.isam.model.enums.EstadoSesion;
 public class Sesion {
     
     @Id
-    @Column(name = "TokenJWT", length = 500)
+    @Column(name = "TokenJWT", length = 4096)
     private String tokenJWT;
     
     @NotNull(message = "El usuario es obligatorio")
