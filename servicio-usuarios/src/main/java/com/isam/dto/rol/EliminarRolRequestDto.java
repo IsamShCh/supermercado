@@ -1,6 +1,7 @@
 package com.isam.dto.rol;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * DTO para la eliminación de roles.
@@ -10,5 +11,6 @@ import jakarta.validation.constraints.NotBlank;
 public record EliminarRolRequestDto(
     
     @NotBlank(message = "El ID del rol es obligatorio")
+    @Size(min = 36, max = 36, message = "El ID del rol debe tener exactamente 36 caracteres")
     String idRol
 ) {}
