@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +51,8 @@ class UsuariosMapperTest {
     void setUp() {
         mapper = new UsuariosMapper();
 
+        rolDto = new RolDto("ROL-001", "Administrador", "Rol de administrador", new ArrayList<>());
+        
         usuarioDto = new UsuarioDto(
             "USR-001",
             "jdoe",
@@ -58,10 +61,9 @@ class UsuariosMapperTest {
             "2023-01-01T10:00:00",
             Optional.of("2023-01-02T15:30:00"),
             false,
-            List.of(new RolDto("ROL-001", "Admin", "Administrador"))
+            List.of(rolDto)
         );
 
-        rolDto = new RolDto("ROL-001", "Administrador", "Rol de administrador");
         permisoDto = new PermisoDto("PERM-001", "Gestionar Usuarios", "Permite gestionar usuarios", "usuarios", AccionPermiso.CREAR);
     }
 
@@ -309,7 +311,7 @@ class UsuariosMapperTest {
     @Test
     void toProto_CrearRolResponseDto_ConvierteCorrectamente() {
         // Given
-        RolDto rolDto = new RolDto("ROL-001", "Nuevo Rol", "Descripción del nuevo rol");
+        RolDto rolDto = new RolDto("ROL-001", "Nuevo Rol", "Descripción del nuevo rol", new ArrayList<>());
         CrearRolResponseDto responseDto = new CrearRolResponseDto(rolDto);
 
         // When

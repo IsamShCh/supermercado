@@ -40,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -134,10 +135,18 @@ public class UsuariosMapper {
      * Convierte entidad Rol a RolDto.
      */
     public RolDto toDto(Rol rol) {
+        List<PermisoDto> permisosDto = new ArrayList<>();
+        if (rol.getPermisos() != null) {
+            permisosDto = rol.getPermisos().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        }
+
         return new RolDto(
             rol.getIdRol(),
             rol.getNombreRol(),
-            rol.getDescripcionRol()
+            rol.getDescripcionRol(),
+            permisosDto
         );
     }
 
@@ -155,6 +164,13 @@ public class UsuariosMapper {
         
         if (rolDto.descripcion() != null) {
             builder.setDescripcion(rolDto.descripcion());
+        }
+
+        if (rolDto.permisos() != null && !rolDto.permisos().isEmpty()) {
+            List<PermisoProto> permisosProto = rolDto.permisos().stream()
+                .map(this::toProto)
+                .collect(Collectors.toList());
+            builder.addAllPermisos(permisosProto);
         }
         
         return builder.build();
@@ -539,10 +555,18 @@ public class UsuariosMapper {
             return null;
         }
 
+        List<PermisoDto> permisos = new ArrayList<>();
+        if (proto.getPermisosCount() > 0) {
+            permisos = proto.getPermisosList().stream()
+                .map(this::toDtoFromProto)
+                .collect(Collectors.toList());
+        }
+
         return new RolDto(
             proto.getIdRol(),
             proto.getNombreRol(),
-            proto.getDescripcion()
+            proto.getDescripcion(),
+            permisos
         );
     }
 

@@ -44,6 +44,7 @@ message RolProto {
     string id_rol = 1;
     string nombre_rol = 2;
     string descripcion = 3;
+    repeated PermisoProto permisos = 4;
 }
 
 message PermisoProto {

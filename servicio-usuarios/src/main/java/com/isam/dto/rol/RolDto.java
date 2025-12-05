@@ -1,5 +1,8 @@
 package com.isam.dto.rol;
 
+import java.util.List;
+import com.isam.dto.permiso.PermisoDto;
+
 /**
  * DTO para la representación de roles en respuestas.
  * Contiene los datos del rol.
@@ -11,5 +14,7 @@ public record RolDto(
     
     String nombreRol,
     
-    String descripcion
+    String descripcion,
+
+    List<PermisoDto> permisos
 ) {}
