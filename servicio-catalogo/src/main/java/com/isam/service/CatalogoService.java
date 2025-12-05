@@ -45,6 +45,7 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +61,7 @@ public class CatalogoService {
      * Este método contiene la lógica empresarial para la creación de productos.
      */
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_PRODUCTOS')")
     public Producto crearProducto(CrearProductoDto dto) {
         System.out.println("DEBUG: Service creating product from DTO: " + dto);
         System.out.println("DEBUG: DTO PoliticaRotacion: " + dto.politicaRotacion());
@@ -136,6 +138,7 @@ public class CatalogoService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('LEER_PRODUCTOS')")
     public Producto consultarProducto(ConsultarProductoDto consultarProductoDto){
         Producto productoEntity = productoRepository.findBySku(consultarProductoDto.sku())
         .orElseThrow(() -> new EntityNotFoundException(
@@ -145,6 +148,7 @@ public class CatalogoService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_PRODUCTOS')")
     public ListaProductosDto listarProductos(ListarProductosRequestDto dto) {
         // Paginación por defecto
         Integer page = 1;
@@ -229,6 +233,7 @@ public class CatalogoService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_CATEGORIAS')")
     public Categoria crearCategoria(CrearCategoriaDto dto){
         // Validar el DTO
         if (dto.nombreCategoria() == null || dto.nombreCategoria().isBlank()) {
@@ -253,6 +258,7 @@ public class CatalogoService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_PRODUCTOS')")
     public ListaProductosDto buscarProductos(BuscarProductosDto dto) {
         // Manejamos la paginación (Igual que en listarProductos)
         Integer page = 1;
@@ -390,6 +396,7 @@ public class CatalogoService {
      * @return El producto descatalogado
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_PRODUCTOS')")
     public Producto descatalogarProducto(DescatalogarProductoDto dto) {
         Producto producto = productoRepository.findBySku(dto.sku())
             .orElseThrow(() -> new EntityNotFoundException(
@@ -423,6 +430,7 @@ public class CatalogoService {
      * @return El producto recatalogado
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_PRODUCTOS')")
     public Producto recatalogarProducto(RecatalogarProductoDto dto) {
         Producto producto = productoRepository.findBySku(dto.sku())
             .orElseThrow(() -> new EntityNotFoundException(
@@ -461,6 +469,7 @@ public class CatalogoService {
      * Este método contiene la lógica empresarial para la creación de ofertas.
      */
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_OFERTAS')")
     public Oferta crearOferta(CrearOfertaDto dto) {
         // Verificar que el producto existe
         Producto producto = productoRepository.findBySku(dto.sku())
@@ -535,6 +544,7 @@ public class CatalogoService {
      * @return La categoría modificada
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_CATEGORIAS')")
     public Categoria modificarCategoria(ModificarCategoriaDto dto) {
         // Buscar la categoría por ID
         Categoria categoria = categoriaRepository.findById(dto.idCategoria())
@@ -570,6 +580,7 @@ public class CatalogoService {
      * @return El producto modificado
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_PRODUCTOS')")
     public Producto modificarProducto(ModificarProductoDto dto) {
         // Buscar el producto por SKU
         Producto producto = productoRepository.findBySku(dto.sku())
@@ -631,6 +642,7 @@ public class CatalogoService {
      * @return El producto con las etiquetas actualizadas
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_PRODUCTOS')")
     public Producto asignarEtiquetas(com.isam.dto.producto.AsignarEtiquetasDto dto) {
         // Buscar el producto por SKU
         Producto producto = productoRepository.findBySku(dto.sku())
@@ -676,6 +688,7 @@ public class CatalogoService {
      * @return ResultadoTraduccionDto con el código de entrada y los códigos de salida
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_PRODUCTOS')")
     public com.isam.dto.producto.ResultadoTraduccionDto traducirIdentificador(com.isam.dto.producto.TraducirIdentificadorRequestDto dto) {
         String codigo = dto.codigo();
         com.isam.dto.producto.TraducirIdentificadorRequestDto.TipoIdentificador tipoEntrada = dto.tipoIdentificador();
