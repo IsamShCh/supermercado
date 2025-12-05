@@ -35,8 +35,6 @@ import org.hibernate.StaleObjectStateException;
 import org.hibernate.exception.JDBCConnectionException;
 import org.hibernate.QueryException;
 
-// Bean Validation - Note: Using fully qualified name to avoid collision with Hibernate's ConstraintViolationException
-// import jakarta.validation.ConstraintViolationException;
 
 // Transaction Exceptions
 import org.springframework.transaction.TransactionException;

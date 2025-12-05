@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.grpc.Status;
 
@@ -56,6 +57,7 @@ public class InventarioService {
      * Este método contiene la lógica empresarial para la creación de proveedores.
      */
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_PROVEEDORES')")
     public ProveedorDto agregarProveedor(AgregarProveedorRequestDto dto) {
 
         // Verificar duplicado por nombre ANTES de crear la entidad
@@ -102,6 +104,7 @@ public class InventarioService {
      * Este método crea un nuevo lote y actualiza el inventario correspondiente.
      */
     @Transactional
+    @PreAuthorize("hasAuthority('CREAR_LOTES')")
     public RegistrarNuevasExistenciasResponseDto registrarNuevasExistencias(RegistrarNuevasExistenciasRequestDto dto) {
         
         // Verificar que el proveedor existe
@@ -204,7 +207,7 @@ public class InventarioService {
 
 
 
-    
+    @PreAuthorize("hasAuthority('CREAR_INVENTARIO')")
     public InventarioDto crearInventario(CrearInventarioRequestDto dto) {
         // Validar que solo tenga EAN o PLU, no ambos --> Estos ya deberia comprobarlo el validator
         if (isNotNullOrEmpty(dto.ean()) && isNotNullOrEmpty(dto.plu())) {
@@ -288,6 +291,7 @@ public class InventarioService {
      * incluyendo detalles por lote.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_INVENTARIO')")
     public ConsultarInventarioResponseDto consultarInventario(ConsultarInventarioRequestDto dto) {
         
         // Buscar el inventario para este SKU
@@ -334,6 +338,7 @@ public class InventarioService {
      * Este método traslada una cantidad específica de un lote desde el almacén a la estantería.
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_INVENTARIO')")
     public com.isam.dto.stock.MoverStockEstanteriaResponseDto moverStockEstanteria(
             com.isam.dto.stock.MoverStockEstanteriaRequestDto peticionDto) {
         
@@ -430,6 +435,7 @@ public class InventarioService {
      * Delega la lógica al servicio especializado AjusteInventarioService.
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_INVENTARIO')")
     public com.isam.dto.inventario.AjustarInventarioManualResponseDto ajustarInventarioManual(com.isam.dto.inventario.AjustarInventarioManualRequestDto dto) {
         return ajusteInventarioService.ajustarInventarioManual(dto);
     }
@@ -439,6 +445,7 @@ public class InventarioService {
      * Para almacén, admite dos modalidades: rápida (total) o precisa (por lotes).
      */
     @Transactional
+    @PreAuthorize("hasAuthority('ACTUALIZAR_INVENTARIO')")
     public com.isam.dto.inventario.ContabilizarStockManualResponseDto contabilizarStockManual(
             com.isam.dto.inventario.ContabilizarStockManualRequestDto dto) {
         
