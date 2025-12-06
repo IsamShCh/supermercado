@@ -39,10 +39,10 @@ public class AuthorizationInterceptor implements ServerInterceptor {
         if (token != null && token.startsWith("Bearer ")) {
             String jwt = token.substring(7);
             
-            // 1. Validar firma y expiración del token (JWT puro)
+            // Validar firma y expiración del token, el JWT puro
             if (jwtUtil.validateToken(jwt)) {
                 
-                // 2. Validar estado de la sesión en Base de Datos (Stateful check)
+                // Validar estado de la sesión en Base de Datos (Stateful check)
                 boolean sesionActiva = sesionRepository.findByTokenJWT(jwt)
                         .map(sesion -> sesion.getEstado() == EstadoSesion.ACTIVA)
                         .orElse(false);
@@ -50,7 +50,7 @@ public class AuthorizationInterceptor implements ServerInterceptor {
                 if (sesionActiva) {
                     String username = jwtUtil.extractUsername(jwt);
                     
-                    // Extraer permisos (authorities)
+                    // Extraer permisos, el authorities
                     List<?> rawAuthorities = jwtUtil.extractClaim(jwt, claims -> claims.get("authorities", List.class));
                     
                     if (rawAuthorities != null) {

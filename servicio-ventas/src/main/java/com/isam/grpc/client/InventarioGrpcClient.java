@@ -60,7 +60,16 @@ public class InventarioGrpcClient {
             .build();
         
         try {
-            RegistrarVentaRequest.Response response = inventarioStub.registrarVenta(request);
+            // Inyectar token de seguridad si existe (Propagación de Token)
+            InventarioServiceGrpc.InventarioServiceBlockingStub stubUsar = inventarioStub;
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            
+            if (auth != null && auth.getCredentials() != null) {
+                String token = auth.getCredentials().toString();
+                stubUsar = inventarioStub.withCallCredentials(new BearerTokenCallCredentials(token));
+            }
+            
+            RegistrarVentaRequest.Response response = stubUsar.registrarVenta(request);
             log.info("Venta registrada exitosamente en inventario: Ticket='{}', Movimientos={}",
                 numeroTicket, response.getMovimientosCount());
         } catch (StatusRuntimeException e) {

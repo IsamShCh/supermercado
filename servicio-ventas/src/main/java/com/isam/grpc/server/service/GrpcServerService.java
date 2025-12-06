@@ -39,10 +39,15 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
     public void crearNuevoTicket(CrearNuevoTicketRequest request, StreamObserver<Response> responseObserver) {
         log.info("Iniciando creación de nuevo ticket temporal");
         
-        // TODO: Obtener ID de usuario y nombre del contexto de autenticación
-        // Por ahora usamos valores de ejemplo
-        String idUsuario = "usuario-temporal";
-        String nombreCajero = "Cajero Temporal";
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        
+        if (auth == null || !auth.isAuthenticated()) {
+             responseObserver.onError(Status.UNAUTHENTICATED.withDescription("Usuario no autenticado").asRuntimeException());
+             return;
+        }
+
+        String idUsuario = auth.getName();
+        String nombreCajero = auth.getName();
         
         // Llamar al servicio
         CrearNuevoTicketResponseDto responseDto = ventasService.crearNuevoTicket(idUsuario, nombreCajero);
@@ -55,8 +60,6 @@ public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
         // Construir respuest
         responseObserver.onNext(responseProto);
         responseObserver.onCompleted();
-        
-        
     }
 
     @Override

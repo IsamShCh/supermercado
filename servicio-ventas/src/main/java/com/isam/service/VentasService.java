@@ -54,6 +54,7 @@ public class VentasService {
     private final InventarioGrpcClient inventarioGrpcClient;
 
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('CREAR_VENTAS')")
     public CrearNuevoTicketResponseDto crearNuevoTicket(String idUsuario, String nombreCajero) {
         
         // Validar que el ID de usuario no sea nulo o vacío
@@ -99,6 +100,7 @@ public class VentasService {
      * @return Respuesta con los detalles del producto añadido y el subtotal actualizado
      */
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ACTUALIZAR_VENTAS')")
     public AnadirProductoTicketResponseDto anadirProductoTicket(AnadirProductoTicketRequestDto dto) {
         log.info("Añadiendo producto al ticket: idTicket='{}', codigoBarras='{}'",
             dto.idTicketTemporal(), dto.codigoBarras());
@@ -231,6 +233,7 @@ public class VentasService {
      * @return Respuesta con los detalles del pago procesado
      */
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('EJECUTAR_VENTAS')")
     public ProcesarPagoResponseDto procesarPago(ProcesarPagoRequestDto dto) {
         log.info("Procesando pago para ticket: idTicket='{}', metodoPago='{}', montoRecibido={}",
             dto.idTicketTemporal(), dto.metodoPago(), dto.montoRecibido());
@@ -354,6 +357,7 @@ public class VentasService {
      * @return Respuesta con los detalles del ticket cerrado
      */
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('EJECUTAR_VENTAS')")
     public CerrarTicketResponseDto cerrarTicket(CerrarTicketRequestDto dto) {
         log.info("Cerrando ticket: idTicket='{}'", dto.idTicketTemporal());
         
@@ -500,6 +504,7 @@ public class VentasService {
      * @return Respuesta con los detalles completos del ticket
      */
     @Transactional(readOnly = true)
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('LEER_VENTAS')")
     public com.isam.dto.ConsultarTicketResponseDto consultarTicket(com.isam.dto.ConsultarTicketRequestDto dto) {
         
         log.info("Consultando ticket: idTicket='{}', numeroTicket='{}'",
@@ -634,6 +639,7 @@ public class VentasService {
      * @return Respuesta con los detalles de la cancelación
      */
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ACTUALIZAR_VENTAS')")
     public CancelarTicketResponseDto cancelarTicket(CancelarTicketRequestDto dto) {
         log.info("Cancelando ticket: idTicket='{}'", dto.idTicket());
         
@@ -709,6 +715,7 @@ public class VentasService {
      * @return Respuesta con los detalles de la eliminación y el subtotal actualizado
      */
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ACTUALIZAR_VENTAS')")
     public EliminarProductoTicketResponseDto eliminarProductoTicket(EliminarProductoTicketRequestDto dto) {
         log.info("Eliminando producto del ticket: idTicket='{}', sku='{}', cantidadAEliminar={}",
             dto.idTicket(), dto.sku(), dto.cantidadAEliminar().orElse(null));

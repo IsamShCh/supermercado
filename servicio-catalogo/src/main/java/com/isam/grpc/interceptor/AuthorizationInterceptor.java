@@ -37,7 +37,7 @@ public class AuthorizationInterceptor implements ServerInterceptor {
             String jwt = token.substring(7);
             
             try {
-                // 1. Llamada remota a Servicio Usuarios
+                // Llamada remota a Servicio Usuarios
                 VerificarTokenRequest.Response response = usuariosClient.verificarToken(jwt);
 
                 if (response.getEsValido()) {
@@ -59,7 +59,7 @@ public class AuthorizationInterceptor implements ServerInterceptor {
 
                     log.debug("Usuario autenticado remotamente: {} con {} permisos", username, authorities.size());
 
-                    // 3. Propagar contexto
+                    // Propagar contexto
                     return new ContextPropagatingListener<>(
                             serverCallHandler.startCall(serverCall, metadata),
                             auth

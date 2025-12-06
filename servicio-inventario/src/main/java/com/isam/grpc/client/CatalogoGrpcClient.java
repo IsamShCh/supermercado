@@ -65,7 +65,16 @@ public class CatalogoGrpcClient {
             .setSku(sku)
             .build();
         
-        ConsultarProductoRequest.Response response = catalogoStub.consultarProducto(request);
+        // Inyectar token de seguridad si existe (Propagación de Token)
+        CatalogoServiceGrpc.CatalogoServiceBlockingStub stubUsar = catalogoStub;
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        
+        if (auth != null && auth.getCredentials() != null) {
+            String token = auth.getCredentials().toString();
+            stubUsar = catalogoStub.withCallCredentials(new BearerTokenCallCredentials(token));
+        }
+        
+        ConsultarProductoRequest.Response response = stubUsar.consultarProducto(request);
         
         ProductoProto producto = response.getProducto();
         log.debug("Producto consultado: SKU='{}', Nombre='{}'", producto.getSku(), producto.getNombre());

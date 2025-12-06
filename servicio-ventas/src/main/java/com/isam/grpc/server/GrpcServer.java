@@ -29,6 +29,7 @@ public class GrpcServer {
 
     private final GrpcServerService grpcServerService;
     private final ExceptionInterceptor exceptionInterceptor;
+    private final com.isam.grpc.interceptor.AuthorizationInterceptor authorizationInterceptor;
 
 
     public void start() throws IOException, InterruptedException {
@@ -36,6 +37,7 @@ public class GrpcServer {
         server = ServerBuilder.forPort(port)
                 .addService(grpcServerService)
                 .intercept(exceptionInterceptor)
+                .intercept(authorizationInterceptor)
                 .build()
                 .start();
         LOG.info("Los siguientes servicios están disponibles:");

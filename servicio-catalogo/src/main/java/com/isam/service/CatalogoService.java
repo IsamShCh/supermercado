@@ -57,8 +57,9 @@ public class CatalogoService {
     private final EntityManager entityManager; // NOTE - Ya ni recuerdo para que servia esto. Recuerdo usarlo para hacer consultas personalizadas.
 
     /**
-     * Crea un producto a partir de DTO, gestionando la búsqueda de categorías y la creación de entidades.
-     * Este método contiene la lógica empresarial para la creación de productos.
+     * Crea un nuevo producto validando que la categoría exista.
+     * @param dto DTO con los datos del producto a crear
+     * @return El producto creado
      */
     @Transactional
     @PreAuthorize("hasAuthority('CREAR_PRODUCTOS')")

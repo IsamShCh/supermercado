@@ -47,7 +47,7 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         System.out.println(">>" + request.hasEan());
         System.out.println(">>" + request.hasPlu());
 
-        // Paso 1: Convertir la solicitud gRPC a DTO (responsabilidad del mapeador)
+        // Mapeo entrada
         CrearProductoDto productoDto = productoMapper.toDto(request);
         System.out.println("DEBUG: DTO created: " + productoDto);
 
@@ -67,16 +67,17 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
         }
         
 
-        // Paso 2: El servicio gestiona la lógica de negocio y la creación de entidades.
+        // Lógica de negocio
         Producto productoEntityCreated = catalogoService.crearProducto(productoDto);
         System.out.println("DEBUG: Product created: " + productoEntityCreated);
 
-        // Paso 3: Convertir la entidad de nuevo a una respuesta gRPC (responsabilidad del mapeador)
+        // Convertir la entidad de nuevo a una respuesta gRPC con el mapeador
         com.isam.grpc.catalogo.ProductoProto productoResGrpc = productoMapper.toProto(productoEntityCreated);
 
         com.isam.grpc.catalogo.CrearProductoRequest.Response crearProductoRespuesta = com.isam.grpc.catalogo.CrearProductoRequest.Response.newBuilder()
                         .setProducto(productoResGrpc).build();
 
+        // Respuesta
         responseObserver.onNext(crearProductoRespuesta);
         responseObserver.onCompleted();
     }
