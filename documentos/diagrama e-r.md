@@ -184,69 +184,54 @@ erDiagram
     }
 
     %% ========================================
-    %% BD MONITOREO
+    %% BD REPORTES / MONITOREO
     %% ========================================
-    ALERTAS {
-        string IDAlerta PK
-        enum TipoAlerta "StockMinimo, Caducidad, Sistema"
-        string SKU FK
-        text Mensaje
-        timestamp FechaHoraGeneracion
-        enum EstadoAlertas "Pendiente, Atendida, Ignorada"
-        timestamp FechaHoraAtendida
-        string IDUsuarioAtendio FK
-    }
     
-    REPORTE_VENTAS_DIARIO {
-        string IDReporte PK
-        date Fecha
-        string SKU FK
+    %% --- DIMENSIONES (Describen los datos) ---
+    DIM_PRODUCTO {
+        string SKU PK
         string NombreProducto
-        string NombreCategoria
-        decimal CantidadVendida
-        decimal MontoTotal
-        int NumeroTransacciones
-        timestamp FechaActualizacion
+        string Categoria
+        string UnidadMedida
+        string ProveedorActual
+        boolean EsGranel
+        boolean Caduca
+        timestamp FechaUltimaActualizacion
     }
     
-    REPORTE_DEVOLUCIONES_DIARIO {
-        string IDReporte PK
-        date Fecha
+    DIM_USUARIO {
+        string IDUsuario PK
+        string NombreUsuario
+        string RolPrincipal
+        timestamp FechaUltimaActualizacion
+    }
+    
+    %% --- HECHOS (Miden los datos) ---
+    FACT_VENTAS {
+        string IDVenta PK
+        timestamp FechaHora
+        string IDUsuario FK
         string SKU FK
-        string NombreProducto
-        string NombreCategoria
-        decimal CantidadDevuelta
-        decimal MontoReembolsado
-        int NumeroTransacciones
-        timestamp FechaActualizacion
+        string NumeroTicket
+        decimal Cantidad
+        decimal PrecioUnitario
+        decimal Subtotal
+        decimal Impuesto
+        decimal TotalLinea
+        string MetodoPago
     }
     
-    REPORTE_CATALOGO {
-        string IDReporte PK
-        date FechaGeneracion
-        int TotalProductos
-        int ProductosActivos
-        int ProductosDescatalogados
-        int ProductosConOferta
-        decimal PromedioPrecios
-        timestamp FechaActualizacion
-    }
-    
-    REPORTE_CADUCIDAD {
-        string IDReporte PK
-        date FechaGeneracion
+    FACT_MOVIMIENTOS_INVENTARIO {
+        string IDMovimiento PK
+        timestamp FechaHora
         string SKU FK
-        string NombreProducto
-        string IDLote FK
-        string NumeroLote
-        date FechaCaducidad
-        decimal CantidadAlmacen
-        decimal CantidadEstanteria
-        int DiasRestantes
-        enum Categoria "Proximos7Dias, Proximos3Dias, Vencidos"
-        timestamp FechaActualizacion
+        string IDLote
+        string TipoMovimiento
+        decimal Cantidad
+        string Motivo
+        string IDUsuario FK
     }
-    
+
     METRICAS_SISTEMA {
         string IDMetrica PK
         timestamp FechaHora
@@ -286,3 +271,11 @@ erDiagram
     INVENTARIO ||--o{ LOTES : "compuesto por"
     LOTES ||--o{ MOVIMIENTOS_INVENTARIO : "genera"
         PROVEEDORES ||--o{ LOTES : "suministra"
+
+    %% ========================================
+    %% RELACIONES - BD BI
+    %% ========================================
+    DIM_PRODUCTO ||--o{ FACT_VENTAS : "registra ventas de"
+    DIM_PRODUCTO ||--o{ FACT_MOVIMIENTOS_INVENTARIO : "genera movimientos de"
+    DIM_USUARIO ||--o{ FACT_VENTAS : "realiza"
+    DIM_USUARIO ||--o{ FACT_MOVIMIENTOS_INVENTARIO : "registra"
