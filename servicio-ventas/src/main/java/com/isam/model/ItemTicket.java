@@ -26,56 +26,56 @@ public class ItemTicket {
     
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_item_ticket", nullable = false, length = 36)
+    @Column(name = "IDItemTicket", nullable = false, length = 36)
     private String idItemTicket;
     
     @NotNull(message = "El ticket es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_ticket", nullable = false)
+    @JoinColumn(name = "IDTicket", nullable = false)
     private Ticket ticket;
     
     @NotNull(message = "El número de línea es obligatorio")
     @Min(value = 1, message = "El número de línea debe ser mayor que 0")
-    @Column(name = "numero_linea", nullable = false)
+    @Column(name = "NumeroLinea", nullable = false)
     private Integer numeroLinea;
     
     @NotBlank(message = "El SKU es obligatorio")
-    @Column(name = "sku", nullable = false, length = 50)
+    @Column(name = "SKU", nullable = false, length = 50)
     private String sku;
     
 
     @NotBlank(message = "El nombre del producto no puede estar vacío")
     @Size(max = 200, message ="El nombre del producto no puede exceder 200 caracteres")
     @Check(constraints = "trim(nombre_producto) <> ''") // Esta restriccion generará una precondicion dentro del la base de datos. Por ende, el error que genere será a nivel de BBDD.
-    @Column(name = "nombre_producto", length = 200, nullable = false)
+    @Column(name = "NombreProducto", length = 200, nullable = false)
     private String nombreProducto;
     
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.001", inclusive = true, message = "La cantidad debe ser mayor que 0")
     @Digits(integer = 10, fraction = 3, message = "La cantidad debe tener máximo 10 dígitos enteros y 3 decimales")
-    @Column(name = "cantidad", nullable = false, precision = 10, scale = 3)
+    @Column(name = "Cantidad", nullable = false, precision = 10, scale = 3)
     private BigDecimal cantidad;
     
     @NotNull(message = "El precio unitario es obligatorio")
     @DecimalMin(value = "0.01", inclusive = true, message = "El precio unitario debe ser mayor que 0")
     @Digits(integer = 10, fraction = 2, message = "El precio unitario debe tener máximo 10 dígitos enteros y 2 decimales")
-    @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
+    @Column(name = "PrecioUnitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioUnitario;
     
     @DecimalMin(value = "0.0", inclusive = true, message = "El descuento no puede ser negativo")
     @Digits(integer = 10, fraction = 2, message = "El descuento debe tener máximo 10 dígitos enteros y 2 decimales")
-    @Column(name = "descuento", precision = 10, scale = 2)
+    @Column(name = "Descuento", precision = 10, scale = 2)
     private BigDecimal descuento;
     
     @NotNull(message = "El subtotal es obligatorio")
     @DecimalMin(value = "0.0", inclusive = true, message = "El subtotal no puede ser negativo")
     @Digits(integer = 10, fraction = 2, message = "El subtotal debe tener máximo 10 dígitos enteros y 2 decimales")
-    @Column(name = "subtotal", nullable = false, precision = 10, scale = 2)
+    @Column(name = "Subtotal", nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
     
     @DecimalMin(value = "0.0", inclusive = true, message = "El impuesto no puede ser negativo")
     @Digits(integer = 5, fraction = 2, message = "El impuesto debe tener máximo 5 dígitos enteros y 2 decimales")
-    @Column(name = "impuesto", precision = 5, scale = 2)
+    @Column(name = "Impuesto", precision = 5, scale = 2)
     private BigDecimal impuesto;
     
     public void calcularSubtotal() {

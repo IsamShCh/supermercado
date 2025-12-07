@@ -49,6 +49,9 @@ class VentasServiceTest {
     @Mock
     private com.isam.grpc.client.InventarioGrpcClient inventarioGrpcClient;
 
+    @Mock
+    private com.isam.service.VentasEventService ventasEventService;
+
     @InjectMocks
     private VentasService ventasService;
 

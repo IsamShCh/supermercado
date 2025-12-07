@@ -107,6 +107,11 @@ services:
       MB_DB_USER: postgres
       MB_DB_PASS: contrasena_secreta
       MB_DB_HOST: metabase-db
+      # Credenciales para setup automatico
+      MB_ADMIN_EMAIL: admin@supermercado.com
+      MB_ADMIN_PASSWORD: Password123!
+      MB_ADMIN_FIRST_NAME: Admin
+      MB_ADMIN_LAST_NAME: Supermercado
     depends_on:
       - metabase-db
       - reportes-db

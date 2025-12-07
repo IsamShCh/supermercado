@@ -174,7 +174,7 @@ class InventarioServiceTest {
             () -> inventarioService.crearInventario(dtoValido));
         
         assertEquals(Status.Code.ALREADY_EXISTS, exception.getStatus().getCode());
-        assertTrue(exception.getStatus().getDescription().contains("Ya existe un inventario para SKU 'TEST-001' con unidad de medida diferente"));
+        assertTrue(exception.getStatus().getDescription().contains("Ya existe un inventario oficial para SKU 'TEST-001' con unidad de medida diferente"));
         
         // Verificar que se llamó al cliente de catálogo pero no se guardó
         verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
