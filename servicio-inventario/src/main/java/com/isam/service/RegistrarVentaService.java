@@ -1,6 +1,7 @@
 package com.isam.service;
 
 import com.isam.dto.movimiento.MovimientoInventarioDto;
+import com.isam.dto.producto.ConsultarProductoDto;
 import com.isam.dto.venta.ItemVentaDto;
 import com.isam.dto.venta.RegistrarVentaRequestDto;
 import com.isam.dto.venta.RegistrarVentaResponseDto;
@@ -32,6 +33,7 @@ public class RegistrarVentaService {
     private final LoteRepository loteRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final InventarioRepository inventarioRepository;
+    private final com.isam.grpc.client.CatalogoGrpcClient catalogoGrpcClient;
 
     /**
      * Registra una venta completa.
@@ -68,10 +70,9 @@ public class RegistrarVentaService {
         String sku = item.sku();
 
         // Obtener entidad Inventario global (para actualizar totales)
+        // AUTO-REPARACIÓN: Si no existe inventario, consultamos catálogo para crearlo al vuelo
         Inventario inventarioGlobal = inventarioRepository.findBySku(sku)
-            .orElseThrow(() -> Status.NOT_FOUND
-                .withDescription("No existe registro de inventario para el SKU: " + sku)
-                .asRuntimeException());
+            .orElseGet(() -> recuperarOCrearInventario(sku));
 
         // Buscar lotes con stock positivo en estantería  con Estrategia FIFO)
         // TODO - Tenemos que implementar un sitema que permita usar otras estrategias, como FEFO.
@@ -167,6 +168,48 @@ public class RegistrarVentaService {
         }
 
         return dtosSalida;
+    }
+
+    /**
+     * Intenta recuperar datos del catálogo para crear un registro de inventario inicial.
+     * Si el producto no existe en catálogo o falla la comunicación, usa valores por defecto (Fallback)
+     * para asegurar que la venta quede registrada contablemente en inventario.
+     */
+    private Inventario recuperarOCrearInventario(String sku) {
+        log.warn("Inventario no encontrado para SKU: {}. Iniciando auto-reparación (Lazy Initialization)...", sku);
+        
+        // Valores por defecto
+        com.isam.model.UnidadMedida unidadMedida = com.isam.model.UnidadMedida.UNIDAD; 
+        String ean = null;
+        String plu = null;
+
+        try {
+            // Consultar al Catálogo
+            ConsultarProductoDto productoDto = catalogoGrpcClient.consultarProducto(sku);
+            
+            // Mapear Unidad de Medida
+            if (productoDto.unidadMedida() != null) {
+                try {
+                    unidadMedida = productoDto.unidadMedida();
+                } catch (IllegalArgumentException e) {
+                    log.warn("Unidad de medida desconocida en catálogo: {}. Usando UNIDAD.", productoDto.unidadMedida());
+                }
+            }
+            ean = productoDto.ean();
+            plu = productoDto.plu();
+            
+            log.info("Datos recuperados del catálogo para SKU {}: UM={}, EAN={}, PLU={}", sku, unidadMedida, ean, plu);
+
+        } catch (Exception e) {
+            // FALLBACK CRÍTICO: El producto no existe ni en catálogo o servicio caído.
+            // Creamos el inventario igualmente para no perder la traza del movimiento de salida.
+            log.error("FALLBACK CRÍTICO: No se pudo recuperar SKU {} del catálogo (Error: {}). Se creará inventario genérico 'UNIDAD' para registrar la venta.", sku, e.getMessage());
+        }
+
+        // Crear inventario con stock 0 para permitir que luego pase a negativo
+        Inventario nuevoInventario = new Inventario(sku, ean, plu, unidadMedida);
+        nuevoInventario.setEsProvisional(true); // Marcamos como provisional para permitir corrección posterior
+        return inventarioRepository.save(nuevoInventario);
     }
 
     private MovimientoInventario crearMovimiento(String sku, String idLote, BigDecimal cantidad, 

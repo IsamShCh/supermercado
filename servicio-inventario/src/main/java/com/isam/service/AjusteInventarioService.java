@@ -37,6 +37,7 @@ public class AjusteInventarioService {
     private final InventarioRepository inventarioRepository;
     private final LoteRepository loteRepository;
     private final MovimientoInventarioRepository movimientoRepository;
+    private final InventarioEventService inventarioEventService;
 
     /**
      * Aplica un ajuste manual al inventario (AC16).
@@ -365,6 +366,9 @@ public class AjusteInventarioService {
             Inventario inventarioActualizado, 
             MovimientoInventario movimientoGuardado) {
         
+        // Publicar evento de movimiento para BI
+        inventarioEventService.publicarMovimiento(movimientoGuardado);
+
         // Convertir inventario a DTO
         InventarioDto inventarioDto = new InventarioDto(
             inventarioActualizado.getIdInventario(),
@@ -392,4 +396,5 @@ public class AjusteInventarioService {
         
         return new AjustarInventarioManualResponseDto(inventarioDto, movimientoDto);
     }
+    
 }

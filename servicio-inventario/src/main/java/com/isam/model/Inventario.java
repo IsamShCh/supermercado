@@ -49,6 +49,9 @@ public class Inventario {
     @Column(name = "UnidadMedida", nullable = false)
     private UnidadMedida unidadMedida;
 
+    @Column(name = "EsProvisional", nullable = false)
+    private Boolean esProvisional = false;
+
     // Constructors
     public Inventario() {}
 

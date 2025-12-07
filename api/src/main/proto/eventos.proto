@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package isam.eventos;
+
+import "comun.proto";
+import "inventario.proto";
+import "ventas.proto";
+
+option java_multiple_files = true;
+option java_package = "com.isam.grpc.eventos";
+option java_outer_classname = "EventosProto";
+
+// ========================================
+// EVENTOS PARA BI
+// ========================================
+
+// ----------------------------------------
+// Eventos de Dominio: CATALOGO --> DIM_PRODUCTO
+// ----------------------------------------
+
+message EventoProductoCreado {
+  string id_evento = 1;
+  int64 timestamp = 2;
+  string sku = 3;
+  string nombre = 4;
+  string categoria = 5;
+  string unidad_medida = 6;
+  bool es_granel = 7;
+  bool caduca = 8;
+  string proveedor_principal = 9;
+}
+
+message EventoProductoModificado {
+  string id_evento = 1;
+  int64 timestamp = 2;
+  string sku = 3;
+  string nombre = 4;
+  string categoria = 5;
+  string unidad_medida = 6;
+  string proveedor_principal = 7;
+}
+
+// ----------------------------------------
+// Eventos de Dominio: USUARIOS --> Alimentan DIM_USUARIO
+// ----------------------------------------
+
+message EventoUsuarioCreado {
+  string id_evento = 1;
+  int64 timestamp = 2;
+  string id_usuario = 3;
+  string nombre_usuario = 4;
+  string rol_principal = 5;
+}
+
+message EventoUsuarioModificado {
+  string id_evento = 1;
+  int64 timestamp = 2;
+  string id_usuario = 3;
+  string nombre_usuario = 4;
+  string rol_principal = 5;
+}
+
+// ----------------------------------------
+// Eventos de Dominio: VENTAS --> alimentan FACT_VENTAS
+// ----------------------------------------
+
+message EventoVentaRealizada {
+  string id_evento = 1;
+  int64 timestamp = 2;
+  
+  // Cabecera del Ticket
+  string id_ticket = 3;
+  string numero_ticket = 4;
+  string id_usuario_cajero = 5;
+  string total_venta = 6;
+  string metodo_pago = 7;
+  repeated ItemVentaEvento items = 8;
+}
+
+message ItemVentaEvento {
+  string sku = 1;
+  string cantidad = 2;
+  string precio_unitario = 3;
+  string subtotal = 4;
+  string impuesto = 5;
+  string total_linea = 6;         // Decimal string (Subtotal + Impuesto)
+  
+  // Datos redundantes del producto al momento de la venta
+  // por si el producto cambia de nombre/categoría mañana
+  string nombre_producto_snapshot = 7;
+  string categoria_snapshot = 8;
+}
+
+// ----------------------------------------
+// Eventos de Dominio: INVENTARIO --> Alimentan FACT_MOVIMIENTOS
+// ----------------------------------------
+
+message EventoMovimientoInventario {
+  string id_evento = 1;
+  int64 timestamp = 2;
+  
+  string id_movimiento = 3;
+  string sku = 4;
+  string id_lote = 5;             // Opcional
+  string tipo_movimiento = 6;
+  string cantidad = 7;
+  isam.comun.UnidadMedida unidad_medida = 12; // Agregado para contexto
+  string fecha_hora = 13; // Fecha del movimiento en ISO 8601
+  string motivo = 8;
+  string id_usuario = 9;
+  string ubicacion = 10;          // "ALMACEN" o "ESTANTERIA"
+  string saldo_resultante = 11;
+}

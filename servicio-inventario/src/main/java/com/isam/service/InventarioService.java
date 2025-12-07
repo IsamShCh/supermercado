@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class InventarioService {
 
     private final InventarioRepository inventarioRepository;
@@ -49,7 +51,8 @@ public class InventarioService {
     private final ProveedorRepository proveedorRepository;
     private final AjusteInventarioService ajusteInventarioService;
     private final com.isam.grpc.client.CatalogoGrpcClient catalogoGrpcClient;
-    private final TransactionTemplate transactionTemplate; 
+    private final TransactionTemplate transactionTemplate;
+    private final InventarioEventService inventarioEventService;
 
     
     /**
@@ -119,10 +122,19 @@ public class InventarioService {
                 .withDescription("Inventario no encontrado para SKU '" + dto.sku() + "'")
                 .asRuntimeException());
 
+        // Validar que el inventario no sea provisional (Dummy de venta)
+        if (Boolean.TRUE.equals(inventario.getEsProvisional())) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("El inventario para SKU '" + dto.sku() + "' es provisional (creado automáticamente por una venta). " +
+                                 "Debe oficializarlo utilizando la función 'Crear Inventario' antes de registrar existencias.")
+                .asRuntimeException();
+        }
+
         // Validar que la unidad de medida coincida
         if (!inventario.getUnidadMedida().equals(dto.unidadMedida())) {
             throw Status.INVALID_ARGUMENT
-                .withDescription("La unidad de medida no coincide con la del inventario existente")
+                .withDescription("La unidad de medida no coincide con la del inventario existente (" 
+                                 + inventario.getUnidadMedida() + " vs " + dto.unidadMedida() + ")")
                 .asRuntimeException();
         }
 
@@ -170,7 +182,10 @@ public class InventarioService {
         movimiento.setIdUsuario("SYSTEM"); // TODO: Obtener del contexto de seguridad
         movimiento.setMotivo("Registro de nuevas existencias - Lote: " + dto.numeroLote());
         movimiento.setObservaciones("Proveedor: " + proveedor.getNombreProveedor());
-        movimientoRepository.save(movimiento);
+        MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+
+        // Publicar evento de movimiento para BI
+        inventarioEventService.publicarMovimiento(movimientoGuardado);
 
         // Convertir entidades a DTOs
         LoteDto loteDto = new LoteDto(
@@ -249,29 +264,55 @@ public class InventarioService {
 
     private InventarioDto crearInventarioAux(CrearInventarioRequestDto dto){
 
-        // Comprobamos que no exista un inventario ya existente. Si existe y es igual a los datos del dto, lo dejamos pasar, si no, tiramos error
+        // Comprobamos si existe un inventario
         Optional<Inventario> inventarioExistenteOpt = inventarioRepository.findBySku(dto.sku());
         
         if (inventarioExistenteOpt.isPresent()) {
-            Inventario inventarioExistente = inventarioExistenteOpt.get();
-            if (!inventarioExistente.getUnidadMedida().equals(dto.unidadMedida())) {
+            Inventario inventario = inventarioExistenteOpt.get();
+            
+            // Si es PROVISIONAL, lo sobrescribimos con los datos oficiales
+            if (Boolean.TRUE.equals(inventario.getEsProvisional())) {
+                log.info("Oficializando inventario provisional para SKU: {}", dto.sku());
+                inventario.setUnidadMedida(dto.unidadMedida());
+                inventario.setEan(dto.ean());
+                inventario.setPlu(dto.plu());
+                inventario.setEsProvisional(false); // Quitamos la marca de provisional
+                
+                Inventario inventarioGuardado = inventarioRepository.save(inventario);
+                
+                return new InventarioDto(
+                    inventarioGuardado.getIdInventario(),
+                    inventarioGuardado.getSku(),
+                    inventarioGuardado.getEan(),
+                    inventarioGuardado.getPlu(),
+                    inventarioGuardado.getCantidadAlmacen(),
+                    inventarioGuardado.getCantidadEstanteria(),
+                    inventarioGuardado.getUnidadMedida().name()
+                );
+            }
+            
+            // Si es OFICIAL (no provisional) y la unidad no coincide, entonce emitimos un error
+            if (!inventario.getUnidadMedida().equals(dto.unidadMedida())) {
                 throw Status.ALREADY_EXISTS
-                    .withDescription("Ya existe un inventario para SKU '" + dto.sku() + "' con unidad de medida diferente")
+                    .withDescription("Ya existe un inventario oficial para SKU '" + dto.sku() + "' con unidad de medida diferente (" 
+                                     + inventario.getUnidadMedida() + " vs " + dto.unidadMedida() + ")")
                     .asRuntimeException();
             }
-            // Si existe y coincide, devolver el DTO existente
+            
+            // Si existe, es oficial y coincide  entonces Devolver el existente
             return new InventarioDto(
-                inventarioExistente.getIdInventario(),
-                inventarioExistente.getSku(),
-                inventarioExistente.getEan(),
-                inventarioExistente.getPlu(),
-                inventarioExistente.getCantidadAlmacen(),
-                inventarioExistente.getCantidadEstanteria(),
-                inventarioExistente.getUnidadMedida().name()
+                inventario.getIdInventario(),
+                inventario.getSku(),
+                inventario.getEan(),
+                inventario.getPlu(),
+                inventario.getCantidadAlmacen(),
+                inventario.getCantidadEstanteria(),
+                inventario.getUnidadMedida().name()
             );
         } else {
             // Crear nuevo inventario
             Inventario nuevoInventario = new Inventario(dto.sku(), dto.ean(), dto.plu(), dto.unidadMedida());
+            // Por defecto esProvisional es false
             Inventario inventarioGuardado = inventarioRepository.save(nuevoInventario);
             return new InventarioDto(
                 inventarioGuardado.getIdInventario(),
@@ -283,7 +324,7 @@ public class InventarioService {
                 inventarioGuardado.getUnidadMedida().name()
             );
         }
-    }    
+    }
 
     /**
      * Consulta el inventario de un producto (AC20).
@@ -403,6 +444,9 @@ public class InventarioService {
         movimiento.setMotivo("Traslado de almacén a estantería");
         movimiento.setObservaciones("Lote: " + loteActualizado.getNumeroLote() + " - Cantidad trasladada: " + peticionDto.cantidadTransladar());
         MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+        
+        // Publicar evento de movimiento
+        inventarioEventService.publicarMovimiento(movimientoGuardado);
 
         // Convertir entidades a DTOs
         com.isam.dto.inventario.InventarioDto inventarioDto = new com.isam.dto.inventario.InventarioDto(
@@ -590,6 +634,9 @@ public class InventarioService {
         movimiento.setObservaciones("Discrepancia: " + discrepancia.doubleValue());
         
         MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+
+        // Publicar evento
+        inventarioEventService.publicarMovimiento(movimientoGuardado);
         
         movimientos.add(new com.isam.dto.movimiento.MovimientoInventarioDto(
             movimientoGuardado.getIdMovimiento(),
@@ -663,6 +710,9 @@ public class InventarioService {
                 movimiento.setObservaciones("Lote: " + lote.getNumeroLote() + ", Discrepancia: " + discrepancia.doubleValue());
                 
                 MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
+
+                // Publicar evento
+                inventarioEventService.publicarMovimiento(movimientoGuardado);
                 
                 movimientos.add(new com.isam.dto.movimiento.MovimientoInventarioDto(
                     movimientoGuardado.getIdMovimiento(),

@@ -52,6 +52,7 @@ public class VentasService {
     private final PagoRepository pagoRepository;
     private final CatalogoGrpcClient catalogoGrpcClient;
     private final InventarioGrpcClient inventarioGrpcClient;
+    private final VentasEventService ventasEventService;
 
     @Transactional
     @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('CREAR_VENTAS')")
@@ -447,6 +448,9 @@ public class VentasService {
         log.info("Ticket cerrado exitosamente: numeroTicket='{}', total={}",
             ticket.getNumeroTicket(), ticket.getTotal());
         
+        // Publicar evento de venta para BI
+        ventasEventService.publicarVenta(ticket, ticket.getItems(), ticket.getPago().getMetodoPago().name());
+
         // Construir y retornar la respuesta
         return new CerrarTicketResponseDto(
             ticket.getNumeroTicket(),
