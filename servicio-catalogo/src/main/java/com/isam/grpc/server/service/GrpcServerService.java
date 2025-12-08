@@ -1,6 +1,7 @@
 package com.isam.grpc.server.service;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.categoria.ListarCategoriasResponseDto;
 import com.isam.dto.categoria.ModificarCategoriaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
@@ -12,6 +13,7 @@ import com.isam.dto.producto.ListaProductosDto;
 import com.isam.dto.producto.ListarProductosRequestDto;
 import com.isam.dto.producto.RecatalogarProductoDto;
 import com.isam.grpc.catalogo.*;
+import com.isam.grpc.catalogo.ListarCategoriasRequest;
 import com.isam.mapper.CatalogoMapper;
 import com.isam.model.Oferta;
 import com.isam.model.Categoria;
@@ -112,6 +114,18 @@ public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBa
                 ConsultarProductoRequest.Response.newBuilder()
                         .setProducto(productoProto).build()
         );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void listarCategorias(ListarCategoriasRequest request, StreamObserver<ListarCategoriasRequest.Response> responseObserver) {
+        
+        ListarCategoriasResponseDto dto = catalogoService.listarCategorias();
+        
+        ListarCategoriasRequest.Response response = productoMapper.toProto(dto);
+
+        responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 

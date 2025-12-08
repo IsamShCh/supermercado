@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.isam.dto.categoria.CategoriaDto;
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.categoria.ListarCategoriasResponseDto;
 import com.isam.dto.categoria.ModificarCategoriaDto;
 import com.isam.dto.comun.PaginacionResponseDto;
 import com.isam.dto.oferta.OfertaDto;
@@ -231,6 +232,22 @@ public class CatalogoService {
         );
         
         return new ListaProductosDto(detalles, paginacionDto);
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('LEER_CATEGORIAS')")
+    public ListarCategoriasResponseDto listarCategorias() {
+        List<Categoria> categorias = categoriaRepository.findAll();
+        
+        List<CategoriaDto> categoriasDto = categorias.stream()
+            .map(c -> new CategoriaDto(
+                c.getIdCategoria(),
+                c.getNombreCategoria(),
+                c.getDescripcion()
+            ))
+            .collect(Collectors.toList());
+            
+        return new ListarCategoriasResponseDto(categoriasDto);
     }
 
     @Transactional

@@ -1,8 +1,11 @@
 package com.isam.mapper;
 
 import com.isam.dto.categoria.CrearCategoriaDto;
+import com.isam.dto.categoria.ListarCategoriasResponseDto;
+import com.isam.dto.categoria.CategoriaDto;
 import com.isam.dto.categoria.ModificarCategoriaDto;
 import com.isam.dto.comun.PaginacionDto;
+import com.isam.grpc.catalogo.ListarCategoriasRequest;
 import com.isam.dto.oferta.OfertaDto;
 import com.isam.dto.producto.BuscarProductosDto;
 import com.isam.dto.producto.ConsultarProductoDto;
@@ -307,6 +310,20 @@ public class CatalogoMapper {
                 .build();
 
         return categoriaProto;
+    }
+
+    public ListarCategoriasRequest.Response toProto(ListarCategoriasResponseDto dto) {
+        List<CategoriaProto> categoriasProto = dto.categorias().stream()
+            .map(c -> CategoriaProto.newBuilder()
+                .setIdCategoria(c.idCategoria())
+                .setNombreCategoria(c.nombreCategoria())
+                .setDescripcion(c.descripcion() != null ? c.descripcion() : "")
+                .build())
+            .collect(Collectors.toList());
+            
+        return ListarCategoriasRequest.Response.newBuilder()
+            .addAllCategorias(categoriasProto)
+            .build();
     }
 
 

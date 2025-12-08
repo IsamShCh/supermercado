@@ -261,6 +261,17 @@ message ModificarCategoriaRequest {
 }
 
 // ========================================
+// AC 10-B. Listar Categorias
+// ========================================
+message ListarCategoriasRequest {
+  // No requiere parámetros para listar todas
+
+  message Response {
+    repeated CategoriaProto categorias = 1;
+  }
+}
+
+// ========================================
 // AC 11. crear oferta
 // ========================================
 
@@ -342,6 +353,7 @@ service CatalogoService {
   // Gestión de Categorías
   rpc CrearCategoria(CrearCategoriaRequest) returns (CrearCategoriaRequest.Response);
   rpc ModificarCategoria(ModificarCategoriaRequest) returns (ModificarCategoriaRequest.Response);
+  rpc ListarCategorias(ListarCategoriasRequest) returns (ListarCategoriasRequest.Response);
 
 //   Gestión de Ofertas
   rpc CrearOferta(CrearOfertaRequest) returns (CrearOfertaRequest.Response);
