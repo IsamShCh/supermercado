@@ -73,7 +73,7 @@ class VentasServiceEliminarProductoTicketTest {
             false,               // esGranel
             null,                // categoria
             null,                // politicaRotacion
-            "UNIDAD",            // unidadMedida
+            com.isam.model.UnidadMedida.UNIDAD,            // unidadMedida
             List.of(),           // etiquetas
             "ACTIVO"             // estado
         );
@@ -514,7 +514,7 @@ class VentasServiceEliminarProductoTicketTest {
             true,  // esGranel = true
             null,
             null,
-            "KILOGRAMO",
+            com.isam.model.UnidadMedida.KILOGRAMO,
             List.of(),
             "ACTIVO"
         );

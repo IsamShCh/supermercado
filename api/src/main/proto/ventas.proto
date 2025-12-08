@@ -230,6 +230,8 @@ message LineaVentaProto {
   optional string promocion_aplicada = 7;           // opcional
   string subtotal = 8;                              // decimal 10,2
   string impuesto = 9;                              // decimal 5,2 (porcentaje)
+  string categoria = 10;                             // Nombre de la categoría del producto
+  isam.comun.UnidadMedida unidad_medida = 11;      // Unidad de medida (UNIDAD, KILOGRAMO, etc.)
 }
 
 // ========================================

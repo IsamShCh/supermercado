@@ -108,6 +108,7 @@ public class ReportesService {
                 
                 fact.setNombreProductoSnapshot(item.getNombreProductoSnapshot());
                 fact.setCategoriaSnapshot(item.getCategoriaSnapshot());
+                fact.setUnidadMedidaSnapshot(item.getUnidadMedidaSnapshot());
                 
                 fact.setIdEvento(evento.getIdEvento());
                 fact.setFechaProcesado(LocalDateTime.now());

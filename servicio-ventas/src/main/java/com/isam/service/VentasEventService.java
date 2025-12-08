@@ -33,9 +33,10 @@ public class VentasEventService {
                     .setPrecioUnitario(item.getPrecioUnitario() != null ? item.getPrecioUnitario().toString() : "0")
                     .setSubtotal(item.getSubtotal() != null ? item.getSubtotal().toString() : "0")
                     .setImpuesto(item.getImpuesto() != null ? item.getImpuesto().toString() : "0")
-                    .setTotalLinea(item.getSubtotal() != null ? item.getSubtotal().toString() : "0") 
+                    .setTotalLinea(item.getSubtotal() != null ? item.getSubtotal().toString() : "0")
                     .setNombreProductoSnapshot(item.getNombreProducto() != null ? item.getNombreProducto() : "")
-                    .setCategoriaSnapshot("") 
+                    .setCategoriaSnapshot(item.getCategoria() != null ? item.getCategoria() : "")
+                    .setUnidadMedidaSnapshot(item.getUnidadMedida() != null ? item.getUnidadMedida().name() : "")
                     .build())
                 .collect(Collectors.toList());
 

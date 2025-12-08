@@ -567,7 +567,8 @@ public class InventarioMapper {
         java.util.List<ItemVentaDto> items = request.getItemsList().stream()
             .map(itemProto -> new ItemVentaDto(
                 itemProto.getSku(),
-                new BigDecimal(itemProto.getCantidad())
+                new BigDecimal(itemProto.getCantidad()),
+                convertUnidadMedidaToModel(itemProto.getUnidadMedida())
             ))
             .collect(Collectors.toList());
         
@@ -587,4 +588,48 @@ public class InventarioMapper {
             .addAllMovimientos(movimientosProto)
             .build();
     }
+
+
+    /**
+     * Convierte el enum UnidadMedida de modelo a proto
+     * @param unidadMedida Enum de modelo
+     * @return Enum de proto
+     */
+    private com.isam.grpc.common.UnidadMedida convertUnidadMedidaToProto(com.isam.model.UnidadMedida unidadMedida) {
+        return switch (unidadMedida) {
+            case UNIDAD -> com.isam.grpc.common.UnidadMedida.UNIDAD;
+            case KILOGRAMO -> com.isam.grpc.common.UnidadMedida.KILOGRAMO;
+            case GRAMO -> com.isam.grpc.common.UnidadMedida.GRAMO;
+            case LITRO -> com.isam.grpc.common.UnidadMedida.LITRO;
+            case MILILITRO -> com.isam.grpc.common.UnidadMedida.MILILITRO;
+            case METRO -> com.isam.grpc.common.UnidadMedida.METRO;
+            case PAQUETE -> com.isam.grpc.common.UnidadMedida.PAQUETE;
+            case DOCENA -> com.isam.grpc.common.UnidadMedida.DOCENA;
+            default -> com.isam.grpc.common.UnidadMedida.UNIDAD_MEDIDA_UNSPECIFIED;
+        };
+    }
+
+    /**
+     * Convierte el enum UnidadMedida de proto a modelo
+     * @param unidadMedidaProto Enum de proto
+     * @return Enum de modelo
+     */
+    private com.isam.model.UnidadMedida convertUnidadMedidaToModel(com.isam.grpc.common.UnidadMedida unidadMedidaProto) {
+        return switch (unidadMedidaProto) {
+            case UNIDAD -> com.isam.model.UnidadMedida.UNIDAD;
+            case KILOGRAMO -> com.isam.model.UnidadMedida.KILOGRAMO;
+            case GRAMO -> com.isam.model.UnidadMedida.GRAMO;
+            case LITRO -> com.isam.model.UnidadMedida.LITRO;
+            case MILILITRO -> com.isam.model.UnidadMedida.MILILITRO;
+            case METRO -> com.isam.model.UnidadMedida.METRO;
+            case PAQUETE -> com.isam.model.UnidadMedida.PAQUETE;
+            case DOCENA -> com.isam.model.UnidadMedida.DOCENA;
+            default -> com.isam.model.UnidadMedida.UNIDAD_MEDIDA_UNSPECIFIED;
+        };
+    }
+
+    
+
+
+
 }

@@ -6,6 +6,7 @@ import com.isam.grpc.catalogo.CatalogoServiceGrpc;
 import com.isam.grpc.catalogo.ConsultarProductoRequest;
 import com.isam.grpc.catalogo.ProductoProto;
 import com.isam.grpc.catalogo.TraducirIdentificadorRequest;
+import com.isam.grpc.common.UnidadMedida;
 import com.isam.grpc.catalogo.ResultadoTraduccion;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -156,8 +157,10 @@ public class CatalogoGrpcClient {
         // Convertir enums a strings (acceso directo para campos regulares)
         String politicaRotacion = producto.getPoliticaRotacion() != null ?
             producto.getPoliticaRotacion().name() : null;
-        String unidadMedida = producto.getUnidadMedida() != null ?
-            producto.getUnidadMedida().name() : null;
+        // String unidadMedida = producto.getUnidadMedida() != null ?
+        //     producto.getUnidadMedida().name() : null;
+        com.isam.model.UnidadMedida unidadMedida = com.isam.model.UnidadMedida.valueOf(producto.getUnidadMedida().toString()); 
+        
         String estado = producto.getEstado() != null ?
             producto.getEstado().name() : null;
         

@@ -89,6 +89,7 @@ message ItemVentaEvento {
   // por si el producto cambia de nombre/categoría mañana
   string nombre_producto_snapshot = 7;
   string categoria_snapshot = 8;
+  string unidad_medida_snapshot = 9;
 }
 
 // ----------------------------------------

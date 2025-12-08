@@ -78,6 +78,16 @@ public class ItemTicket {
     @Column(name = "Impuesto", precision = 5, scale = 2)
     private BigDecimal impuesto;
     
+    @NotNull(message = "La unidad de medida es obligatoria")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "UnidadMedida", length = 20, nullable = false)
+    private UnidadMedida unidadMedida;
+    
+    @NotBlank(message = "La categoría es obligatoria")
+    @Size(max = 100, message = "La categoría no puede exceder 100 caracteres")
+    @Column(name = "Categoria", length = 100, nullable = false)
+    private String categoria;
+    
     public void calcularSubtotal() {
         BigDecimal subtotalSinDescuento = precioUnitario.multiply(cantidad)
                     .setScale(2, java.math.RoundingMode.HALF_UP); // Multiplicar un numero de precision 1 con uno de precision 2 produce un numero de precision decimal 3.

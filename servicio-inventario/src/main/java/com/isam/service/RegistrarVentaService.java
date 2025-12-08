@@ -10,6 +10,7 @@ import com.isam.model.Inventario;
 import com.isam.model.Lote;
 import com.isam.model.MovimientoInventario;
 import com.isam.model.TipoMovimiento;
+import com.isam.model.UnidadMedida;
 import com.isam.repository.InventarioRepository;
 import com.isam.repository.LoteRepository;
 import com.isam.repository.MovimientoInventarioRepository;
@@ -68,11 +69,13 @@ public class RegistrarVentaService {
 
         BigDecimal cantidadPendiente = item.cantidad();
         String sku = item.sku();
+        UnidadMedida unidadMedida = item.unidadMedida();
+
 
         // Obtener entidad Inventario global (para actualizar totales)
         // AUTO-REPARACIÓN: Si no existe inventario, consultamos catálogo para crearlo al vuelo
         Inventario inventarioGlobal = inventarioRepository.findBySku(sku)
-            .orElseGet(() -> recuperarOCrearInventario(sku));
+            .orElseGet(() -> recuperarOCrearInventario(sku, unidadMedida));
 
         // Buscar lotes con stock positivo en estantería  con Estrategia FIFO)
         // TODO - Tenemos que implementar un sitema que permita usar otras estrategias, como FEFO.
@@ -175,11 +178,11 @@ public class RegistrarVentaService {
      * Si el producto no existe en catálogo o falla la comunicación, usa valores por defecto (Fallback)
      * para asegurar que la venta quede registrada contablemente en inventario.
      */
-    private Inventario recuperarOCrearInventario(String sku) {
+    private Inventario recuperarOCrearInventario(String sku, UnidadMedida udMedida) {
         log.warn("Inventario no encontrado para SKU: {}. Iniciando auto-reparación (Lazy Initialization)...", sku);
         
         // Valores por defecto
-        com.isam.model.UnidadMedida unidadMedida = com.isam.model.UnidadMedida.UNIDAD; 
+        com.isam.model.UnidadMedida unidadMedida = udMedida != null ? udMedida : com.isam.model.UnidadMedida.UNIDAD;
         String ean = null;
         String plu = null;
 

@@ -315,6 +315,7 @@ message RegistrarVentaRequest {
 message ItemVenta {
   string sku = 1;
   string cantidad = 2;  // decimal 10,3
+  isam.comun.UnidadMedida unidad_medida = 3;
 }
 
 // ========================================

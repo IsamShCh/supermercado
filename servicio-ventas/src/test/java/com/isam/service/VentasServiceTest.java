@@ -140,7 +140,7 @@ class VentasServiceTest {
             false,
             null,
             "FIFO",
-            "KILOGRAMOS",
+            com.isam.model.UnidadMedida.KILOGRAMO,
             null,
             "ACTIVO"
         );

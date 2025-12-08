@@ -59,6 +59,9 @@ public class FactVenta {
     @Column(name = "CategoriaSnapshot", length = 100)
     private String categoriaSnapshot;
 
+    @Column(name = "unidadMedidaSnapshot", length = 40)
+    private String unidadMedidaSnapshot;
+
     // Auditoría del evento
     @Column(name = "IDEvento", length = 36)
     private String idEvento;

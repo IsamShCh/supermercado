@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.isam.dto.CatalogoClient.CategoriaDto;
+import com.isam.model.UnidadMedida;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -35,7 +36,7 @@ public record ProductoDto(
         
         String politicaRotacion,
         
-        String unidadMedida,
+        UnidadMedida unidadMedida,
         
         List<String> etiquetas,
         

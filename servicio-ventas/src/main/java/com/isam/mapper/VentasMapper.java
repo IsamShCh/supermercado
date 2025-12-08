@@ -166,6 +166,25 @@ public class VentasMapper {
     }
     
     /**
+     * Convierte el enum UnidadMedida de modelo a proto
+     * @param unidadMedida Enum de modelo
+     * @return Enum de proto
+     */
+    private com.isam.grpc.common.UnidadMedida convertUnidadMedidaToProto(com.isam.model.UnidadMedida unidadMedida) {
+        return switch (unidadMedida) {
+            case UNIDAD -> com.isam.grpc.common.UnidadMedida.UNIDAD;
+            case KILOGRAMO -> com.isam.grpc.common.UnidadMedida.KILOGRAMO;
+            case GRAMO -> com.isam.grpc.common.UnidadMedida.GRAMO;
+            case LITRO -> com.isam.grpc.common.UnidadMedida.LITRO;
+            case MILILITRO -> com.isam.grpc.common.UnidadMedida.MILILITRO;
+            case METRO -> com.isam.grpc.common.UnidadMedida.METRO;
+            case PAQUETE -> com.isam.grpc.common.UnidadMedida.PAQUETE;
+            case DOCENA -> com.isam.grpc.common.UnidadMedida.DOCENA;
+            default -> com.isam.grpc.common.UnidadMedida.UNIDAD_MEDIDA_UNSPECIFIED;
+        };
+    }
+    
+    /**
      * Convierte un proto request de cerrar ticket a DTO
      * @param request Proto request de cerrar ticket
      * @return DTO con los datos del request
@@ -225,7 +244,9 @@ public class VentasMapper {
             .setCantidad(dto.cantidad().toPlainString())
             .setPrecioUnitario(dto.precioUnitario().toPlainString())
             .setSubtotal(dto.subtotal().toPlainString())
-            .setImpuesto(dto.impuesto().toPlainString());
+            .setImpuesto(dto.impuesto().toPlainString())
+            .setCategoria(dto.categoria() != null ? dto.categoria() : "")
+            .setUnidadMedida(convertUnidadMedidaToProto(dto.unidadMedida()));
         
         // Campos opcionales
         if (dto.descuento() != null && dto.descuento().compareTo(BigDecimal.ZERO) > 0) {

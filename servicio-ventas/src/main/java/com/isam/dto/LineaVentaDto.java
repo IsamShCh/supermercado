@@ -2,6 +2,8 @@ package com.isam.dto;
 
 import java.math.BigDecimal;
 
+import com.isam.model.UnidadMedida;
+
 public record LineaVentaDto(
     Integer numeroLinea,
     String sku,
@@ -11,5 +13,7 @@ public record LineaVentaDto(
     BigDecimal descuento,
     String promocionAplicada,
     BigDecimal subtotal,
-    BigDecimal impuesto
+    BigDecimal impuesto,
+    String categoria,
+    UnidadMedida unidadMedida
 ) {}

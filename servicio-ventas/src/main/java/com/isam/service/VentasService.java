@@ -193,6 +193,11 @@ public class VentasService {
             nuevoItem.setCantidad(BigDecimal.ONE);
             nuevoItem.setPrecioUnitario(producto.precioVenta());
             nuevoItem.setDescuento(BigDecimal.ZERO);
+            
+            // Poblar los nuevos campos para snapshot
+            nuevoItem.setUnidadMedida(producto.unidadMedida());
+            nuevoItem.setCategoria(producto.categoria() != null ? producto.categoria().nombreCategoria() : "");
+            
             nuevoItem.calcularSubtotal();
             
             // Añadir el item al ticket
@@ -437,7 +442,9 @@ public class VentasService {
                 item.getDescuento() != null ? item.getDescuento() : BigDecimal.ZERO,
                 null, // promocionAplicada - TODO: implementar cuando esté disponible
                 item.getSubtotal(),
-                item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO
+                item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO,
+                item.getCategoria(),
+                item.getUnidadMedida()
             );
             lineasVenta.add(lineaVenta);
         }
@@ -542,7 +549,9 @@ public class VentasService {
                 item.getDescuento() != null ? item.getDescuento() : BigDecimal.ZERO,
                 null, // promocionAplicada - TODO: implementar cuando esté disponible
                 item.getSubtotal(),
-                item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO
+                item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO,
+                item.getCategoria(),
+                item.getUnidadMedida()
             );
             lineasVenta.add(lineaVenta);
         }
@@ -599,18 +608,18 @@ public class VentasService {
         // Unidades que permiten decimales (peso, volumen, longitud)
         if (producto.unidadMedida() != null) {
             switch (producto.unidadMedida()) {
-                case "KILOGRAMO":
-                case "GRAMO":
-                case "LITRO":
-                case "MILILITRO":
-                case "METRO":
+                case KILOGRAMO:
+                case GRAMO:
+                case LITRO:
+                case MILILITRO:
+                case METRO:
                     return true;
                     
                 // Unidades que solo permiten enteros
-                case "UNIDAD":
-                case "PAQUETE":
-                case "DOCENA":
-                case "UNIDAD_MEDIDA_UNSPECIFIED":
+                case UNIDAD:
+                case PAQUETE:
+                case DOCENA:
+                case UNIDAD_MEDIDA_UNSPECIFIED:
                 default:
                     return false;
             }
