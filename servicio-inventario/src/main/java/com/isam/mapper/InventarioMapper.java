@@ -320,6 +320,8 @@ public class InventarioMapper {
             case "SALIDA":
                 return com.isam.grpc.inventario.TipoMovimiento.SALIDA;
             case "AJUSTE":
+            case "AJUSTE_POSITIVO":
+            case "AJUSTE_NEGATIVO":
                 return com.isam.grpc.inventario.TipoMovimiento.AJUSTE;
             case "TRASLADO_ESTANTERIA":
                 return com.isam.grpc.inventario.TipoMovimiento.TRASLADO_ESTANTERIA;

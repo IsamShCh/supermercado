@@ -99,10 +99,10 @@ public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceIm
             responseObserver.onNext(response);
             responseObserver.onCompleted();
             
-        } catch (Exception e) {
+        } catch (Throwable e) {
             responseObserver.onError(
                 Status.INTERNAL
-                    .withDescription("Error al ajustar inventario manual: " + e.getMessage())
+                    .withDescription("Error al ajustar inventario manual: " + e.toString())
                     .asRuntimeException()
             );
         }
