@@ -22,22 +22,22 @@ message EventoProductoCreado {
   string id_evento = 1;
   int64 timestamp = 2;
   string sku = 3;
-  string nombre = 4;
-  string categoria = 5;
-  string unidad_medida = 6;
-  bool es_granel = 7;
-  bool caduca = 8;
-  string proveedor_principal = 9;
+  string nombre_snapshot = 4;
+  string categoria_snapshot = 5;
+  string unidad_medida_snapshot = 6;
+  bool es_granel_snapshot = 7;
+  bool caduca_snapshot = 8;
+//  string proveedor_principal = 9; 
 }
 
 message EventoProductoModificado {
   string id_evento = 1;
   int64 timestamp = 2;
   string sku = 3;
-  string nombre = 4;
-  string categoria = 5;
-  string unidad_medida = 6;
-  string proveedor_principal = 7;
+  string nombre_snapshot = 4;
+  string categoria_snapshot = 5;
+  string unidad_medida_snapshot = 6;
+//  string proveedor_principal = 7;
 }
 
 // ----------------------------------------
@@ -49,7 +49,7 @@ message EventoUsuarioCreado {
   int64 timestamp = 2;
   string id_usuario = 3;
   string nombre_usuario = 4;
-  string rol_principal = 5;
+  repeated string rol_snapshot = 5;
 }
 
 message EventoUsuarioModificado {
@@ -57,7 +57,7 @@ message EventoUsuarioModificado {
   int64 timestamp = 2;
   string id_usuario = 3;
   string nombre_usuario = 4;
-  string rol_principal = 5;
+  string rol_snapshot = 5;
 }
 
 // ----------------------------------------
@@ -105,7 +105,7 @@ message EventoMovimientoInventario {
   string id_lote = 5;             // Opcional
   string tipo_movimiento = 6;
   string cantidad = 7;
-  isam.comun.UnidadMedida unidad_medida = 12; // Agregado para contexto
+  string unidad_medida_snapshot = 12; // Agregado para contexto
   string fecha_hora = 13; // Fecha del movimiento en ISO 8601
   string motivo = 8;
   string id_usuario = 9;

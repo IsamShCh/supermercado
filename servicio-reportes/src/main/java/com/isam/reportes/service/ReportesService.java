@@ -46,7 +46,7 @@ public class ReportesService {
             fact.setSku(evento.getSku());
             fact.setIdLote(evento.getIdLote().isEmpty() ? null : evento.getIdLote());
             fact.setTipoMovimiento(evento.getTipoMovimiento()); // Viene como String
-            fact.setUnidadMedida(evento.getUnidadMedida().name()); // Enum -> String
+            fact.setUnidadMedidaSnapshot(evento.getUnidadMedidaSnapshot()); // String
             fact.setMotivo(evento.getMotivo());
             fact.setIdUsuario(evento.getIdUsuario());
             fact.setUbicacion(evento.getUbicacion());

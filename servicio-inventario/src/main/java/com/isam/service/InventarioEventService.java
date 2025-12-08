@@ -34,7 +34,7 @@ public class InventarioEventService {
                     // En eventos.proto definimos tipo_movimiento como string para desacoplar
                     .setTipoMovimiento(movimiento.getTipoMovimiento().name())
                     .setCantidad(movimiento.getCantidad().toString()) // Decimal como String
-                    .setUnidadMedida(com.isam.grpc.common.UnidadMedida.valueOf(movimiento.getUnidadMedida().name()))
+                    .setUnidadMedidaSnapshot(movimiento.getUnidadMedida().name())
                     .setFechaHora(movimiento.getFechaHora().atOffset(ZoneOffset.UTC).toString())
                     .setIdUsuario(movimiento.getIdUsuario() != null ? movimiento.getIdUsuario() : "SYSTEM")
                     .setMotivo(movimiento.getMotivo() != null ? movimiento.getMotivo() : "")

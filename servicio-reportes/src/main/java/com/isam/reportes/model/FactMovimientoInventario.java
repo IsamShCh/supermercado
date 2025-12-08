@@ -39,8 +39,8 @@ public class FactMovimientoInventario {
     @Column(name = "Cantidad", precision = 10, scale = 3, nullable = false)
     private BigDecimal cantidad;
 
-    @Column(name = "UnidadMedida", length = 20)
-    private String unidadMedida;
+    @Column(name = "UnidadMedidaSnapshot", length = 20)
+    private String unidadMedidaSnapshot;
 
     @Column(name = "Motivo", length = 200)
     private String motivo;
