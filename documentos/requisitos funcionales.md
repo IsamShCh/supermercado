@@ -787,22 +787,23 @@ Prioridad: Alta
 
 
 ID: REQ-35
-#NOTE - Nombre: Correspondencia entre stock lógico y físico al vender
-Descripción: El sistema mantendrá coherencia entre stock físico y lógico al decrementar automáticamente stock [de estanteria] cuando se venden productos. Esto incluye los productos a granel también.
+#NOTE - Nombre: Correspondencia entre stock lógico y físico al vender (Venta Forzada)
+Descripción: El sistema mantendrá coherencia entre stock físico y lógico al decrementar automáticamente stock [de estanteria] cuando se venden productos. Si el stock lógico es insuficiente, el sistema permitirá la transacción (venta forzada), resultando en stock negativo. Esto incluye los productos a granel también.
 Entradas:
 - SKU del producto
 - Cantidad
 - Unidades de medida
 Proceso:
-- Deducir a que lote pertenecía el producto aplicando la politica de rotación de existendias correspondiente. (FIFO, FEFO, LIFO)
+- Deducir a que lote pertenecía el producto aplicando la politica de rotación de existendias correspondiente (FIFO, FEFO, LIFO).
 - Decrementar el stock en la estanteria de ese producto en el lote deducido.
+- Si la cantidad a decrementar es mayor al stock disponible, el stock resultante será negativo.
 Salidas:
 - Niveles de stock actualizados
 Precondiciones:
-- Stock suficiente disponible
+- Producto existe y activo en catálogo
 Postcondiciones:
-- Stock lógico y físico sincronizados [en teoría]
-- Stock en estantería decrementado
+- Stock lógico y físico intentan sincronizarse
+- Stock en estantería decrementado (posible valór negativo)
 Prioridad: Alta
 
 ID: REQ-36
