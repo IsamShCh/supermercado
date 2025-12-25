@@ -8,9 +8,13 @@ import com.isam.model.*;
 import com.isam.repository.CategoriaRepository;
 import com.isam.repository.OfertaRepository;
 import com.isam.repository.ProductoRepository;
+import com.isam.config.TestKafkaConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import com.isam.service.ports.IProductoEventPublisher;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.ComponentScan;
@@ -30,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = CatalogoService.class))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@Import(TestKafkaConfig.class)
 class CatalogoServiceBuscarProductosTest {
 
     @Autowired
@@ -164,8 +169,8 @@ class CatalogoServiceBuscarProductosTest {
     @Test
     void buscarProductos_PorNombre_RetornaProductosCoincidentes() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
-            new BuscarProductosDto.CriteriosBusquedaDto("Leche", null, null, null, null, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto("Leche", null,
+                null, null, null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -181,8 +186,8 @@ class CatalogoServiceBuscarProductosTest {
     @Test
     void buscarProductos_PorCategoria_RetornaProductosDeCategoria() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
-            new BuscarProductosDto.CriteriosBusquedaDto(null, categoriaLacteos.getIdCategoria(), null, null, null, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto(null,
+                categoriaLacteos.getIdCategoria(), null, null, null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -192,14 +197,14 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().categoria().idCategoria().equals(categoriaLacteos.getIdCategoria())));
+                .allMatch(p -> p.producto().categoria().idCategoria().equals(categoriaLacteos.getIdCategoria())));
     }
 
     @Test
     void buscarProductos_PorRangoPrecio_RetornaProductosEnRango() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios =
-            new BuscarProductosDto.CriteriosBusquedaDto(null, null, new BigDecimal("1.0"), new BigDecimal("2.0"), null, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto(null, null,
+                new BigDecimal("1.0"), new BigDecimal("2.0"), null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -209,14 +214,15 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().precioVenta().doubleValue() >= 1.0 && p.producto().precioVenta().doubleValue() <= 2.0));
+                .allMatch(p -> p.producto().precioVenta().doubleValue() >= 1.0
+                        && p.producto().precioVenta().doubleValue() <= 2.0));
     }
 
     @Test
     void buscarProductos_PorEsGranel_RetornaSoloProductosGranel() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
-            new BuscarProductosDto.CriteriosBusquedaDto(null, null, null, null, true, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto(null, null,
+                null, null, true, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -226,14 +232,14 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().esGranel()));
+                .allMatch(p -> p.producto().esGranel()));
     }
 
     @Test
     void buscarProductos_PorEtiqueta_RetornaProductosConEtiqueta() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios =
-            new BuscarProductosDto.CriteriosBusquedaDto(null, null, null, null, null, List.of("fresca"));
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto(null, null,
+                null, null, null, List.of("fresca"));
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -243,7 +249,7 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().etiquetas() != null && p.producto().etiquetas().contains("fresca")));
+                .allMatch(p -> p.producto().etiquetas() != null && p.producto().etiquetas().contains("fresca")));
     }
 
     @Test
@@ -283,15 +289,13 @@ class CatalogoServiceBuscarProductosTest {
     @Test
     void buscarProductos_CriteriosMultiples_RetornaProductosQueCoinciden() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
-            new BuscarProductosDto.CriteriosBusquedaDto(
-                null, 
-                categoriaFrutas.getIdCategoria(), 
-                null, 
-                null, 
-                true, 
-                List.of("fresca")
-            );
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto(
+                null,
+                categoriaFrutas.getIdCategoria(),
+                null,
+                null,
+                true,
+                List.of("fresca"));
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -301,16 +305,16 @@ class CatalogoServiceBuscarProductosTest {
         assertNotNull(resultado);
         assertEquals(2, resultado.productos().size());
         assertTrue(resultado.productos().stream()
-            .allMatch(p -> p.producto().categoria().idCategoria().equals(categoriaFrutas.getIdCategoria()) 
-                && p.producto().esGranel() 
-                && p.producto().etiquetas().contains("fresca")));
+                .allMatch(p -> p.producto().categoria().idCategoria().equals(categoriaFrutas.getIdCategoria())
+                        && p.producto().esGranel()
+                        && p.producto().etiquetas().contains("fresca")));
     }
 
     @Test
     void buscarProductos_VerificaOfertasAsociadas() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios =
-            new BuscarProductosDto.CriteriosBusquedaDto("Leche", null, null, null, null, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto("Leche", null,
+                null, null, null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -319,11 +323,11 @@ class CatalogoServiceBuscarProductosTest {
         // Then
         assertNotNull(resultado);
         assertEquals(1, resultado.productos().size());
-        
+
         ListaProductosDto.DetallesProductoCompletoDto detalles = resultado.productos().get(0);
         assertNotNull(detalles.ofertas());
         assertEquals(1, detalles.ofertas().size());
-        
+
         OfertaDto oferta = detalles.ofertas().get(0);
         assertNotNull(oferta.idOferta());
         assertEquals(0, new BigDecimal("1.20").compareTo(oferta.precioPromocional()));
@@ -350,8 +354,8 @@ class CatalogoServiceBuscarProductosTest {
     @Test
     void buscarProductos_SinResultados_RetornaListaVacia() {
         // Given
-        BuscarProductosDto.CriteriosBusquedaDto criterios = 
-            new BuscarProductosDto.CriteriosBusquedaDto("ProductoInexistente", null, null, null, null, null);
+        BuscarProductosDto.CriteriosBusquedaDto criterios = new BuscarProductosDto.CriteriosBusquedaDto(
+                "ProductoInexistente", null, null, null, null, null);
         BuscarProductosDto dto = new BuscarProductosDto(criterios, null);
 
         // When
@@ -405,10 +409,10 @@ class CatalogoServiceBuscarProductosTest {
             assertNotNull(detalles.producto().precioVenta());
             assertNotNull(detalles.producto().caduca());
             assertNotNull(detalles.producto().esGranel());
-            
+
             // Verify categoria
             assertNotNull(detalles.producto().categoria());
-            
+
             // Verify ofertas (can be empty)
             assertNotNull(detalles.ofertas());
         });
