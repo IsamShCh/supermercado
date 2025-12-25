@@ -1,8 +1,8 @@
 package com.isam.grpc.interceptor;
 
-import com.isam.grpc.client.UsuariosGrpcClient;
-import com.isam.grpc.usuarios.VerificarTokenRequest;
+import com.isam.util.JwtValidationUtil;
 import io.grpc.*;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,14 +14,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Interceptor para gestionar la autorización delegando la validación al servicio de usuarios.
+ * Interceptor para gestionar la autorización mediante validación local de JWT.
+ * Desacoplado del servicio de usuarios para mayor resiliencia.
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class AuthorizationInterceptor implements ServerInterceptor {
 
-    private final UsuariosGrpcClient usuariosClient;
+    private final JwtValidationUtil jwtUtil;
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
@@ -34,65 +35,66 @@ public class AuthorizationInterceptor implements ServerInterceptor {
         // Si hay token, intentamos autenticar
         if (token != null && token.startsWith("Bearer ")) {
             String jwt = token.substring(7);
-            
+
             try {
-                // Llamada remota a Servicio Usuarios
-                VerificarTokenRequest.Response response = usuariosClient.verificarToken(jwt);
+                // Validación LOCAL (Sin llamada remota)
+                if (jwtUtil.validateToken(jwt)) {
+                    Claims claims = jwtUtil.extractAllClaims(jwt);
+                    String username = claims.getSubject();
 
-                if (response.getEsValido()) {
-                    String username = response.getNombreUsuario();
-                    
-                    
-                    List<SimpleGrantedAuthority> authorities = response.getRolesList().stream()
-                        .flatMap(rol -> rol.getPermisosList().stream()) 
-                        .map(permiso -> new SimpleGrantedAuthority(permiso.getNombrePermiso()))
-                        .collect(Collectors.toList());
+                    // Extraer authorities del token
+                    @SuppressWarnings("unchecked")
+                    List<String> authoritiesStr = (List<String>) claims.get("authorities");
 
-                    // Agregamos también los nombres de los roles como authorities por si los vamos a utilizar en el futuro, por si acaso
-                    response.getRolesList().forEach(rol -> 
-                        authorities.add(new SimpleGrantedAuthority("ROLE_" + rol.getNombreRol()))
-                    );
+                    List<SimpleGrantedAuthority> authorities = authoritiesStr.stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
 
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(username, jwt, authorities);
+                    // También extraemos roles si es necesario para compatibilidad
+                    @SuppressWarnings("unchecked")
+                    List<String> roles = (List<String>) claims.get("roles");
+                    if (roles != null) {
+                        roles.forEach(rol -> authorities.add(new SimpleGrantedAuthority("ROLE_" + rol)));
+                    }
 
-                    log.debug("Usuario autenticado remotamente: {} con {} permisos", username, authorities.size());
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, jwt,
+                            authorities);
+
+                    log.debug("Usuario autenticado localmente: {} con {} permisos", username, authorities.size());
 
                     // Propagar contexto
                     return new ContextPropagatingListener<>(
                             serverCallHandler.startCall(serverCall, metadata),
-                            auth
-                    );
+                            auth);
                 } else {
-                    log.warn("Token rechazado por servicio de usuarios");
-                    // Si el token es explícitamente inválido, rechazar
+                    log.warn("Token inválido o expirado (Validación Local)");
                     serverCall.close(Status.UNAUTHENTICATED.withDescription("Token inválido o expirado"), metadata);
-                    return new ServerCall.Listener<>() {};
+                    return new ServerCall.Listener<>() {
+                    };
                 }
 
-            } catch (StatusRuntimeException e) {
-                log.error("Error al validar token con servicio de usuarios: {}", e.getMessage());
-                // Si el servicio de usuarios está caído, Fallar (Fail Safe).
-                serverCall.close(Status.UNAVAILABLE.withDescription("No se pudo verificar la autenticación"), metadata);
-                return new ServerCall.Listener<>() {};
             } catch (Exception e) {
-                log.error("Error inesperado en autenticación: {}", e.getMessage());
+                log.error("Error inesperado en autenticación local: {}", e.getMessage());
                 serverCall.close(Status.INTERNAL.withDescription("Error interno de autenticación"), metadata);
-                return new ServerCall.Listener<>() {};
+                return new ServerCall.Listener<>() {
+                };
             }
         }
 
-        // Si no hay token, continuamos como Anónimo. Los métodos protegidos por @PreAuthorize lo rechazarán si es necesario.
+        // Si no hay token, continuamos como Anónimo.
         return serverCallHandler.startCall(serverCall, metadata);
     }
 
     /**
-     * Listener que establece el SecurityContext antes de delegar al listener original.
+     * Listener que establece el SecurityContext antes de delegar al listener
+     * original.
      */
-    private static class ContextPropagatingListener<ReqT> extends ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
+    private static class ContextPropagatingListener<ReqT>
+            extends ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
         private final UsernamePasswordAuthenticationToken authentication;
 
-        public ContextPropagatingListener(ServerCall.Listener<ReqT> delegate, UsernamePasswordAuthenticationToken authentication) {
+        public ContextPropagatingListener(ServerCall.Listener<ReqT> delegate,
+                UsernamePasswordAuthenticationToken authentication) {
             super(delegate);
             this.authentication = authentication;
         }
@@ -116,7 +118,7 @@ public class AuthorizationInterceptor implements ServerInterceptor {
                 SecurityContextHolder.clearContext();
             }
         }
-        
+
         @Override
         public void onCancel() {
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -126,7 +128,7 @@ public class AuthorizationInterceptor implements ServerInterceptor {
                 SecurityContextHolder.clearContext();
             }
         }
-        
+
         @Override
         public void onComplete() {
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -136,7 +138,7 @@ public class AuthorizationInterceptor implements ServerInterceptor {
                 SecurityContextHolder.clearContext();
             }
         }
-        
+
         @Override
         public void onReady() {
             SecurityContextHolder.getContext().setAuthentication(authentication);
