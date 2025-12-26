@@ -3,7 +3,7 @@ package com.isam.service;
 import com.isam.dto.CatalogoClient.ProductoDto;
 import com.isam.dto.EliminarProductoTicketRequestDto;
 import com.isam.dto.EliminarProductoTicketResponseDto;
-import com.isam.grpc.client.CatalogoGrpcClient;
+import com.isam.service.ports.IProveedorCatalogo;
 import com.isam.grpc.client.InventarioGrpcClient;
 import com.isam.model.EstadoTicket;
 import com.isam.model.ItemTicket;
@@ -44,7 +44,7 @@ class VentasServiceEliminarProductoTicketTest {
     private PagoRepository pagoRepository;
     
     @Mock
-    private CatalogoGrpcClient catalogoGrpcClient;
+    private IProveedorCatalogo proveedorCatalogo;
     
     @Mock
     private InventarioGrpcClient inventarioGrpcClient;
@@ -131,7 +131,7 @@ class VentasServiceEliminarProductoTicketTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
             .thenReturn(productoMock);
         when(ticketRepository.save(any(Ticket.class)))
             .thenReturn(ticketTemporal);
@@ -164,7 +164,7 @@ class VentasServiceEliminarProductoTicketTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
             .thenReturn(productoMock);
         when(ticketRepository.save(any(Ticket.class)))
             .thenReturn(ticketTemporal);
@@ -417,7 +417,7 @@ class VentasServiceEliminarProductoTicketTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
             .thenReturn(productoMock);
 
         // When & Then
@@ -445,7 +445,7 @@ class VentasServiceEliminarProductoTicketTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
             .thenReturn(productoMock);
         when(ticketRepository.save(any(Ticket.class)))
             .thenReturn(ticketTemporal);
@@ -472,7 +472,7 @@ class VentasServiceEliminarProductoTicketTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
             .thenReturn(productoMock);
         when(ticketRepository.save(any(Ticket.class)))
             .thenReturn(ticketTemporal);
@@ -527,7 +527,7 @@ class VentasServiceEliminarProductoTicketTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
             .thenReturn(productoGranel);
         when(ticketRepository.save(any(Ticket.class)))
             .thenReturn(ticketTemporal);

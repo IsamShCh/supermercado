@@ -3,7 +3,7 @@ package com.isam.service;
 import com.isam.dto.inventario.CrearInventarioRequestDto;
 import com.isam.dto.inventario.InventarioDto;
 import com.isam.dto.producto.ConsultarProductoDto;
-import com.isam.grpc.client.CatalogoGrpcClient;
+import com.isam.service.ports.IProveedorCatalogo;
 import com.isam.model.Inventario;
 import com.isam.model.UnidadMedida;
 import com.isam.repository.InventarioRepository;
@@ -51,7 +51,7 @@ class InventarioServiceTest {
     private AjusteInventarioService ajusteInventarioService;
 
     @Mock
-    private CatalogoGrpcClient catalogoGrpcClient;
+    private IProveedorCatalogo proveedorCatalogo;
 
     @Mock
     private TransactionTemplate transactionTemplate;
@@ -85,7 +85,7 @@ class InventarioServiceTest {
     @Test
     void crearInventario_ProductoExisteEnCatalogo_CreaInventarioExitosamente() {
         // Given
-        when(catalogoGrpcClient.consultarProducto("TEST-001")).thenReturn(productoEnCatalogo);
+        when(proveedorCatalogo.consultarProducto("TEST-001")).thenReturn(productoEnCatalogo);
         when(inventarioRepository.findBySku("TEST-001")).thenReturn(Optional.empty());
 
         Inventario inventarioGuardado = new Inventario("TEST-001", "1234567890123", null, UnidadMedida.UNIDAD);
@@ -107,14 +107,14 @@ class InventarioServiceTest {
         assertEquals(UnidadMedida.UNIDAD.name(), resultado.unidadMedida());
 
         // Verificar que se llamó al cliente de catálogo
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, times(1)).save(any(Inventario.class));
     }
 
     @Test
     void crearInventario_ProductoNoExisteEnCatalogo_LanzaExcepcionNotFound() {
         // Given
-        when(catalogoGrpcClient.consultarProducto("TEST-001"))
+        when(proveedorCatalogo.consultarProducto("TEST-001"))
                 .thenThrow(new StatusRuntimeException(Status.NOT_FOUND.withDescription("Producto no encontrado")));
 
         // When & Then
@@ -125,14 +125,14 @@ class InventarioServiceTest {
         assertTrue(exception.getStatus().getDescription().contains("Producto no encontrado"));
 
         // Verificar que se llamó al cliente de catálogo
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
     @Test
     void crearInventario_InventarioYaExisteConMismaUnidadMedida_RetornaInventarioExistente() {
         // Given
-        when(catalogoGrpcClient.consultarProducto("TEST-001")).thenReturn(productoEnCatalogo);
+        when(proveedorCatalogo.consultarProducto("TEST-001")).thenReturn(productoEnCatalogo);
 
         Inventario inventarioExistente = new Inventario("TEST-001", "1234567890123", null, UnidadMedida.UNIDAD);
         when(inventarioRepository.findBySku("TEST-001")).thenReturn(Optional.of(inventarioExistente));
@@ -153,14 +153,14 @@ class InventarioServiceTest {
         assertEquals(UnidadMedida.UNIDAD.name(), resultado.unidadMedida());
 
         // Verificar que se llamó al cliente de catálogo pero no se guardó nuevamente
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
     @Test
     void crearInventario_InventarioYaExisteConDiferenteUnidadMedida_LanzaExcepcionAlreadyExists() {
         // Given
-        when(catalogoGrpcClient.consultarProducto("TEST-001")).thenReturn(productoEnCatalogo);
+        when(proveedorCatalogo.consultarProducto("TEST-001")).thenReturn(productoEnCatalogo);
 
         Inventario inventarioExistente = new Inventario("TEST-001", "1234567890123", null, UnidadMedida.KILOGRAMO);
         when(inventarioRepository.findBySku("TEST-001")).thenReturn(Optional.of(inventarioExistente));
@@ -180,14 +180,14 @@ class InventarioServiceTest {
                 .contains("Ya existe un inventario oficial para SKU 'TEST-001' con unidad de medida diferente"));
 
         // Verificar que se llamó al cliente de catálogo pero no se guardó
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
     @Test
     void crearInventario_ErrorEnComunicacionConCatalogo_PropagaExcepcion() {
         // Given
-        when(catalogoGrpcClient.consultarProducto(anyString()))
+        when(proveedorCatalogo.consultarProducto(anyString()))
                 .thenThrow(new StatusRuntimeException(Status.INTERNAL.withDescription("Error de comunicación")));
 
         // When & Then
@@ -198,7 +198,7 @@ class InventarioServiceTest {
         assertEquals("Error de comunicación", exception.getStatus().getDescription());
 
         // Verificar que no se guardó
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
@@ -217,7 +217,7 @@ class InventarioServiceTest {
                 "12345",
                 UnidadMedida.UNIDAD);
 
-        when(catalogoGrpcClient.consultarProducto("TEST-002")).thenReturn(productoConPlu);
+        when(proveedorCatalogo.consultarProducto("TEST-002")).thenReturn(productoConPlu);
         when(inventarioRepository.findBySku("TEST-002")).thenReturn(Optional.empty());
 
         Inventario inventarioGuardado = new Inventario("TEST-002", null, "12345", UnidadMedida.UNIDAD);
@@ -239,7 +239,7 @@ class InventarioServiceTest {
         assertEquals(UnidadMedida.UNIDAD.name(), resultado.unidadMedida());
 
         // Verificar que se llamó al cliente de catálogo
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-002");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-002");
         verify(inventarioRepository, times(1)).save(any(Inventario.class));
     }
 
@@ -262,7 +262,7 @@ class InventarioServiceTest {
 
         // Verificar que no se llamó al cliente de catálogo porque la validación de
         // EAN/PLU es primero
-        verify(catalogoGrpcClient, never()).consultarProducto(anyString());
+        verify(proveedorCatalogo, never()).consultarProducto(anyString());
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
@@ -275,7 +275,7 @@ class InventarioServiceTest {
                 null,
                 UnidadMedida.UNIDAD);
 
-        when(catalogoGrpcClient.consultarProducto("TEST-001")).thenReturn(productoCatalogoDiferente);
+        when(proveedorCatalogo.consultarProducto("TEST-001")).thenReturn(productoCatalogoDiferente);
 
         // When & Then
         StatusRuntimeException exception = assertThrows(StatusRuntimeException.class,
@@ -286,7 +286,7 @@ class InventarioServiceTest {
                 exception.getStatus().getDescription().contains("El ean del producto no coincide con el del catalogo"));
 
         // Verificar que se llamó al catálogo pero no se guardó
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
@@ -300,7 +300,7 @@ class InventarioServiceTest {
                 UnidadMedida.KILOGRAMO // Unidad diferente
         );
 
-        when(catalogoGrpcClient.consultarProducto("TEST-001")).thenReturn(productoCatalogoDiferente);
+        when(proveedorCatalogo.consultarProducto("TEST-001")).thenReturn(productoCatalogoDiferente);
 
         // When & Then
         StatusRuntimeException exception = assertThrows(StatusRuntimeException.class,
@@ -311,14 +311,14 @@ class InventarioServiceTest {
                 .contains("La unidad de medida del producto no coincide con la del catalogo"));
 
         // Verificar que se llamó al catálogo pero no se guardó
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }
 
     @Test
     void crearInventario_VerificaOrdenValidaciones_CatalogoSeVerificaPrimero() {
         // Given
-        when(catalogoGrpcClient.consultarProducto("TEST-001"))
+        when(proveedorCatalogo.consultarProducto("TEST-001"))
                 .thenThrow(new StatusRuntimeException(
                         Status.NOT_FOUND.withDescription("Producto no existe en el catálogo")));
 
@@ -331,7 +331,7 @@ class InventarioServiceTest {
         assertTrue(exception.getStatus().getDescription().contains("no existe en el catálogo"));
 
         // Verificar que se llamó al cliente de catálogo pero no al repositorio
-        verify(catalogoGrpcClient, times(1)).consultarProducto("TEST-001");
+        verify(proveedorCatalogo, times(1)).consultarProducto("TEST-001");
         verify(inventarioRepository, never()).findBySku(anyString());
         verify(inventarioRepository, never()).save(any(Inventario.class));
     }

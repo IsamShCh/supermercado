@@ -1,7 +1,8 @@
-package com.isam.service;
+package com.isam.infrastructure.kafka;
 
 import com.isam.grpc.eventos.EventoMovimientoInventario;
 import com.isam.model.MovimientoInventario;
+import com.isam.service.ports.IMovimientoEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -12,11 +13,12 @@ import java.time.ZoneOffset;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class InventarioEventService {
+public class MovimientoEventPublisher implements IMovimientoEventPublisher {
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
-    private static final String TOPIC_MOVIMIENTOS = "movimientos-inventario";
+    private static final String TOPIC_MOVIMIENTOS = "inventario.movimiento.eventos";
 
+    @Override
     public void publicarMovimiento(MovimientoInventario movimiento) {
         try {
             log.debug("Preparando evento de movimiento para SKU: {}", movimiento.getSku());

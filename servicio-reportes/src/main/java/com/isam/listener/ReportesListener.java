@@ -24,7 +24,7 @@ public class ReportesListener {
      * 
      * @param mensaje Array de bytes conteniendo el mensaje Protobuf serializado.
      */
-    @KafkaListener(topics = "movimientos-inventario", groupId = "reportes-group")
+    @KafkaListener(topics = "inventario.movimiento.eventos", groupId = "reportes-consumer")
     public void consumirMovimientoInventario(byte[] mensaje) {
         try {
             EventoMovimientoInventario evento = EventoMovimientoInventario.parseFrom(mensaje);
@@ -44,7 +44,7 @@ public class ReportesListener {
      * 
      * @param mensaje Array de bytes conteniendo el mensaje Protobuf serializado.
      */
-    @KafkaListener(topics = "ventas-realizadas", groupId = "reportes-group")
+    @KafkaListener(topics = "ventas.venta.realizada", groupId = "reportes-consumer")
     public void consumirVentaRealizada(byte[] mensaje) {
         try {
             EventoVentaRealizada evento = EventoVentaRealizada.parseFrom(mensaje);

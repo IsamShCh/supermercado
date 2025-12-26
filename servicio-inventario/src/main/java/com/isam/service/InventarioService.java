@@ -45,16 +45,16 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
-public class InventarioService {
+public class InventarioService implements com.isam.service.ports.IProductoEventHandler {
 
     private final InventarioRepository inventarioRepository;
     private final LoteRepository loteRepository;
     private final MovimientoInventarioRepository movimientoRepository;
     private final ProveedorRepository proveedorRepository;
     private final AjusteInventarioService ajusteInventarioService;
-    private final com.isam.grpc.client.CatalogoGrpcClient catalogoGrpcClient;
+    private final com.isam.service.ports.IProveedorCatalogo proveedorCatalogo;
     private final TransactionTemplate transactionTemplate;
-    private final InventarioEventService inventarioEventService;
+    private final com.isam.service.ports.IMovimientoEventPublisher movimientoEventPublisher;
     private final ProductoCacheRepository productoCacheRepository;
 
     /**
@@ -123,7 +123,7 @@ public class InventarioService {
                         .withDescription("Inventario no encontrado para SKU '" + dto.sku() + "'")
                         .asRuntimeException());
 
-        // Validar que el inventario no sea provisional (Dummy de venta)
+        // Validar que el inventario no sea provisional
         if (Boolean.TRUE.equals(inventario.getEsProvisional())) {
             throw Status.FAILED_PRECONDITION
                     .withDescription("El inventario para SKU '" + dto.sku()
@@ -187,7 +187,7 @@ public class InventarioService {
         MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
 
         // Publicar evento de movimiento para BI
-        inventarioEventService.publicarMovimiento(movimientoGuardado);
+        movimientoEventPublisher.publicarMovimiento(movimientoGuardado);
 
         // Convertir entidades a DTOs
         LoteDto loteDto = new LoteDto(
@@ -230,8 +230,7 @@ public class InventarioService {
                     .asRuntimeException();
         }
 
-        // Si no está en caché, hacer fallback a gRPC (para compatibilidad durante
-        // migración)
+        // Si no está en caché, hacer fallback a gRPC
         Optional<ProductoCache> productoEnCache = productoCacheRepository.findBySku(dto.sku());
 
         if (productoEnCache.isPresent()) {
@@ -265,7 +264,7 @@ public class InventarioService {
             // Fallback a gRPC - solo si el producto no está en caché
             log.debug("Producto {} no encontrado en caché, consultando via gRPC", dto.sku());
 
-            ConsultarProductoDto productoEnCatalogo = catalogoGrpcClient.consultarProducto(dto.sku());
+            ConsultarProductoDto productoEnCatalogo = proveedorCatalogo.consultarProducto(dto.sku());
 
             if (isNotNullOrEmpty(productoEnCatalogo.ean()) && isNotNullOrEmpty(dto.ean())
                     && !productoEnCatalogo.ean().equals(dto.ean())) {
@@ -488,7 +487,7 @@ public class InventarioService {
         MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
 
         // Publicar evento de movimiento
-        inventarioEventService.publicarMovimiento(movimientoGuardado);
+        movimientoEventPublisher.publicarMovimiento(movimientoGuardado);
 
         // Convertir entidades a DTOs
         com.isam.dto.inventario.InventarioDto inventarioDto = new com.isam.dto.inventario.InventarioDto(
@@ -665,7 +664,7 @@ public class InventarioService {
         // Usar el nuevo método para determinar el tipo de ajuste según el signo
         movimiento.setTipoMovimiento(TipoMovimiento.ajustePorCantidad(discrepancia)); // Devuelve o AJUSTE_POSITIVO o
                                                                                       // AJUSTE_NEGATIVO
-        // Convertir discrepancia a valor absoluto (siempre positiva)
+        // Convertir discrepancia a valor absoluto
         movimiento.setCantidad(discrepancia.abs());
         movimiento.setUnidadMedida(inventario.getUnidadMedida());
         movimiento.setFechaHora(LocalDateTime.now());
@@ -676,7 +675,7 @@ public class InventarioService {
         MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
 
         // Publicar evento
-        inventarioEventService.publicarMovimiento(movimientoGuardado);
+        movimientoEventPublisher.publicarMovimiento(movimientoGuardado);
 
         movimientos.add(new com.isam.dto.movimiento.MovimientoInventarioDto(
                 movimientoGuardado.getIdMovimiento(),
@@ -740,7 +739,7 @@ public class InventarioService {
                 movimiento.setIdLote(lote.getIdLote());
                 // Usar el nuevo método para determinar el tipo de ajuste según el signo
                 movimiento.setTipoMovimiento(TipoMovimiento.ajustePorCantidad(discrepancia));
-                // Convertir discrepancia a valor absoluto (siempre positiva)
+                // Convertir discrepancia a valor absoluto
                 movimiento.setCantidad(discrepancia.abs());
                 movimiento.setUnidadMedida(inventario.getUnidadMedida());
                 movimiento.setFechaHora(LocalDateTime.now());
@@ -752,7 +751,7 @@ public class InventarioService {
                 MovimientoInventario movimientoGuardado = movimientoRepository.save(movimiento);
 
                 // Publicar evento
-                inventarioEventService.publicarMovimiento(movimientoGuardado);
+                movimientoEventPublisher.publicarMovimiento(movimientoGuardado);
 
                 movimientos.add(new com.isam.dto.movimiento.MovimientoInventarioDto(
                         movimientoGuardado.getIdMovimiento(),
@@ -779,10 +778,12 @@ public class InventarioService {
 
     /**
      * Actualiza la caché local de un producto.
+     * Implementación del puerto IProductoEventHandler.
      * Llamado por el consumidor de eventos para mantener el desacoplamiento.
      */
+    @Override
     @Transactional
-    public void actualizarCacheProducto(String sku, String nombre, com.isam.model.UnidadMedida unidadMedida,
+    public void onProductoActualizado(String sku, String nombre, com.isam.model.UnidadMedida unidadMedida,
             String ean, String plu) {
         log.info("Actualizando caché local para SKU: {}", sku);
 

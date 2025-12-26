@@ -29,6 +29,7 @@ message EventoProductoCreado {
   bool caduca_snapshot = 8;
   string ean_snapshot = 9;
   string plu_snapshot = 10;
+  string precio_venta_snapshot = 11;
 }
 
 message EventoProductoModificado {
@@ -40,6 +41,7 @@ message EventoProductoModificado {
   string unidad_medida_snapshot = 6;
   string ean_snapshot = 7;
   string plu_snapshot = 8;
+  string precio_venta_snapshot = 9;
 }
 
 // ----------------------------------------

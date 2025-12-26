@@ -13,9 +13,6 @@ import com.isam.dto.LineaVentaDto;
 import com.isam.dto.ProcesarPagoRequestDto;
 import com.isam.dto.ProcesarPagoResponseDto;
 import com.isam.dto.CatalogoClient.ProductoDto;
-import com.isam.grpc.client.CatalogoGrpcClient;
-import com.isam.grpc.client.InventarioGrpcClient;
-import com.isam.grpc.inventario.ItemVenta;
 import com.isam.model.EstadoTicket;
 import com.isam.model.ItemTicket;
 import com.isam.model.MetodoPago;
@@ -29,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.isam.repository.ProductoCacheRepository;
 import io.grpc.Status;
 
 import java.math.BigDecimal;
@@ -50,9 +48,9 @@ public class VentasService {
 
     private final TicketRepository ticketRepository;
     private final PagoRepository pagoRepository;
-    private final CatalogoGrpcClient catalogoGrpcClient;
-    private final InventarioGrpcClient inventarioGrpcClient;
-    private final VentasEventService ventasEventService;
+    private final com.isam.service.ports.IProveedorCatalogo proveedorCatalogo;
+    private final com.isam.service.ports.IVentaEventPublisher ventaEventPublisher;
+    private final ProductoCacheRepository productoCacheRepository;
 
     @Transactional
     @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('CREAR_VENTAS')")
@@ -145,35 +143,54 @@ public class VentasService {
                 .asRuntimeException();
         }
         
-        // Traducir el código de barras a SKU usando el servicio de catálogo
-        String sku;
-        try {
-            sku = catalogoGrpcClient.traducirCodigoBarrasASku(dto.codigoBarras());
-            if (sku == null || sku.trim().isEmpty()) {
-                throw Status.NOT_FOUND
-                    .withDescription("No se encontró producto con código de barras '" + dto.codigoBarras() + "'")
-                    .asRuntimeException();
+        String sku = null;
+        String nombreProducto = null;
+        BigDecimal precioVenta = null;
+        com.isam.model.UnidadMedida unidadMedida = null;
+        String categoria = null;
+
+        java.util.Optional<com.isam.model.ProductoCache> productoCacheOpt = productoCacheRepository.findByEan(dto.codigoBarras());
+        
+        if (productoCacheOpt.isEmpty()) {
+            productoCacheOpt = productoCacheRepository.findByPlu(dto.codigoBarras());
+        }
+
+        if (productoCacheOpt.isEmpty()) {
+             productoCacheOpt = productoCacheRepository.findById(dto.codigoBarras());
+        }
+
+        if (productoCacheOpt.isPresent()) {
+            com.isam.model.ProductoCache cache = productoCacheOpt.get();
+            sku = cache.getSku();
+            nombreProducto = cache.getNombre();
+            precioVenta = cache.getPrecioVenta();
+            unidadMedida = cache.getUnidadMedida();
+            categoria = cache.getCategoria();
+            log.debug("Producto encontrado en caché local: SKU={}, Nombre={}", sku, nombreProducto);
+        } else {
+            log.warn("Producto no encontrado en caché local para código '{}'. Usando fallback gRPC.", dto.codigoBarras());
+            try {
+                sku = proveedorCatalogo.traducirCodigoBarrasASku(dto.codigoBarras());
+                if (sku == null || sku.trim().isEmpty()) {
+                    throw Status.NOT_FOUND.withDescription("No se encontró producto con código '" + dto.codigoBarras() + "'").asRuntimeException();
+                }
+                
+                ProductoDto producto = proveedorCatalogo.consultarProducto(sku);
+                nombreProducto = producto.nombre();
+                precioVenta = producto.precioVenta();
+                unidadMedida = producto.unidadMedida();
+                categoria = producto.categoria() != null ? producto.categoria().nombreCategoria() : "";
+                
+            } catch (StatusRuntimeException e) {
+                log.error("Error en fallback gRPC: {}", e.getMessage());
+                throw e;
             }
-        } catch (StatusRuntimeException e) {
-            log.error("Error al traducir código de barras: {}", e.getMessage());
-            throw e;
         }
-        
-        // Consultar el producto por SKU usando el servicio de catálogo
-        ProductoDto producto;
-        try {
-            producto = catalogoGrpcClient.consultarProducto(sku);
-        } catch (StatusRuntimeException e) {
-            log.error("Error al consultar producto: {}", e.getMessage());
-            // throw Status.NOT_FOUND
-            //     .withDescription("Producto no encontrado con SKU '" + sku + "'")
-            //     .asRuntimeException();
-            throw e;
-        }
-        
+
         // Verificar si el producto ya existe en el ticket
+        String finalSku = sku;
         ItemTicket itemExistente = ticket.getItems().stream()
-            .filter(item -> item.getSku().equals(sku))
+            .filter(item -> item.getSku().equals(finalSku))
             .findFirst()
             .orElse(null);
         
@@ -189,20 +206,20 @@ public class VentasService {
             nuevoItem.setTicket(ticket);
             nuevoItem.setNumeroLinea(ticket.getItems().size() + 1);
             nuevoItem.setSku(sku);
-            nuevoItem.setNombreProducto(producto.nombre());
+            nuevoItem.setNombreProducto(nombreProducto);
             nuevoItem.setCantidad(BigDecimal.ONE);
-            nuevoItem.setPrecioUnitario(producto.precioVenta());
+            nuevoItem.setPrecioUnitario(precioVenta);
             nuevoItem.setDescuento(BigDecimal.ZERO);
             
             // Poblar los nuevos campos para snapshot
-            nuevoItem.setUnidadMedida(producto.unidadMedida());
-            nuevoItem.setCategoria(producto.categoria() != null ? producto.categoria().nombreCategoria() : "");
+            nuevoItem.setUnidadMedida(unidadMedida);
+            nuevoItem.setCategoria(categoria);
             
             nuevoItem.calcularSubtotal();
             
             // Añadir el item al ticket
             ticket.addItem(nuevoItem);
-            log.debug("Nuevo producto añadido al ticket: SKU='{}', Nombre='{}'", sku, producto.nombre());
+            log.debug("Nuevo producto añadido al ticket: SKU='{}', Nombre='{}'", sku, nombreProducto);
         }
         
         // Recalcular el subtotal del ticket
@@ -213,7 +230,7 @@ public class VentasService {
         
         // Obtener el item añadido/actualizado
         ItemTicket itemFinal = ticket.getItems().stream()
-            .filter(item -> item.getSku().equals(sku))
+            .filter(item -> item.getSku().equals(finalSku))
             .findFirst()
             .orElseThrow(() -> Status.INTERNAL
                 .withDescription("Error al recuperar el item añadido")
@@ -427,9 +444,6 @@ public class VentasService {
         // Guardar el ticket actualizado
         ticket = ticketRepository.save(ticket);
         
-        // Registrar movimientos de venta en inventario
-        registrarMovimientosVentaEnInventario(ticket);
-        
         // Construir lista de líneas de venta
         List<LineaVentaDto> lineasVenta = new ArrayList<>();
         for (ItemTicket item : ticket.getItems()) {
@@ -456,7 +470,7 @@ public class VentasService {
             ticket.getNumeroTicket(), ticket.getTotal());
         
         // Publicar evento de venta para BI
-        ventasEventService.publicarVenta(ticket, ticket.getItems(), ticket.getPago().getMetodoPago().name());
+        ventaEventPublisher.publicarVenta(ticket, ticket.getItems(), ticket.getPago().getMetodoPago().name());
 
         // Construir y retornar la respuesta
         return new CerrarTicketResponseDto(
@@ -471,42 +485,6 @@ public class VentasService {
             ticket.getPago().getMontoRecibido(),
             ticket.getPago().getMontoCambio()
         );
-    }
-    
-    /**
-     * Registra los movimientos de venta en el servicio de inventario
-     * Este método notifica al servicio de inventario sobre las salidas de productos por venta
-     * @param ticket Ticket con los items vendidos
-     */
-    private void registrarMovimientosVentaEnInventario(Ticket ticket) {
-        log.info("Registrando movimientos de venta en inventario para ticket: {}", ticket.getNumeroTicket());
-        
-        try {
-            // Construir lista de items para el servicio de inventario
-            List<ItemVenta> itemsVenta = new ArrayList<>();
-            
-            for (ItemTicket item : ticket.getItems()) {
-                ItemVenta itemVenta = ItemVenta.newBuilder()
-                    .setSku(item.getSku())
-                    .setCantidad(item.getCantidad().toPlainString())
-                    .build();
-                itemsVenta.add(itemVenta);
-            }
-            
-            // Registrar la venta completa en inventario
-            inventarioGrpcClient.registrarVenta(ticket.getNumeroTicket(), itemsVenta);
-            
-            log.info("Venta registrada exitosamente en inventario: Ticket='{}'", ticket.getNumeroTicket());
-            
-        } catch (StatusRuntimeException e) {
-            // Log del error pero no interrumpir el proceso de cierre del ticket
-            // El ticket ya está cerrado, solo estamos notificando a inventario
-            log.error("Error al registrar venta en inventario: Ticket='{}', Error: {}",
-                ticket.getNumeroTicket(), e.getMessage());
-            
-            // TODO: Implementar mecanismo de reintento o cola de mensajes para casos de fallo
-            // Por ahora solo logueamos el error
-        }
     }
     
     /**
@@ -794,7 +772,7 @@ public class VentasService {
         // Consultar información del producto para validar si permite decimales
         ProductoDto producto;
         try {
-            producto = catalogoGrpcClient.consultarProducto(dto.sku());
+            producto = proveedorCatalogo.consultarProducto(dto.sku());
         } catch (StatusRuntimeException e) {
             log.error("Error al consultar producto para validación: {}", e.getMessage());
             throw Status.INTERNAL
@@ -832,7 +810,7 @@ public class VentasService {
         
         // Guardar valores para la respuesta
         BigDecimal cantidadAnterior = itemExistente.getCantidad();
-        BigDecimal subtotalAnterior = itemExistente.getSubtotal();
+
         
         // Realizar la eliminación
         if (cantidadAEliminar.compareTo(cantidadAnterior) == 0) {

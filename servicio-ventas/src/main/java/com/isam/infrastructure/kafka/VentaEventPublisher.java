@@ -1,26 +1,27 @@
-package com.isam.service;
+package com.isam.infrastructure.kafka;
 
 import com.isam.grpc.eventos.EventoVentaRealizada;
 import com.isam.grpc.eventos.ItemVentaEvento;
 import com.isam.model.ItemTicket;
 import com.isam.model.Ticket;
+import com.isam.service.ports.IVentaEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class VentasEventService {
+public class VentaEventPublisher implements IVentaEventPublisher {
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
-    private static final String TOPIC_VENTAS = "ventas-realizadas";
+    private static final String TOPIC_VENTAS = "ventas.venta.realizada";
 
+    @Override
     public void publicarVenta(Ticket ticket, List<ItemTicket> items, String metodoPago) {
         try {
             log.debug("Preparando evento de venta para Ticket: {}", ticket.getNumeroTicket());

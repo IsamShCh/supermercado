@@ -19,10 +19,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class KafkaProductoEventPublisher implements IProductoEventPublisher {
+public class ProductoEventPublisher implements IProductoEventPublisher {
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
-    private static final String TOPIC_PRODUCTOS = "catalogo.productos";
+    private static final String TOPIC_PRODUCTOS = "catalogo.producto.eventos";
 
     @Override
     public void publicarProductoCreado(Producto producto) {
@@ -42,6 +42,7 @@ public class KafkaProductoEventPublisher implements IProductoEventPublisher {
                     .setCaducaSnapshot(producto.getCaduca() != null ? producto.getCaduca() : false)
                     .setEanSnapshot(producto.getEan() != null ? producto.getEan() : "")
                     .setPluSnapshot(producto.getPlu() != null ? producto.getPlu() : "")
+                    .setPrecioVentaSnapshot(producto.getPrecioVenta() != null ? producto.getPrecioVenta().toString() : "0.00")
                     .build();
 
             enviarAKafka(producto.getSku(), evento.toByteArray(), "ProductoCreado");
@@ -66,6 +67,7 @@ public class KafkaProductoEventPublisher implements IProductoEventPublisher {
                             producto.getUnidadMedida() != null ? producto.getUnidadMedida().name() : "")
                     .setEanSnapshot(producto.getEan() != null ? producto.getEan() : "")
                     .setPluSnapshot(producto.getPlu() != null ? producto.getPlu() : "")
+                    .setPrecioVentaSnapshot(producto.getPrecioVenta() != null ? producto.getPrecioVenta().toString() : "0.00")
                     .build();
 
             enviarAKafka(producto.getSku(), evento.toByteArray(), "ProductoModificado");

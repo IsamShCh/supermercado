@@ -16,7 +16,7 @@ import com.isam.repository.LoteRepository;
 import com.isam.repository.MovimientoInventarioRepository;
 import com.isam.repository.ProductoCacheRepository;
 import com.isam.model.ProductoCache;
-import io.grpc.Status;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,13 +31,23 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RegistrarVentaService {
+public class RegistrarVentaService implements com.isam.service.ports.IVentaEventHandler {
 
     private final LoteRepository loteRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final InventarioRepository inventarioRepository;
-    private final com.isam.grpc.client.CatalogoGrpcClient catalogoGrpcClient;
+    private final com.isam.service.ports.IProveedorCatalogo proveedorCatalogo;
     private final ProductoCacheRepository productoCacheRepository;
+
+    /**
+     * Implementación del puerto IVentaEventHandler.
+     * Maneja los eventos de venta recibidos desde Kafka.
+     */
+    @Override
+    @Transactional
+    public void onVentaRealizada(RegistrarVentaRequestDto request) {
+        registrarVenta(request);
+    }
 
     /**
      * Registra una venta completa.
@@ -75,9 +85,8 @@ public class RegistrarVentaService {
         String sku = item.sku();
         UnidadMedida unidadMedida = item.unidadMedida();
 
-        // Obtener entidad Inventario global (para actualizar totales)
+        // Obtener entidad Inventario global
         // AUTO-REPARACIÓN: Si no existe inventario, consultamos catálogo para crearlo
-        // al vuelo
         Inventario inventarioGlobal = inventarioRepository.findBySku(sku)
                 .orElseGet(() -> recuperarOCrearInventario(sku, unidadMedida));
 
@@ -135,7 +144,7 @@ public class RegistrarVentaService {
                 BigDecimal nuevoStock = ultimoLoteUsado.getCantidadEstanteria().subtract(cantidadPendiente);
                 ultimoLoteUsado.setCantidadEstanteria(nuevoStock);
 
-                // Si no estaba en la lista de actualizar (porque lo acabamos de recuperar del
+                // Si no estaba en la lista para actualizar (porque lo acabamos de recuperar del
                 // backup), lo añadimos
                 if (!lotesAActualizar.contains(ultimoLoteUsado)) {
                     lotesAActualizar.add(ultimoLoteUsado);
@@ -208,9 +217,9 @@ public class RegistrarVentaService {
                 log.info("Datos recuperados de CACHÉ LOCAL para auto-reparación de SKU {}: UM={}, EAN={}, PLU={}", sku,
                         unidadMedida, ean, plu);
             } else {
-                // Fallback: Consultar al Catálogo vía gRPC
+                // Hacemos fallback. Consultar al Catálogo vía gRPC
                 log.warn("SKU {} no en caché, consultando Catálogo vía gRPC...", sku);
-                ConsultarProductoDto productoDto = catalogoGrpcClient.consultarProducto(sku);
+                ConsultarProductoDto productoDto = proveedorCatalogo.consultarProducto(sku);
 
                 if (productoDto.unidadMedida() != null) {
                     unidadMedida = productoDto.unidadMedida();

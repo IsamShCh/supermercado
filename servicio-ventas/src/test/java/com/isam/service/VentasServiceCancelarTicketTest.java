@@ -2,7 +2,7 @@ package com.isam.service;
 
 import com.isam.dto.CancelarTicketRequestDto;
 import com.isam.dto.CancelarTicketResponseDto;
-import com.isam.grpc.client.CatalogoGrpcClient;
+import com.isam.service.ports.IProveedorCatalogo;
 import com.isam.grpc.client.InventarioGrpcClient;
 import com.isam.model.EstadoTicket;
 import com.isam.model.MetodoPago;
@@ -42,7 +42,7 @@ class VentasServiceCancelarTicketTest {
     private PagoRepository pagoRepository;
     
     @Mock
-    private CatalogoGrpcClient catalogoGrpcClient;
+    private IProveedorCatalogo proveedorCatalogo;
     
     @Mock
     private InventarioGrpcClient inventarioGrpcClient;

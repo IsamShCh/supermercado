@@ -8,7 +8,7 @@ import com.isam.dto.ConsultarTicketRequestDto;
 import com.isam.dto.ConsultarTicketResponseDto;
 import com.isam.dto.CrearNuevoTicketResponseDto;
 import com.isam.dto.ProcesarPagoRequestDto;
-import com.isam.grpc.client.CatalogoGrpcClient;
+import com.isam.service.ports.IProveedorCatalogo;
 import com.isam.model.EstadoTicket;
 import com.isam.model.Ticket;
 import com.isam.repository.TicketRepository;
@@ -44,13 +44,13 @@ class VentasServiceTest {
     private TicketRepository ticketRepository;
     
     @Mock
-    private CatalogoGrpcClient catalogoGrpcClient;
+    private IProveedorCatalogo proveedorCatalogo;
 
     @Mock
-    private com.isam.grpc.client.InventarioGrpcClient inventarioGrpcClient;
-
+    private com.isam.service.ports.IVentaEventPublisher ventaEventPublisher;
+    
     @Mock
-    private com.isam.service.VentasEventService ventasEventService;
+    private com.isam.repository.ProductoCacheRepository productoCacheRepository;
 
     @InjectMocks
     private VentasService ventasService;
@@ -147,9 +147,14 @@ class VentasServiceTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.traducirCodigoBarrasASku(codigoBarras))
+        
+        when(productoCacheRepository.findByEan(codigoBarras)).thenReturn(Optional.empty());
+        when(productoCacheRepository.findByPlu(codigoBarras)).thenReturn(Optional.empty());
+        when(productoCacheRepository.findById(codigoBarras)).thenReturn(Optional.empty());
+        
+        when(proveedorCatalogo.traducirCodigoBarrasASku(codigoBarras))
             .thenReturn(sku);
-        when(catalogoGrpcClient.consultarProducto(sku))
+        when(proveedorCatalogo.consultarProducto(sku))
             .thenReturn(producto);
         when(ticketRepository.save(any(Ticket.class)))
             .thenReturn(ticketTemporal);
@@ -165,8 +170,8 @@ class VentasServiceTest {
         assertEquals(BigDecimal.ONE, resultado.cantidad());
         assertEquals(new BigDecimal("10.50"), resultado.precioUnitario());
         
-        verify(catalogoGrpcClient, times(1)).traducirCodigoBarrasASku(codigoBarras);
-        verify(catalogoGrpcClient, times(1)).consultarProducto(sku);
+        verify(proveedorCatalogo, times(1)).traducirCodigoBarrasASku(codigoBarras);
+        verify(proveedorCatalogo, times(1)).consultarProducto(sku);
         verify(ticketRepository, times(1)).save(any(Ticket.class));
     }
     
@@ -225,7 +230,12 @@ class VentasServiceTest {
         
         when(ticketRepository.findById(ticketTemporal.getIdTicket()))
             .thenReturn(Optional.of(ticketTemporal));
-        when(catalogoGrpcClient.traducirCodigoBarrasASku(codigoBarras))
+        
+        when(productoCacheRepository.findByEan(codigoBarras)).thenReturn(Optional.empty());
+        when(productoCacheRepository.findByPlu(codigoBarras)).thenReturn(Optional.empty());
+        when(productoCacheRepository.findById(codigoBarras)).thenReturn(Optional.empty());
+
+        when(proveedorCatalogo.traducirCodigoBarrasASku(codigoBarras))
             .thenReturn(null);
         
         // When & Then
@@ -497,9 +507,7 @@ class VentasServiceTest {
         // 5. Verificar interacciones con dependencias
         verify(ticketRepository).save(ticketListo);
         
-        // IMPORTANTE: Verificar que se llamó al microservicio de inventario para descontar stock
-        // Se debe llamar con el número de ticket generado
-        verify(inventarioGrpcClient).registrarVenta(eq(numeroEsperado), anyList());
+        verify(ventaEventPublisher).publicarVenta(any(Ticket.class), anyList(), anyString());
     }
 
     @Test

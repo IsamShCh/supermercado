@@ -13,6 +13,7 @@ import com.isam.dto.inventario.AjustarEstanteriaDto;
 import com.isam.dto.inventario.InventarioDto;
 import com.isam.model.TipoMovimiento;
 import com.isam.model.UnidadMedida;
+import com.isam.service.ports.IMovimientoEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -37,7 +38,7 @@ public class AjusteInventarioService {
     private final InventarioRepository inventarioRepository;
     private final LoteRepository loteRepository;
     private final MovimientoInventarioRepository movimientoRepository;
-    private final InventarioEventService inventarioEventService;
+    private final IMovimientoEventPublisher movimientoEventPublisher;
 
     /**
      * Aplica un ajuste manual al inventario (AC16).
@@ -366,10 +367,10 @@ public class AjusteInventarioService {
             Inventario inventarioActualizado, 
             MovimientoInventario movimientoGuardado) {
         
-        // Publicar evento de movimiento para BI
-        inventarioEventService.publicarMovimiento(movimientoGuardado);
 
-        // Convertir inventario a DTO
+        movimientoEventPublisher.publicarMovimiento(movimientoGuardado);
+
+
         InventarioDto inventarioDto = new InventarioDto(
             inventarioActualizado.getIdInventario(),
             inventarioActualizado.getSku(),
