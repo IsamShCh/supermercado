@@ -1,10 +1,10 @@
 package com.isam.service;
 
 import com.isam.dto.CatalogoClient.ProductoDto;
+import com.isam.integration.client.InventarioGrpcClient;
 import com.isam.dto.EliminarProductoTicketRequestDto;
 import com.isam.dto.EliminarProductoTicketResponseDto;
 import com.isam.service.ports.IProveedorCatalogo;
-import com.isam.grpc.client.InventarioGrpcClient;
 import com.isam.model.EstadoTicket;
 import com.isam.model.ItemTicket;
 import com.isam.model.Ticket;

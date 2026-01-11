@@ -1,6 +1,7 @@
 package com.isam.service;
 
 import com.isam.config.SecurityConfig;
+import com.isam.controller.util.JwtUtil;
 import com.isam.dto.rol.AsignarPermisosRequestDto;
 import com.isam.dto.rol.AsignarPermisosResponseDto;
 import com.isam.dto.rol.CrearRolRequestDto;
@@ -21,7 +22,6 @@ import com.isam.repository.PermisoRepository;
 import com.isam.repository.RolRepository;
 import com.isam.repository.SesionRepository;
 import com.isam.repository.UsuarioRepository;
-import com.isam.util.JwtUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,12 +1,12 @@
 package com.isam.service;
 
+import com.isam.controller.util.JwtUtil;
 import com.isam.dto.autenticacion.IniciarSesionRequestDto;
 import com.isam.dto.autenticacion.IniciarSesionResponseDto;
 import com.isam.dto.autenticacion.VerificarTokenRequestDto;
 import com.isam.dto.autenticacion.VerificarTokenResponseDto;
 import com.isam.model.Sesion;
 import com.isam.model.enums.EstadoSesion;
-import com.isam.util.JwtUtil;
 import com.isam.dto.permiso.ListarPermisosRequestDto;
 import com.isam.dto.permiso.ListarPermisosResponseDto;
 import com.isam.dto.permiso.PermisoDto;
