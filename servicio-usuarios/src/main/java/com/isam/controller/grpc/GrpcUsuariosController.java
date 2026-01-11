@@ -30,13 +30,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class GrpcServerService extends UsuarioServiceGrpc.UsuarioServiceImplBase {
+public class GrpcUsuariosController extends UsuarioServiceGrpc.UsuarioServiceImplBase {
     
     private final UsuariosService usuariosService;
     private final UsuariosMapper usuariosMapper;
     private final Validator validator;
-
-    // ... (métodos existentes)
 
     /**
      * Inicia sesión en el sistema.

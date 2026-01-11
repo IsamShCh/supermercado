@@ -25,7 +25,7 @@ public class GrpcServer {
     int port;
     private Server server;
 
-    private final GrpcServerService grpcServerService;
+    private final GrpcUsuariosController grpcServerService;
     private final ExceptionInterceptor exceptionInterceptor;
     private final AuthorizationInterceptor authorizationInterceptor;
 

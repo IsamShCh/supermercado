@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class GrpcServerService extends VentasServiceGrpc.VentasServiceImplBase {
+public class GrpcVentasController extends VentasServiceGrpc.VentasServiceImplBase {
     
     private final VentasService ventasService;
     private final VentasMapper ventasMapper;

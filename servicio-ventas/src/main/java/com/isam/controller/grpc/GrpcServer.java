@@ -28,7 +28,7 @@ public class GrpcServer {
     int port;
     private Server server;
 
-    private final GrpcServerService grpcServerService;
+    private final GrpcVentasController grpcVentasController;
     private final ExceptionInterceptor exceptionInterceptor;
     private final AuthorizationInterceptor authorizationInterceptor;
 
@@ -36,7 +36,7 @@ public class GrpcServer {
     public void start() throws IOException, InterruptedException {
         LOG.info("El servidor se está iniciado en el siguiente puerto {}", port);
         server = ServerBuilder.forPort(port)
-                .addService(grpcServerService)
+                .addService(grpcVentasController)
                 .intercept(exceptionInterceptor)
                 .intercept(authorizationInterceptor)
                 .build()

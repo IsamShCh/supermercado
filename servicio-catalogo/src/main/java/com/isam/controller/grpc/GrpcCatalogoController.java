@@ -36,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class GrpcServerService extends CatalogoServiceGrpc.CatalogoServiceImplBase {
+public class GrpcCatalogoController extends CatalogoServiceGrpc.CatalogoServiceImplBase {
 
     //private static Log log = LogFactory.getLog(GrpcServerService.class);
     private final CatalogoService catalogoService;

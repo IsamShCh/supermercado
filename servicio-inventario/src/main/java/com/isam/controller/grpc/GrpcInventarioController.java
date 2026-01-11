@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class GrpcServerService extends InventarioServiceGrpc.InventarioServiceImplBase {
+public class GrpcInventarioController extends InventarioServiceGrpc.InventarioServiceImplBase {
 
     private final com.isam.service.InventarioService inventarioService;
     private final com.isam.service.RegistrarVentaService registrarVentaService;
