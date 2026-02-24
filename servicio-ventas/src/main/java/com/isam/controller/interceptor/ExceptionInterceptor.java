@@ -54,7 +54,11 @@ public class ExceptionInterceptor implements ServerInterceptor {
          }
          private void manejarExcepcion(RuntimeException exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata){
              StatusRuntimeException statusRuntimeException = ExceptionUtils.trazarException(exception);
-             serverCall.close(statusRuntimeException.getStatus(), metadata);
+             try {
+                 serverCall.close(statusRuntimeException.getStatus(), metadata);
+             } catch (IllegalStateException e) {
+                 // Ignorar si la llamada ya estaba cerrada
+             }
          }
      }
 }
