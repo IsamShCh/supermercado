@@ -24,6 +24,7 @@
         <module>servicio-ventas</module>
         <module>servicio-usuarios</module>
         <module>servicio-reportes</module>
+        <module>pruebas-e2e</module>
     </modules>
 
 
