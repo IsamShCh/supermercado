@@ -84,16 +84,25 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - "8090:8080"
     environment:
@@ -131,6 +140,117 @@ services:
       POSTGRES_DB: metabase-app-db
     volumes:
       - pgdata_metabase:/var/lib/postgresql/data
+
+  servicio-usuarios:
+    build:
+      context: .
+      args:
+        MODULE: servicio-usuarios
+    container_name: servicio-usuarios
+    ports:
+      - "8083:8083"
+      - "9093:9093"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://usuarios-db:5432/usuarios-db
+    depends_on:
+      usuarios-db:
+        condition: service_started
+
+  servicio-catalogo:
+    build:
+      context: .
+      args:
+        MODULE: servicio-catalogo
+    container_name: servicio-catalogo
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://catalogo-db:5432/catalogo-db
+      - GRPC_CLIENT_USUARIOS_HOST=servicio-usuarios
+      - GRPC_CLIENT_USUARIOS_PORT=9093
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      catalogo-db:
+        condition: service_started
+      servicio-usuarios:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  servicio-inventario:
+    build:
+      context: .
+      args:
+        MODULE: servicio-inventario
+    container_name: servicio-inventario
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://inventario-db:5432/inventario-db
+      - GRPC_CLIENT_CATALOGO_HOST=servicio-catalogo
+      - GRPC_CLIENT_CATALOGO_PORT=9090
+      - GRPC_CLIENT_USUARIOS_HOST=servicio-usuarios
+      - GRPC_CLIENT_USUARIOS_PORT=9093
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      inventario-db:
+        condition: service_started
+      servicio-catalogo:
+        condition: service_started
+      servicio-usuarios:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  servicio-ventas:
+    build:
+      context: .
+      args:
+        MODULE: servicio-ventas
+    container_name: servicio-ventas
+    ports:
+      - "8082:8082"
+      - "9092:9092"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ventas-db:5432/ventas-db
+      - GRPC_CLIENT_CATALOGO_HOST=servicio-catalogo
+      - GRPC_CLIENT_CATALOGO_PORT=9090
+      - GRPC_CLIENT_INVENTARIO_HOST=servicio-inventario
+      - GRPC_CLIENT_INVENTARIO_PORT=9091
+      - GRPC_CLIENT_USUARIOS_HOST=servicio-usuarios
+      - GRPC_CLIENT_USUARIOS_PORT=9093
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      ventas-db:
+        condition: service_started
+      servicio-catalogo:
+        condition: service_started
+      servicio-inventario:
+        condition: service_started
+      servicio-usuarios:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  servicio-reportes:
+    build:
+      context: .
+      args:
+        MODULE: servicio-reportes
+    container_name: servicio-reportes
+    ports:
+      - "8085:8085"
+      - "9095:9095"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://reportes-db:5432/reportes-db
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      reportes-db:
+        condition: service_started
+      kafka:
+        condition: service_healthy
 
 volumes:
   pgdata_catalogo:

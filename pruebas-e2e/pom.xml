@@ -15,7 +15,19 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Noos saltamos los Integration Tests en un build normal -->
+        <skipITs>true</skipITs>
     </properties>
+
+    <profiles>
+        <!-- Perfil para habilitar los tests: mvn clean verify -P e2e -->
+        <profile>
+            <id>e2e</id>
+            <properties>
+                <skipITs>false</skipITs>
+            </properties>
+        </profile>
+    </profiles>
 
     <dependencies>
         <!-- Dependency to the API contract (gRPC stubs) -->
